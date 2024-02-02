@@ -1,5 +1,4 @@
 """Tests for the fanpy.wfn.network.rbm."""
-from fanpy.wfn.network.numpy_network import NumpyNetwork
 from fanpy.wfn.network.rbm import RestrictedBoltzmannMachine
 from fanpy.tools.sd_list import sd_list
 from fanpy.tools.slater import occ_indices

@@ -159,6 +159,7 @@ def check_inputs(  # pylint: disable=R0912,R0915
         "ci_pairs",
         "cisd",
         "fci",
+        "hci",
         "doci",
         "mps",
         "determinant-ratio",
@@ -190,7 +191,7 @@ def check_inputs(  # pylint: disable=R0912,R0915
         "ccsdtq",
     ]
     if wfn_type not in wfn_list:
-        raise ValueError("Wavefunction type must be one of {}.".format(", ".join(wfn_list)))
+        raise ValueError("Wavefunction type, {}, must be one of {}.".format(wfn_type, ", ".join(wfn_list)))
 
     # check projection space
     if not (isinstance(pspace_exc, (list, tuple)) and all(isinstance(i, int) for i in pspace_exc)):

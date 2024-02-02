@@ -42,6 +42,7 @@ def satisfies_conditions(sd, nspatial, spin, seniority):
     # pylint: disable=C0103
     return spin in [None, slater.get_spin(sd, nspatial)] and (
         seniority is None or seniority >= slater.get_seniority(sd, nspatial)
+        #seniority == slater.get_seniority(sd, nspatial)
     )
 
 

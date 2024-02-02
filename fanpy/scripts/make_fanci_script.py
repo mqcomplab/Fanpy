@@ -153,6 +153,11 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         wfn_name = "FCI"
         if wfn_kwargs is None:
             wfn_kwargs = "spin=None"
+    elif wfn_type == "hci":
+        from_imports.append(("fanpy.wfn.ci.hci", "hCI"))
+        wfn_name = "hCI"
+        if wfn_kwargs is None:
+            wfn_kwargs = "alpha1=0.5, alpha2=0.25, hierarchy=1"
     elif wfn_type == "doci":
         from_imports.append(("fanpy.wfn.ci.doci", "DOCI"))
         wfn_name = "DOCI"
@@ -316,8 +321,8 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     if solver == "least_squares":
         if solver_kwargs is None:
             solver_kwargs = (
-                "xtol=1.0e-15, ftol=1.0e-15, gtol=1.0e-15, "
-                "max_nfev=1000*fanci_wfn.nactive"
+                "xtol=5.0e-7, ftol=1.0e-9, gtol=5.0e-7, "
+                "max_nfev=fanci_wfn.nactive, verbose=2"
             )
         solver_kwargs = ", ".join(["mode='lstsq', use_jac=True", solver_kwargs])
     elif solver == "root":  # pragma: no branch
@@ -333,7 +338,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         solver_kwargs = ", ".join(["mode='cma', use_jac=False", solver_kwargs])
     elif solver == "minimize":
         if solver_kwargs is None:
-            solver_kwargs = "method='BFGS', options={'gtol': 1e-8, 'disp':True}"
+            solver_kwargs = "method='BFGS', options={'gtol': 5e-7, 'disp':True}"
         solver_kwargs = ", ".join(["mode='bfgs', use_jac=True", solver_kwargs])
     elif solver == "fanpt":
         from_imports.append(("fanci.fanpt_wrapper", "reduce_to_fock, solve_fanpt"))

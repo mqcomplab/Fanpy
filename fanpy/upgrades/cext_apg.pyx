@@ -9,7 +9,7 @@ from cpython cimport bool
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 cdef np.ndarray[np.int32_t, ndim=1] get_col_inds(list orbpairs, int nspin):
-    cdef Py_ssize_t num_orbpairs = (len(orbpairs) - 1) / 2
+    cdef Py_ssize_t num_orbpairs = (len(orbpairs) - 1) // 2
     cdef Py_ssize_t i, j, k
 
     output = np.zeros(num_orbpairs, dtype=np.int32)
@@ -47,7 +47,7 @@ def _olp_internal(
         if len(orbpairs) == 0:
             continue
 
-        for i in range((n - 1) / 2):
+        for i in range((n - 1) // 2):
             orbp = (orbpairs[2 * i], orbpairs[2 * i + 1])
             col_inds[i] = dict_orbpair_ind[orbp]
         # col_inds = np.array([dict_orbpair_ind[orbp] for orbp in orbpairs], dtype=int)
@@ -92,7 +92,7 @@ def _olp_deriv_internal(
             vals_view[col_inds[0]] += sign
             continue
 
-        for i in range(n / 2):
+        for i in range(n // 2):
             orbp = (orbpairs[2 * i], orbpairs[2 * i + 1])
             col_inds[i] = dict_orbpair_ind[orbp]
 
@@ -253,7 +253,7 @@ def generate_general_pmatch(tuple indices, tuple connectivity_flat):
     for j, is_connected in enumerate(connectivity_flat[:n-1]):
         if not is_connected:
             continue
-        sign = (-1) ** j
+        sign = int((-1) ** j)
         j += 1
         ind_two = indices[j]
         # filter out indices that are not used

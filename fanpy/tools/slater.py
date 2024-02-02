@@ -3,7 +3,7 @@ r"""Collection of functions used to construct and manipulate Slater determinants
 Slater determinants are represented with bitstrings that describe their occupation. The `0` would
 correspond to an unoccupied orbital and the `1` would correspond to the occupied orbital. To ensure
 that the lower order excitations are smaller in value, the orbital indices are counted from the
-right to the left. For example, `0b00110011` will have the occupied orbitals with indices 0, 1, 4,
+right to the left. For example, ` 00110011` will have the occupied orbitals with indices 0, 1, 4,
 and 5.
 
 It will be **assumed** that the creators within a Slater determinant are ordered from smallest to

@@ -147,6 +147,13 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         wfn_name = "CISD"
         if wfn_kwargs is None:
             wfn_kwargs = ""
+
+    elif wfn_type == "hci":
+        from_imports.append(("fanpy.wfn.ci.hci", "hCI"))
+        wfn_name = "hCI"
+        if wfn_kwargs is None:
+            wfn_kwargs = "alpha1=0.5, alpha2=0.25, hierarchy=2.5"
+
     elif wfn_type == "fci":
         from_imports.append(("fanpy.wfn.ci.fci", "FCI"))
         wfn_name = "FCI"
@@ -337,7 +344,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         from_imports.append(("fanpy.upgrades.bfgs_fanpy", "bfgs_minimize"))
         solver_name = "bfgs_minimize"
         if solver_kwargs is None:
-            solver_kwargs = "method='BFGS', jac=objective.gradient, options={'gtol': 1e-8, 'disp':True}"
+            solver_kwargs = "method='BFGS', jac=objective.gradient, options={'gtol': 5e-7, 'disp':True}"
     elif solver == "least_squares":
         from_imports.append(("fanpy.solver.system", "least_squares"))
         solver_name = "least_squares"
@@ -521,6 +528,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
             output += "chk_point_file, ext = os.path.splitext(chk_point_file)\n"
             dirname, chk_point_file = os.path.split(load_chk)
             chk_point_file, ext = os.path.splitext(chk_point_file)
+            print(os.path.join(dirname, chk_point_file + '_' + wfn_name + ext), 'x'*99)
             if os.path.isfile(os.path.join(dirname, chk_point_file + '_' + wfn_name + ext)):
                 output += "wfn.assign_params(np.load(os.path.join(dirname, chk_point_file + '_' + wfn.__class__.__name__ + ext)))\n"
             else:
