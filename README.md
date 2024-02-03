@@ -11,10 +11,10 @@ Fanpy is a free, open-source, and cross-platform Python 3 library designed for a
 The following wavefunctions are already implemented in Fanpy.     
 
 #### Configuration Interaction 
-Configuration Interaction with singles and doubles (CISD)   
-Doubly-occupied Configuration Interaction (DOCI)   
-Full CI   
-Selected CI wavefunctions with a user-specified set of Slater determinants   
+- Configuration Interaction with singles and doubles (CISD)   
+- Doubly-occupied Configuration Interaction (DOCI)   
+- Full CI   
+- Selected CI wavefunctions with a user-specified set of Slater determinants   
 
  
 #### Coupled-Cluster
