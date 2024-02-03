@@ -10,19 +10,18 @@ Fanpy is a free, open-source, and cross-platform Python 3 library designed for a
 ### Wavefunctions
 The following wavefunctions are already implemented in Fanpy.     
 
-- **Configuration Interaction**  
+**Configuration Interaction**  
  - Configuration Interaction with singles and doubles (CISD)   
  - Doubly-occupied Configuration Interaction (DOCI)   
  - Full CI   
  - Selected CI wavefunctions with a user-specified set of Slater determinants   
 
- 
-- **Coupled-Cluster**   
+**Coupled-Cluster**   
  - Standard Coupled Cluster (CCSD, CCSDT, ...)   
  - CC with seniority-specific excitations
  - Seniority-restricted CC    
 
-- **Geminal wavefunctions**   
+**Geminal wavefunctions**   
  - Antisymmetrized Product of Geminals (APG)     
  - Antisymmetrized Product of Interacting Geminals (APIG)   
  - Antisymmetrized Product of rank-two Interacting Geminals (APr2G)
