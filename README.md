@@ -1,20 +1,67 @@
-APseqG, APsetG
-See open-shell paper.
+## Fanpy: A Python library for prototyping multideterminant methods in ab initio Electronic Structure Calculations**
 
-APr2G
-http://www.sciencedirect.com/science/article/pii/S2210271X12004963
 
-AP1roG
-http://pubs.acs.org/doi/ipdf/10.1021/ct300902c
+**Web: [Miranda Quintana Group](https://quintana.chem.ufl.edu/)**   
 
-Mixed discriminant Ryser algorithm
-http://www.sciencedirect.com/science/article/pii/0024379589900098
 
-Permanent Ryser algorithm
-https://arxiv.org/abs/0904.3251
 
-Rectangular Borchardt permanent
-http://arxiv.org/abs/math/0003072
+### Information   
 
-Permanent/mixed discriminant derivatives
-http://repository.uwyo.edu/ela/vol27/iss1/18/
+Fanpy is free, open-source and cross-platform Python 3 library designed for ab initio electronic structure calculations. The Fanpy implementation is based on the mathematical framework called [Flexible Ansatz for N-electron Configuration Interaction (FANCI)](https://doi.org/10.1016/j.comptc.2021.113187). The adoption of FANCI framework gives highly modular structure to Fanpy resulting in 5 modules - Hamiltonian, Wavefunction, Objective, Solver and Tools. The modular structure offers two greatest virtues, first is its 'sandbox-like' ability to handle any combinations of wavefunction ansatz and different methods; and the second is the ease in transition from the formal conception of a method to its working implementation.
+
+
+#### Wavefunctions
+The following wavefunctions are already implemented in Fanpy.     
+
+##### Configuration Interaction 
+Configuration Interaction with singles and doubles (CISD)   
+Doubly-occupied Configuration Interaction (DOCI)   
+Full CI   
+Selected CI wavefunctions with a user-specified set of Slater determinants   
+
+ 
+##### Coupled Cluster
+Standard Coupled Cluster (CCSD, CCSDT, ...)   
+CC with seniority-specific excitations     
+Seniority-restricted CC    
+
+##### Geminal wavefunctions   
+Antisymmetrized Product of Geminals (APG)     
+Antisymmetrized Product of Interacting Geminals (APIG)   
+Antisymmetrized Product of rank-two Interacting Geminals (APr2G)
+Matrix Product States (MPS)    
+
+
+##### Coupled Cluster-Inspired Geminal Wavefunctions
+The following 1-reference orbital geminal wavefunctions are implemented incorportating single-like excitations. 
+Antisymmetrized Product of 1-reference Orbital Interacting Geminals (AP1roG)    
+Antisymmetrized Product of Set-separated 1-reference Orbital Geminals (APset1roG)  
+Antisymmetrized Product of Geminals with 1-reference Orbital (APG1ro)    
+
+
+#### Hamiltonians
+The following Hamiltonians are implemented:    
+Electronic Hamiltonian - restricted, unrestricted and generalized basis     
+
+
+##### Objective
+The Objective module combines the wavefunction and Hamiltonian to represent following forms of Schrodinger Equations.
+Variational (solving for the expectation value of the energy)    
+Projected (solving for the system of euations generated)    
+
+#### Solver
+The Solver module is supports following optimizers to optimize/solve the equations from the Objective module.   
+For CI, it supports brute-force eigenvalue decomposition.  
+Optimizers from [SciPy](https://docs.scipy.org/doc/scipy/reference/optimize.html#) 
+Covariance Matrix Adaptation Evolution Strategy (CMA-ES) algorithm from [pycma](https://pypi.org/project/cma)     
+Decision trees and Bayesian optimization algorithms from [scikit-optimize](https://scikit-optimize.github.io/stable/)   
+
+
+#### Tool
+The Tool module provides different utility functions used throughout the Fanpy package. For example, tools for generating and manipulating Slater determinants. 
+
+
+### Publications
+For detailed information about the mathematical formulation, refer to the [FANCI publication](https://doi.org/10.1016/j.comptc.2021.113187). The official notes of Fanpy library can be found in [this article](https://doi.org/10.1002/jcc.27034).    
+
+
