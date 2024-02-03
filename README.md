@@ -10,30 +10,30 @@ Fanpy is a free, open-source, and cross-platform Python 3 library designed for a
 ### Wavefunctions
 The following wavefunctions are already implemented in Fanpy.     
 
-#### Configuration Interaction 
-- Configuration Interaction with singles and doubles (CISD)   
-- Doubly-occupied Configuration Interaction (DOCI)   
-- Full CI   
-- Selected CI wavefunctions with a user-specified set of Slater determinants   
+- **Configuration Interaction**  
+ - Configuration Interaction with singles and doubles (CISD)   
+ - Doubly-occupied Configuration Interaction (DOCI)   
+ - Full CI   
+ - Selected CI wavefunctions with a user-specified set of Slater determinants   
 
  
-#### Coupled-Cluster
-Standard Coupled Cluster (CCSD, CCSDT, ...)   
-CC with seniority-specific excitations     
-Seniority-restricted CC    
+- **Coupled-Cluster**   
+ - Standard Coupled Cluster (CCSD, CCSDT, ...)   
+ - CC with seniority-specific excitations
+ - Seniority-restricted CC    
 
-#### Geminal wavefunctions   
-Antisymmetrized Product of Geminals (APG)     
-Antisymmetrized Product of Interacting Geminals (APIG)   
-Antisymmetrized Product of rank-two Interacting Geminals (APr2G)
-Matrix Product States (MPS)    
+- **Geminal wavefunctions**   
+ - Antisymmetrized Product of Geminals (APG)     
+ - Antisymmetrized Product of Interacting Geminals (APIG)   
+ - Antisymmetrized Product of rank-two Interacting Geminals (APr2G)
+ - Matrix Product States (MPS)    
 
 
-#### Coupled Cluster-Inspired Geminal Wavefunctions
-The following 1-reference orbital geminal wavefunctions are implemented incorporating single-like excitations. 
-Antisymmetrized Product of 1-reference Orbital Interacting Geminals (AP1roG)    
-Antisymmetrized Product of Set-separated 1-reference Orbital Geminals (APset1roG)  
-Antisymmetrized Product of Geminals with 1-reference Orbital (APG1ro)    
+- **Coupled Cluster-Inspired Geminal Wavefunctions**   
+ - The following 1-reference orbital geminal wavefunctions are implemented incorporating single-like excitations. 
+ - Antisymmetrized Product of 1-reference Orbital Interacting Geminals (AP1roG)    
+ - Antisymmetrized Product of Set-separated 1-reference Orbital Geminals (APset1roG)  
+ - Antisymmetrized Product of Geminals with 1-reference Orbital (APG1ro)    
 
 
 ### Hamiltonians
