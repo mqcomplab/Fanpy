@@ -1,4 +1,4 @@
-## Fanpy: A Python library for prototyping multideterminant methods in ab initio Electronic Structure Calculations**
+## Fanpy: A Python library for prototyping multideterminant methods in ab initio Electronic Structure Calculations
 
 
 **Web: [Miranda Quintana Group](https://quintana.chem.ufl.edu/)**   
