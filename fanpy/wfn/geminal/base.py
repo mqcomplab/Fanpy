@@ -329,7 +329,7 @@ class BaseGeminal(BaseWavefunction):
                     print(
                         "The orbital pair of the given wavefunction, {0}, is not possible in the "
                         "current wavefunction. Parameters corresponding to this orbital pair will"
-                        " be ignored."
+                        " be ignored.".format(orbpair)
                     )
 
         params = params.reshape(self.ngem, self.norbpair)
