@@ -420,7 +420,7 @@ class BaseGeminal(BaseWavefunction):
             col_inds = np.array(col_inds)
 
         # select function that evaluates the permanent
-        # Ryser algorithm is faster if the number of rows and columns are greater than 3
+        # Ryser algorithm is faster if the number of rows and columns are smaller than 3
         if len(col_inds) <= 3 >= len(row_inds):
             permanent = math_tools.permanent_ryser
         else:
