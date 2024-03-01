@@ -75,7 +75,8 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         # Coefficient matrix for interaction order = 1 with size (nspin)
         # Coefficient matrix for interaction order = 2 with size (nspin, nspin)      
         # Coefficient matrix for hidden variables with size (nbath)
-        # weights matrix of size nbath x nspin
+        # weights matrix of size nspin x nbath
+        # coefficient matrix for sign parameter of size (nspin + 1)
         return ( 
             [((self.nspin, ) * self.orders)] + 
             [(self.nbath, )] + [(self.nspin, self.nbath)] + [(self.nspin + 1, )] 
@@ -90,6 +91,9 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
  
     @staticmethod
     def sign_correction(x):
+        '''
+        Sign correction function to introduce + or - sign to the exp() ansatz of RBM.
+        '''
         return np.tanh(x)
 
     @staticmethod
@@ -98,6 +102,9 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
 
     def assign_template_params(self):
+        '''
+        The template parameters are set to a default range of [-0.02, 0.02).
+        '''
         params = []
         random.seed(10)
         for i, param_shape in enumerate(self.params_shape[:-1]):
@@ -134,6 +141,17 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         
 
     def get_overlaps(self, sds, deriv=None):
+        '''
+        Function to calculate the overlap of |RBM> with given set of Slater determinants. 
+     
+        Input
+        -----
+        sds: list
+            List of Slater determinants with respect to which overlap of RBM wavefunction needs to be calculated.
+        deriv: (None, list)
+            If deriv is None meaning that only overlap is required or else list of indices of parameters is provided
+            with respect to which derivative is required.  
+        '''
         if len(sds) == 0:
             return np.array([])
         
