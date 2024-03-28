@@ -279,17 +279,17 @@ def check_inputs(  # pylint: disable=R0912,R0915
 
 
 parser = argparse.ArgumentParser()  # pylint: disable=C0103
-parser.add_argument("--nelec", type=int, required=True, help="Number of electrons.")
+parser.add_argument("--nelec", type=int, required=False, help="Number of electrons.")
 parser.add_argument(
     "--one_int_file",
     type=str,
-    required=True,
+    required=False,
     help="File name of the numpy file that contains the one electron integrals.",
 )
 parser.add_argument(
     "--two_int_file",
     type=str,
-    required=True,
+    required=False,
     help="File name of the numpy file that contains the two electron integrals.",
 )
 parser.add_argument(

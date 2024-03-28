@@ -159,7 +159,7 @@ class ComponentParameterIndices(OrderedDict):
                 isinstance(indices, np.ndarray)
                 and indices.ndim == 1
                 and (
-                    indices.dtype == np.bool
+                    indices.dtype == np.bool_
                     or np.issubdtype(indices.dtype, np.integer)
                     or indices.size == 0
                 )
@@ -168,7 +168,7 @@ class ComponentParameterIndices(OrderedDict):
                     "Indices for the selected (active) parameters must be given as a "
                     "one-dimensional numpy array (or list or tuple) of booleans or integers."
                 )
-            if indices.dtype == np.bool and indices.size != component.nparams:
+            if indices.dtype == np.bool_ and indices.size != component.nparams:
                 raise ValueError(
                     "If boolean indices are used to select parameters for optimization, the number "
                     "of indices must be equal to the number of parameters must have the same size."
