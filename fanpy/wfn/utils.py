@@ -13,7 +13,7 @@ import numpy as np
 from scipy.optimize import OptimizeResult, root, minimize
 from fanpy.solver.least_squares_fanci import least_squares
 import cma
- 
+
 
 def wfn_factory(olp, olp_deriv, nelec, nspin, params, memory=None, assign_params=None):
     """Return the instance of the Wavefunction class with the given overlaps.
@@ -476,7 +476,7 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwar
 
             if self.step_save:
                 self.save_params()
-            
+
             return output
 
         def compute_jacobian(self, x: np.ndarray) -> np.ndarray:
@@ -854,4 +854,4 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwar
                 # Go to next iteration
                 isamp += 1
 
-    return GeneratedFanCI(ham, wfn, wfn.nelec, nproj=nproj, wfn=proj_wfn, **kwargs)
+    return GeneratedFanCI(ham, wfn, wfn.nelec, nproj=nproj, wfn=proj_wfn, seniority=seniority, **kwargs)
