@@ -387,14 +387,21 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwar
             # a waste
             # convert slater determinants
             sds = []
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
-                sds.append(sd)
+            if isinstance(occs_array[0,0], np.ndarray):
+                for i, occs in enumerate(occs_array):
+                    # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
+                    # convert occupation vector to sd
+                    if occs.dtype == bool:
+                        occs = np.where(occs)[0]
+                    sd = slater.create(0, *occs[0])
+                    sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
+                    sds.append(sd)
+            else:
+                for i, occs in enumerate(occs_array):
+                    if occs.dtype == bool:
+                        occs = np.where(occs)
+                    sd = slater.create(0, *occs)
+                    sds.append(sd)
 
             # Feed in parameters into fanpy wavefunction
             for component, indices in self.indices_component_params.items():
