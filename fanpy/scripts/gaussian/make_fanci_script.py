@@ -3,7 +3,7 @@ import os
 import textwrap
 
 from fanpy.scripts.utils import check_inputs, parser
-
+from fanpy.scripts.utils import get_wfn_info
 
 def make_script(  # pylint: disable=R1710,R0912,R0915
     nelec,
@@ -138,176 +138,10 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     from_imports = [("fanpy.wfn.utils", "convert_to_fanci")]
 
     wfn_type = wfn_type.lower()
-    if wfn_type == "ci_pairs":
-        from_imports.append(("fanpy.wfn.ci.ci_pairs", "CIPairs"))
-        wfn_name = "CIPairs"
-        if wfn_kwargs is None:
-            wfn_kwargs = ""
-    elif wfn_type == "cisd":
-        from_imports.append(("fanpy.wfn.ci.cisd", "CISD"))
-        wfn_name = "CISD"
-        if wfn_kwargs is None:
-            wfn_kwargs = ""
-    elif wfn_type == "fci":
-        from_imports.append(("fanpy.wfn.ci.fci", "FCI"))
-        wfn_name = "FCI"
-        if wfn_kwargs is None:
-            wfn_kwargs = "spin=None"
-    elif wfn_type == "hci":
-        from_imports.append(("fanpy.wfn.ci.hci", "hCI"))
-        wfn_name = "hCI"
-        if wfn_kwargs is None:
-            wfn_kwargs = "alpha1=0.5, alpha2=0.25, hierarchy=1"
-    elif wfn_type == "doci":
-        from_imports.append(("fanpy.wfn.ci.doci", "DOCI"))
-        wfn_name = "DOCI"
-        if wfn_kwargs is None:
-            wfn_kwargs = ""
-    elif wfn_type == "mps":
-        from_imports.append(("fanpy.wfn.network.mps", "MatrixProductState"))
-        wfn_name = "MatrixProductState"
-        if wfn_kwargs is None:
-            wfn_kwargs = "dimension=None"
-    elif wfn_type == "determinant-ratio":
-        from_imports.append(("fanpy.wfn.quasiparticle.det_ratio", "DeterminantRatio"))
-        wfn_name = "DeterminantRatio"
-        if wfn_kwargs is None:
-            wfn_kwargs = "numerator_mask=None"
-    elif wfn_type == "ap1rog":
-        from_imports.append(("fanpy.wfn.geminal.ap1rog", "AP1roG"))
-        wfn_name = "AP1roG"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ref_sd=None, ngem=None"
-    elif wfn_type == "apr2g":
-        from_imports.append(("fanpy.wfn.geminal.apr2g", "APr2G"))
-        wfn_name = "APr2G"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ngem=None"
-    elif wfn_type == "apig":
-        from_imports.append(("fanpy.wfn.geminal.apig", "APIG"))
-        wfn_name = "APIG"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ngem=None"
-    elif wfn_type == "apsetg":
-        from_imports.append(("fanpy.wfn.geminal.apsetg", "BasicAPsetG"))
-        wfn_name = "BasicAPsetG"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ngem=None"
-    elif wfn_type == "apg":  # pragma: no branch
-        from_imports.append(("fanpy.wfn.geminal.apg", "APG"))
-        wfn_name = "APG"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ngem=None"
-    elif wfn_type == "network":
-        from_imports.append(("fanpy.upgrades.numpy_network", "NumpyNetwork"))
-        wfn_name = "NumpyNetwork"
-        if wfn_kwargs is None:
-            wfn_kwargs = "num_layers=2"
-    elif wfn_type == "rbm":
-        from_imports.append(("fanpy.wfn.network.rbm", "RestrictedBoltzmannMachine"))
-        wfn_name = "RestrictedBoltzmannMachine"
-        if wfn_kwargs is None:
-            wfn_kwargs = "nbath=nspin, num_layers=1, orders=(1, 2)"
 
-    elif wfn_type == "basecc":
-        from_imports.append(("fanpy.wfn.cc.base", "BaseCC"))
-        wfn_name = "BaseCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "standardcc":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "generalizedcc":
-        from_imports.append(("fanpy.wfn.cc.generalized_cc", "GeneralizedCC"))
-        wfn_name = "GeneralizedCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "senioritycc":
-        from_imports.append(("fanpy.wfn.cc.seniority", "SeniorityCC"))
-        wfn_name = "SeniorityCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "pccd":
-        from_imports.append(("fanpy.wfn.cc.pccd_ap1rog", "PCCD"))
-        wfn_name = "PCCD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ap1rogsd":
-        from_imports.append(("fanpy.wfn.cc.ap1rog_generalized", "AP1roGSDGeneralized"))
-        wfn_name = "AP1roGSDGeneralized"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ap1rogsd_spin":
-        from_imports.append(("fanpy.wfn.cc.ap1rog_spin", "AP1roGSDSpin"))
-        wfn_name = "AP1roGSDSpin"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "apsetgd":
-        from_imports.append(("fanpy.wfn.cc.apset1rog_d", "APset1roGD"))
-        wfn_name = "APset1roGD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "apsetgsd":
-        from_imports.append(("fanpy.wfn.cc.apset1rog_sd", "APset1roGSD"))
-        wfn_name = "APset1roGSD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "apg1rod":
-        from_imports.append(("fanpy.wfn.cc.apg1ro_d", "APG1roD"))
-        wfn_name = "APG1roD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "apg1rosd":
-        from_imports.append(("fanpy.wfn.cc.apg1ro_sd", "APG1roSD"))
-        wfn_name = "APG1roSD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccsdsen0":
-        from_imports.append(("fanpy.wfn.cc.ccsd_sen0", "CCSDsen0"))
-        wfn_name = "CCSDsen0"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccsdqsen0":
-        from_imports.append(("fanpy.wfn.cc.ccsdq_sen0", "CCSDQsen0"))
-        wfn_name = "CCSDQsen0"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccsdtqsen0":
-        from_imports.append(("fanpy.wfn.cc.ccsdtq_sen0", "CCSDTQsen0"))
-        wfn_name = "CCSDTQsen0"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccsdtsen2qsen0":
-        from_imports.append(("fanpy.wfn.cc.ccsdt_sen2_q_sen0", "CCSDTsen2Qsen0"))
-        wfn_name = "CCSDTsen2Qsen0"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccs":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
-        wfn_kwargs = f"ranks=[1], {wfn_kwargs}"
-    elif wfn_type == "ccsd":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
-        wfn_kwargs = f"ranks=[1, 2], {wfn_kwargs}"
-    elif wfn_type == "ccsdt":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
-        wfn_kwargs = f"ranks=[1, 2, 3], {wfn_kwargs}"
-    elif wfn_type == "ccsdtq":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
-        wfn_kwargs = f"ranks=[1, 2, 3, 4], {wfn_kwargs}"
+    wfn_info = get_wfn_info(wfn_type)
+    import_line, wfn_name, wfn_kwargs = wfn_info(wfn_kwargs)
+    from_imports.append(import_line)
 
     if wfn_name in ["DOCI", "CIPairs"] and not optimize_orbs:
         from_imports.append(("fanpy.ham.senzero", "SeniorityZeroHamiltonian"))
