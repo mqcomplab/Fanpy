@@ -278,7 +278,10 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
 
     output += "# Initialize wavefunction\n"
     wfn_init1 = "wfn = {}(".format(wfn_name)
-    wfn_init2 = "nelec, nspin, params={}, memory={}, {})\n".format(wfn_params, memory, wfn_kwargs)
+    if len(wfn_kwargs) > 0:
+        wfn_init2 = "nelec, nspin, params={}, memory={}, {})\n".format(wfn_params, memory, wfn_kwargs)
+    else:
+        wfn_init2 = "nelec, nspin, params={}, memory={})\n".format(wfn_params, memory)
     output += "\n".join(
         textwrap.wrap(wfn_init1 + wfn_init2, width=100, subsequent_indent=" " * len(wfn_init1))
     )
