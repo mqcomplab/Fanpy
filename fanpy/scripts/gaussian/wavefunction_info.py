@@ -158,6 +158,8 @@ def get_wfn_info(wfn_type):
         return _get_ccsdtqsen0_info
     elif wfn_type == "ccsdtsen2qsen0":
         return _get_ccsdtsen2qsen0_info
+    elif wfn_type == "ccs":
+        return _get_ccs_info
     elif wfn_type == "ccsd":
         return _get_ccsd_info
     elif wfn_type == "ccsdt":
@@ -844,6 +846,28 @@ def _get_ccsdtq_info(wfn_kwargs):
     if wfn_kwargs is None:
         wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
     wfn_kwargs = f"ranks=[1, 2, 3, 4], {wfn_kwargs}"
+    return import_line, wfn_name, wfn_kwargs
+
+def _get_ccs_info(wfn_kwargs):
+    """
+    Get information about the CCS wavefunction.
+
+    Parameters
+    ----------
+    wfn_kwargs : str, None
+        Keyword arguments for the CCS wavefunction.
+
+    Returns
+    -------
+    results : tuple
+        A tuple containing the import line, wavefunction name, and keyword arguments.
+    """
+
+    import_line = ("fanpy.wfn.cc.standard_cc", "StandardCC")
+    wfn_name = "StandardCC"
+    if wfn_kwargs is None:
+        wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
+    wfn_kwargs = f"ranks=[1], {wfn_kwargs}"
     return import_line, wfn_name, wfn_kwargs
 
 def _get_custom_info(wfn_kwargs):

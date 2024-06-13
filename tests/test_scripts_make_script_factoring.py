@@ -153,6 +153,12 @@ def old_input(wfn_type, wfn_kwargs=None):
         wfn_name = "CCSDTsen2Qsen0"
         if wfn_kwargs is None:
             wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
+    elif wfn_type == "ccs":
+        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
+        wfn_name = "StandardCC"
+        if wfn_kwargs is None:
+            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
+        wfn_kwargs = f"ranks=[1], {wfn_kwargs}"
     elif wfn_type == "ccsd":
         from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
         wfn_name = "StandardCC"
@@ -205,6 +211,7 @@ def test_make_script():
         "ccsdqsen0",
         "ccsdtqsen0",
         "ccsdtsen2qsen0",
+        "ccs",
         "ccsd",
         "ccsdt",
         "ccsdtq"
