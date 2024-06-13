@@ -13,7 +13,7 @@ import numpy as np
 from scipy.optimize import OptimizeResult, root, minimize
 from fanpy.solver.least_squares_fanci import least_squares
 import cma
- 
+
 
 def wfn_factory(olp, olp_deriv, nelec, nspin, params, memory=None, assign_params=None):
     """Return the instance of the Wavefunction class with the given overlaps.
@@ -387,14 +387,21 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwar
             # a waste
             # convert slater determinants
             sds = []
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
-                sds.append(sd)
+            if isinstance(occs_array[0,0], np.ndarray):
+                for i, occs in enumerate(occs_array):
+                    # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
+                    # convert occupation vector to sd
+                    if occs.dtype == bool:
+                        occs = np.where(occs)[0]
+                    sd = slater.create(0, *occs[0])
+                    sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
+                    sds.append(sd)
+            else:
+                for i, occs in enumerate(occs_array):
+                    if occs.dtype == bool:
+                        occs = np.where(occs)
+                    sd = slater.create(0, *occs)
+                    sds.append(sd)
 
             # Feed in parameters into fanpy wavefunction
             for component, indices in self.indices_component_params.items():
@@ -476,7 +483,7 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwar
 
             if self.step_save:
                 self.save_params()
-            
+
             return output
 
         def compute_jacobian(self, x: np.ndarray) -> np.ndarray:
@@ -854,4 +861,4 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwar
                 # Go to next iteration
                 isamp += 1
 
-    return GeneratedFanCI(ham, wfn, wfn.nelec, nproj=nproj, wfn=proj_wfn, **kwargs)
+    return GeneratedFanCI(ham, wfn, wfn.nelec, nproj=nproj, wfn=proj_wfn, seniority=seniority, **kwargs)
