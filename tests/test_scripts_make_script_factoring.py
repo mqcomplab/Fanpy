@@ -260,3 +260,8 @@ def test_import_line():
             exec(command)
         except ModuleNotFoundError:
             pytest.fail(f"ModuleNotFoundError: {import_line[0]}")
+
+@pytest.mark.parametrize("wfn_type", ["42 is the answer to everything", 41, None, 3.14])
+def test_invalid_wfn_type(wfn_type):
+    with pytest.raises(ValueError):
+        get_wfn_info(wfn_type)
