@@ -16,7 +16,7 @@ parser : argparse.ArgumentParser
 
 """
 import argparse
-
+from fanpy.scripts.gaussian.wavefunction_info import get_wfn_info
 
 def check_inputs(  # pylint: disable=R0912,R0915
     nelec,
@@ -155,43 +155,44 @@ def check_inputs(  # pylint: disable=R0912,R0915
             )
 
     # check wavefunction type
-    wfn_list = [
-        "ci_pairs",
-        "cisd",
-        "fci",
-        "hci",
-        "doci",
-        "mps",
-        "determinant-ratio",
-        "ap1rog",
-        "apr2g",
-        "apig",
-        "apsetg",
-        "apg",
-        "network",
-        "rbm",
+    # wfn_list = [
+    #     "ci_pairs",
+    #     "cisd",
+    #     "fci",
+    #     "hci",
+    #     "doci",
+    #     "mps",
+    #     "determinant-ratio",
+    #     "ap1rog",
+    #     "apr2g",
+    #     "apig",
+    #     "apsetg",
+    #     "apg",
+    #     "network",
+    #     "rbm",
 
-        "basecc",
-        "standardcc",
-        "generalizedcc",
-        "senioritycc",
-        "pccd",
-        "ap1rogsd",
-        "ap1rogsd_spin",
-        "apsetgd",
-        "apsetgsd",
-        "apg1rod",
-        "apg1rosd",
-        "ccsdsen0",
-        "ccsdqsen0",
-        "ccsdtqsen0",
-        "ccsdtsen2qsen0",
-        "ccsd",
-        "ccsdt",
-        "ccsdtq",
-    ]
-    if wfn_type not in wfn_list:
-        raise ValueError("Wavefunction type, {}, must be one of {}.".format(wfn_type, ", ".join(wfn_list)))
+    #     "basecc",
+    #     "standardcc",
+    #     "generalizedcc",
+    #     "senioritycc",
+    #     "pccd",
+    #     "ap1rogsd",
+    #     "ap1rogsd_spin",
+    #     "apsetgd",
+    #     "apsetgsd",
+    #     "apg1rod",
+    #     "apg1rosd",
+    #     "ccsdsen0",
+    #     "ccsdqsen0",
+    #     "ccsdtqsen0",
+    #     "ccsdtsen2qsen0",
+    #     "ccsd",
+    #     "ccsdt",
+    #     "ccsdtq",
+    # ]
+    # this is probably not needed because make_script uses get_wfn_info
+    # so it will be raised there
+    _ = get_wfn_info(wfn_type) # raises error if wfn_type is not valid
 
     # check projection space
     if not (isinstance(pspace_exc, (list, tuple)) and all(isinstance(i, int) for i in pspace_exc)):
