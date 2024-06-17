@@ -102,74 +102,45 @@ def get_wfn_info(wfn_type: str) -> callable:
         If the given wavefunction type is invalid.
     """
 
-    if wfn_type == "ci_pairs":
-        return _get_ci_pairs_info
-    elif wfn_type == "cisd":
-        return _get_cisd_info
-    elif wfn_type == "hci":
-        return _get_hci_info
-    elif wfn_type == "fci":
-        return _get_fci_info
-    elif wfn_type == "doci":
-        return _get_doci_info
-    elif wfn_type == "mps":
-        return _get_mps_info
-    elif wfn_type == "determinant-ratio":
-        return _get_det_ratio_info
-    elif wfn_type == "ap1rog":
-        return _get_ap1rog_info
-    elif wfn_type == "apr2g":
-        return _get_apr2g_info
-    elif wfn_type == "apig":
-        return _get_apig_info
-    elif wfn_type == "apsetg":
-        return _get_apsetg_info
-    elif wfn_type == "apg":
-        return _get_apg_info
-    elif wfn_type == "network": 
-        return _get_network_info
-    elif wfn_type == "rbm":
-        return _get_rbm_info
-    elif wfn_type == "basecc":
-        return _get_basecc_info
-    elif wfn_type == "standardcc":
-        return _get_standardcc_info
-    elif wfn_type == "generalizedcc":
-        return _get_generalizedcc_info
-    elif wfn_type == "senioritycc":
-        return _get_senioritycc_info
-    elif wfn_type == "pccd":
-        return _get_pccd_info
-    elif wfn_type == "ap1rogsd":
-        return _get_ap1rogsd_info
-    elif wfn_type == "ap1rogsd_spin":
-        return _get_ap1rogsd_spin_info
-    elif wfn_type == "apsetgd":
-        return _get_apsetgd_info
-    elif wfn_type == "apsetgsd":
-        return _get_apsetgsd_info
-    elif wfn_type == "apg1rod":
-        return _get_apg1rod_info
-    elif wfn_type == "apg1rosd":
-        return _get_apg1rosd_info
-    elif wfn_type == "ccsdsen0":
-        return _get_ccsdsen0_info
-    elif wfn_type == "ccsdqsen0":
-        return _get_ccsdqsen0_info
-    elif wfn_type == "ccsdtqsen0":
-        return _get_ccsdtqsen0_info
-    elif wfn_type == "ccsdtsen2qsen0":
-        return _get_ccsdtsen2qsen0_info
-    elif wfn_type == "ccs":
-        return _get_ccs_info
-    elif wfn_type == "ccsd":
-        return _get_ccsd_info
-    elif wfn_type == "ccsdt":
-        return _get_ccsdt_info
-    elif wfn_type == "ccsdtq":
-        return _get_ccsdtq_info
-    elif wfn_type == "custom":
-        return _get_custom_info
+    wfn_info_dict = {
+        "ci_pairs": _get_ci_pairs_info,
+        "cisd": _get_cisd_info,
+        "hci": _get_hci_info,
+        "fci": _get_fci_info,
+        "doci": _get_doci_info,
+        "mps": _get_mps_info,
+        "determinant-ratio": _get_det_ratio_info,
+        "ap1rog": _get_ap1rog_info,
+        "apr2g": _get_apr2g_info,
+        "apig": _get_apig_info,
+        "apsetg": _get_apsetg_info,
+        "apg": _get_apg_info,
+        "network": _get_network_info,
+        "rbm": _get_rbm_info,
+        "basecc": _get_basecc_info,
+        "standardcc": _get_standardcc_info,
+        "generalizedcc": _get_generalizedcc_info,
+        "senioritycc": _get_senioritycc_info,
+        "pccd": _get_pccd_info,
+        "ap1rogsd": _get_ap1rogsd_info,
+        "ap1rogsd_spin": _get_ap1rogsd_spin_info,
+        "apsetgd": _get_apsetgd_info,
+        "apsetgsd": _get_apsetgsd_info,
+        "apg1rod": _get_apg1rod_info,
+        "apg1rosd": _get_apg1rosd_info,
+        "ccsdsen0": _get_ccsdsen0_info,
+        "ccsdqsen0": _get_ccsdqsen0_info,
+        "ccsdtqsen0": _get_ccsdtqsen0_info,
+        "ccsdtsen2qsen0": _get_ccsdtsen2qsen0_info,
+        "ccs": _get_ccs_info,
+        "ccsd": _get_ccsd_info,
+        "ccsdt": _get_ccsdt_info,
+        "ccsdtq": _get_ccsdtq_info,
+        "custom": _get_custom_info
+    }
+    
+    if wfn_type in wfn_info_dict:
+        return wfn_info_dict[wfn_type]
     else:
         raise ValueError(f"Invalid wavefunction type: {wfn_type}")
 
