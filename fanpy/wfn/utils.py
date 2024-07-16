@@ -158,7 +158,9 @@ def wfn_factory(olp, olp_deriv, nelec, nspin, params, memory=None, assign_params
     return GeneratedWavefunction(nelec, nspin, params=params, memory=memory)
 
 
-def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwargs):
+def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=None,
+                     step_print=None, step_save=None, tmpfile=None, param_selection=None, mask=None,
+                     objective_type=None, constraints=None, norm_det=None, **kwargs):
     """Covert the given wavefunction instance to that of FanCI class.
 
     https://github.com/QuantumElephant/FanCI
@@ -327,14 +329,21 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwar
             # a waste
             # convert slater determinants
             sds = []
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
-                sds.append(sd)
+            if isinstance(occs_array[0,0], np.ndarray):
+                for i, occs in enumerate(occs_array):
+                    # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
+                    # convert occupation vector to sd
+                    if occs.dtype == bool:
+                        occs = np.where(occs)[0]
+                    sd = slater.create(0, *occs[0])
+                    sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
+                    sds.append(sd)
+            else:
+                for i, occs in enumerate(occs_array):
+                    if occs.dtype == bool:
+                        occs = np.where(occs)
+                    sd = slater.create(0, *occs)
+                    sds.append(sd)
 
             # Feed in parameters into fanpy wavefunction
             for component, indices in self.indices_component_params.items():
@@ -861,4 +870,6 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, seniority=None, **kwar
                 # Go to next iteration
                 isamp += 1
 
-    return GeneratedFanCI(ham, wfn, wfn.nelec, nproj=nproj, wfn=proj_wfn, seniority=seniority, **kwargs)
+    return GeneratedFanCI(ham, wfn, wfn.nelec, nproj=nproj, wfn=proj_wfn, fill=fill, seniority=seniority,
+                          step_print=step_print, step_save=step_save, tmpfile=tmpfile, param_selection=param_selection, mask=mask,
+                          objective_type=objective_type, constraints=constraints, norm_det=norm_det, **kwargs)
