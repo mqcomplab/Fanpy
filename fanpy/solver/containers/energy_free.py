@@ -1,12 +1,13 @@
-r"""Class that contains the elements required to perform a FANPT calculation with explicit E."""
+r"""Class that contains the elements required to perform a FANPT calculation with implicit E."""
 
 import numpy as np
 
-from .base_fanpt_container import FANPTContainer
+from energy_param import FANPTContainerEParam
 
 
-class FANPTContainerEParam(FANPTContainer):
-    r"""Container for the matrices and vectors required ot perform a FANPT calculation.
+class FANPTContainerEFree(FANPTContainerEParam):
+    r"""
+    Container for the matrices and vectors required ot perform a FANPT calculation.
 
     We assume that the equations to be solved have the following structure:
 
@@ -68,12 +69,12 @@ class FANPTContainerEParam(FANPTContainer):
     d_g_lambda : np.ndarray
         Derivative of the FANPT equations with respect to the lambda parameter.
         numpy array with shape (self.nequations,).
+    super_d_g_lambda : np.array
+        Derivarive of the FANPT equations with respect to the lambda parameter
+        as if it was calculated in the E-param way.
+        numpy array with shape (self.nequations,).
     d2_g_lambda_wfnparams : np.ndarray
         Derivative of the FANPT equations with respect to lambda and the wavefunction
-        parameters.
-        numpy array with shape (self.nequations, len(self.wfn_params_active)).
-    d2_g_e_wfnparams : np.ndarray
-        Derivative of the FANPT equations with respect to the energy and the wavefunction
         parameters.
         numpy array with shape (self.nequations, len(self.wfn_params_active)).
     c_matrix : np.ndarray
@@ -99,9 +100,6 @@ class FANPTContainerEParam(FANPTContainer):
         Derivative of the FANPT equations with respect to the lambda parameter.
     der2_g_lambda_wfnparams(self)
         Derivative of the FANPT equations with respect to lambda and the wavefunction parameters.
-    der2_g_e_wfnparams(self)
-        Derivative of the FANPT equations with respect to the energy and the wavefunction
-        parameters.
     gen_coeff_matrix(self)
         Generate the coefficient matrix of the linear FANPT system of equations.
     """
@@ -146,25 +144,29 @@ class FANPTContainerEParam(FANPTContainer):
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
         """
-        super().__init__(
-            fanci_wfn,
-            params,
-            ham0,
-            ham1,
-            l,
-            ref_sd,
-            inorm,
-            ham_ci_op,
-            f_pot_ci_op,
-            ovlp_s,
-            d_ovlp_s,
-        )
-        self.der2_g_e_wfnparams()
+        if fanci_wfn.mask[-1]:
+            raise TypeError("The energy cannot be an active parameter.")
+        else:
+            super().__init__(
+                fanci_wfn,
+                params,
+                ham0,
+                ham1,
+                l,
+                ref_sd,
+                inorm,
+                ham_ci_op,
+                f_pot_ci_op,
+                ovlp_s,
+                d_ovlp_s,
+            )
 
     def der_g_lambda(self):
         r"""Derivative of the FANPT equations with respect to the lambda parameter.
 
-        dG/dl = <n|f_pot|psi(l)>
+        dG/dl = <n|f_pot|psi(l)> - <ref|f_pot|psi(l)> * <n|psi(l)>
+
+        dG/dl = super() - <ref|f_pot|psi(l)> * <n|psi(l)>
 
         Generates
         ---------
@@ -172,15 +174,27 @@ class FANPTContainerEParam(FANPTContainer):
             Derivative of the FANPT equations with respect to the lambda parameter.
             numpy array with shape (self.nequations,).
         """
-        f = np.zeros(self.nequation)
-        f_proj = f[: self.nproj]
-        self.f_pot_ci_op(self.ovlp_s, out=f_proj)
-        self.d_g_lambda = f
+        super().der_g_lambda()
+        self.super_d_g_lambda = self.d_g_lambda.copy()
+        if self.inorm:
+            self.d_g_lambda[: self.nproj] -= (
+                self.d_g_lambda[self.ref_sd] * self.ovlp_s[: self.nproj]
+            )
+        else:
+            self.d_g_lambda[: self.nproj] -= (
+                self.d_g_lambda[self.ref_sd]
+                * self.ovlp_s[: self.nproj]
+                / self.ovlp_s[self.ref_sd]
+            )
 
     def der2_g_lambda_wfnparams(self):
         r"""Derivative of the FANPT equations with respect to lambda and the wavefunction parameters.
 
-        d^2G/dldp_k = <n|f_pot|dpsi(l)/dp_k>
+        d^2G/dldp_k = <n|f_pot|dpsi(l)/dp_k> - <ref|f_pot|dpsi(l)/dp_k> * <n|psi(l)>
+                                             - <ref|f_pot|psi(l)> * <n|dpsi(l)/dp_k>
+
+        d^2G/dldp_k = super() - <ref|f_pot|dpsi(l)/dp_k> * <n|psi(l)>
+                              - <ref|f_pot|psi(l)> * <n|dpsi(l)/dp_k>
 
         Generates
         ---------
@@ -189,45 +203,43 @@ class FANPTContainerEParam(FANPTContainer):
             parameters.
             numpy array with shape (self.nequations, len(self.wfn_params_active)).
         """
-        if self.active_energy:
-            ncolumns = self.nactive - 1
+        super().der2_g_lambda_wfnparams()
+        if self.inorm:
+            self.d2_g_lambda_wfnparams[: self.nproj] -= self.d2_g_lambda_wfnparams[
+                self.ref_sd
+            ] * self.ovlp_s[: self.nproj].reshape(self.nproj, 1)
+            self.d2_g_lambda_wfnparams[: self.nproj] -= (
+                self.super_d_g_lambda[self.ref_sd] * self.d_ovlp_s[: self.nproj]
+            )
         else:
-            ncolumns = self.nactive
-        f = np.zeros((self.nequation, ncolumns), order="F")
-        f_proj = f[: self.nproj]
-        for f_proj_col, d_ovlp_col in zip(f_proj.transpose(), self.d_ovlp_s.transpose()):
-            self.f_pot_ci_op(d_ovlp_col, out=f_proj_col)
-        self.d2_g_lambda_wfnparams = f
-
-    def der2_g_e_wfnparams(self):
-        r"""Derivative of the FANPT equations with respect to the energy and the wavefunction
-        parameters.
-
-        d^2G/dEdp_k = -<n|dpsi(l)/dp_k>
-
-        Generates
-        ---------
-        d2_g_e_wfnparams : np.ndarray
-            Derivative of the FANPT equations with respect to the energy and the wavefunction
-            parameters.
-            numpy array with shape (self.nequations, len(self.wfn_params_active)).
-        """
-        if self.active_energy:
-            ncolumns = self.nactive - 1
-            f = np.zeros((self.nequation, ncolumns), order="F")
-            f[: self.nproj] = -self.d_ovlp_s[: self.nproj]
-            self.d2_g_e_wfnparams = f
-        else:
-            self.d2_g_e_wfnparams = None
+            self.d2_g_lambda_wfnparams[: self.nproj] -= (
+                (
+                    self.d2_g_lambda_wfnparams[self.ref_sd]
+                    - self.super_d_g_lambda[self.ref_sd]
+                    * self.d_ovlp_s[self.ref_sd]
+                    / self.ovlp_s[self.ref_sd]
+                )
+                * self.ovlp_s[: self.nproj].reshape(self.nproj, 1)
+                / self.ovlp_s[self.ref_sd]
+            )
+            self.d2_g_lambda_wfnparams[: self.nproj] -= (
+                self.super_d_g_lambda[self.ref_sd]
+                * self.d_ovlp_s[: self.nproj]
+                / self.ovlp_s[self.ref_sd]
+            )
 
     def gen_coeff_matrix(self):
         r"""Generate the coefficient matrix of the linear FANPT system of equations.
 
         dG/dp_k = <n|ham(l)|dpsi(l)/dp_k> - E * <n|dpsi/dp_k>
+                                          - <ref|ham(l)|dpsi(l)/dp_k> * <n|psi(l)>
 
-        If the energy is active, the last column of the matrix has the form:
+        dG/dp_k = super() - <ref|ham(l)|dpsi(l)/dp_k> * <n|psi(l)>
 
-        dG/dE = -<n|psi(l)>
+        Notes
+        -----
+        - There is not a dG/dE column.
+        - The E that appears in the above equations is just <ref|ham(l)|psi(l)>.
 
         Generates
         ---------
@@ -235,4 +247,19 @@ class FANPTContainerEParam(FANPTContainer):
             Coefficient matrix of the FANPT system of equations.
             numpy array with shape (self.nequations, len(self.nactive)).
         """
-        self.c_matrix = self.fanci_wfn.compute_jacobian(self.params)
+        super().gen_coeff_matrix()
+        f_proj = np.empty((self.nproj, self.nactive), order="F")
+        for f_proj_col, d_ovlp_col in zip(
+            f_proj.transpose(), self.d_ovlp_s.transpose()
+        ):
+            self.ham_ci_op(d_ovlp_col, out=f_proj_col)
+        if self.inorm:
+            self.c_matrix[: self.nproj] -= f_proj[self.ref_sd] * self.ovlp_s[
+                : self.nproj
+            ].reshape(self.nproj, 1)
+        else:
+            self.c_matrix[: self.nproj] -= (
+                (f_proj[self.ref_sd] - self.energy * self.d_ovlp_s[self.ref_sd])
+                * self.ovlp_s[: self.nproj].reshape(self.nproj, 1)
+                / self.ovlp_s[self.ref_sd]
+            )

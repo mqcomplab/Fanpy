@@ -1,13 +1,10 @@
-""" FANPT wrapper"""
+""" Solver using FanPT"""
 
 import numpy as np
-
-import pytest
-
 import pyci
 
-from fanci import FanCI
-from fanci.fanpt import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
+from .fanci import FanCI
+from .fanpt import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
 
 def solve_fanpt(
@@ -39,7 +36,7 @@ def solve_fanpt(
             PyCI Hamiltonian of the real system.
         energy_active : bool, optional
             Whether the energy is an active parameter. It determines which FANPT
-            method is used. If set to true, FANPTContainerEParam is used. 
+            method is used. If set to true, FANPTContainerEParam is used.
             Defaults to True.
         resum : bool, optional
             Indicates if we will solve the FANPT equations by re-summing the series.
@@ -55,7 +52,7 @@ def solve_fanpt(
             Lambda value up to which the FANPT calculation will be performed. Defaults to 1.0.
         steps (int, optional): int, optional
             Solve FANPT in n stepts between lambda_i and lambda_f. Defaults to 1.
-        kwargs (dict, optional): 
+        kwargs (dict, optional):
             Additional keyword arguments for FanPTContainer class. Defaults to {}.
 
     Raises:
@@ -128,7 +125,7 @@ def solve_fanpt(
         )
 
         final_l = l + (lambda_f - lambda_i) / steps
-        print(f'Solving FanPT problem at lambda={final_l}')
+        print(f"Solving FanPT problem at lambda={final_l}")
 
         fanpt_updater = FANPTUpdater(
             fanpt_container=fanpt_container,
@@ -142,8 +139,12 @@ def solve_fanpt(
 
         # These params serve as initial guess to solve the fanci equations for the given lambda.
         fanpt_params = np.append(new_wfn_params, new_energy)
-        print('Frobenius Norm of parameters: {}'.format(np.linalg.norm(fanpt_params - params)))
-        print('Energy change: {}'.format(np.linalg.norm(fanpt_params[-1] - params[-1])))
+        print(
+            "Frobenius Norm of parameters: {}".format(
+                np.linalg.norm(fanpt_params - params)
+            )
+        )
+        print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - params[-1])))
 
         # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
         ham = fanpt_container.linear_comb_ham(ham1, ham0, final_l, 1 - final_l)
@@ -157,25 +158,27 @@ def solve_fanpt(
         results = fanci_wfn.optimize(fanpt_params, **solver_kwargs)
 
         fanpt_params[fanci_wfn.mask] = results.x
+        print("fanpt_params=", fanpt_params)
         params = fanpt_params
 
         if not energy_active:
             fanci_wfn.freeze_parameter([-1])
 
-    # Output for debugging purposes
-    results["energy"] = fanpt_params[-1]
-    results["residuals"] = results.fun
-    #output = {
-    #    "x": params,
-    #    "variables": {
-    #        "steps": steps,
-    #        "inorm": inorm,
-    #        "norm_det": norm_det,
-    #        "eactive": fanci_wfn.mask[-1],
-    #        "final_l": final_l,
-    #    },
-    #}
-    return results
+    # Output formatting
+    output = {
+        "x": params,
+        "energy": params[-1],
+        "residuals": results.fun,
+        "variables": {
+            "steps": steps,
+            "inorm": inorm,
+            "norm_det": norm_det,
+            "eactive": fanci_wfn.mask[-1],
+            "final_l": final_l,
+        },
+    }
+
+    return output
 
 
 def update_fanci_wfn(ham, fanciwfn, norm_det, fill):
@@ -190,16 +193,28 @@ def update_fanci_wfn(ham, fanciwfn, norm_det, fill):
     fanciwfn.unfreeze_parameter([-1])
 
     # FIXME: for FanCI class
-    #return fanci_class(
+    # return fanci_class(
     #    ham, fanciwfn.wfn, fanciwfn.nproj, fanciwfn.nparam, norm_det=norm_det, mask=fanciwfn.mask, fill=fill
-    #)
+    # )
 
     # for fanpy class
+    # ASSUMING GeneratedFanCI class
     return fanci_class(
-        ham, fanciwfn._fanpy_wfn, fanciwfn._wfn.nocc_up + fanciwfn._wfn.nocc_dn, 
-        nproj=fanciwfn.nproj, wfn=fanciwfn.wfn, fill=fill, seniority=fanciwfn.seniority,
-        step_print=fanciwfn.step_print, step_save=fanciwfn.step_save, tmpfile=fanciwfn.tmpfile, 
-        mask=fanciwfn.mask, objective_type=fanciwfn.objective_type, norm_det=norm_det, 
+        ham,
+        fanciwfn._fanpy_wfn,
+        fanciwfn._wfn.nocc_up + fanciwfn._wfn.nocc_dn,
+        nproj=fanciwfn.nproj,
+        wfn=fanciwfn.wfn,
+        fill=fill,
+        seniority=fanciwfn.seniority,
+        step_print=fanciwfn.step_print,
+        step_save=fanciwfn.step_save,
+        tmpfile=fanciwfn.tmpfile,
+        mask=fanciwfn._mask,
+        objective_type=fanciwfn.objective_type,
+        norm_det=norm_det,
+        param_selection=fanciwfn.indices_component_params,
+        constraints=fanciwfn._constraints,
     )
 
 
@@ -215,15 +230,35 @@ def reduce_to_fock(two_int, lambda_val=0):
     fock_two_int = two_int * lambda_val
     nspatial = two_int.shape[0]
     indices = np.arange(nspatial)
-    fock_two_int[indices[:, None, None], indices[None, :, None], indices[None, None, :], indices[None, :, None]] =  two_int[indices[:, None, None], indices[None, :, None], indices[None, None, :], indices[None, :, None]]
-    fock_two_int[indices[:, None, None], indices[None, :, None], indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], indices[None, :, None], indices[None, :, None], indices[None, None, :]]
-    #fock_two_int[indices[None, :, None], indices[:, None, None], indices[None, None, :], indices[None, :, None]] =  two_int[indices[:, None, None], indices[None, :, None], indices[None, None, :], indices[None, :, None]]
-    #fock_two_int[indices[None, :, None], indices[:, None, None], indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], indices[None, :, None], indices[None, :, None], indices[None, None, :]]
-    
-    #occ_indices = np.arange(nelec // 2)
-    #fock_two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]] =  two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]]
-    #fock_two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]]
-    #fock_two_int[occ_indices[None, :, None], indices[:, None, None], indices[None, None, :], occ_indices[None, :, None]] =  two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]]
-    #fock_two_int[occ_indices[None, :, None], indices[:, None, None], occ_indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]]
+    fock_two_int[
+        indices[:, None, None],
+        indices[None, :, None],
+        indices[None, None, :],
+        indices[None, :, None],
+    ] = two_int[
+        indices[:, None, None],
+        indices[None, :, None],
+        indices[None, None, :],
+        indices[None, :, None],
+    ]
+    fock_two_int[
+        indices[:, None, None],
+        indices[None, :, None],
+        indices[None, :, None],
+        indices[None, None, :],
+    ] = two_int[
+        indices[:, None, None],
+        indices[None, :, None],
+        indices[None, :, None],
+        indices[None, None, :],
+    ]
+    # fock_two_int[indices[None, :, None], indices[:, None, None], indices[None, None, :], indices[None, :, None]] =  two_int[indices[:, None, None], indices[None, :, None], indices[None, None, :], indices[None, :, None]]
+    # fock_two_int[indices[None, :, None], indices[:, None, None], indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], indices[None, :, None], indices[None, :, None], indices[None, None, :]]
+
+    # occ_indices = np.arange(nelec // 2)
+    # fock_two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]] =  two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]]
+    # fock_two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]]
+    # fock_two_int[occ_indices[None, :, None], indices[:, None, None], indices[None, None, :], occ_indices[None, :, None]] =  two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]]
+    # fock_two_int[occ_indices[None, :, None], indices[:, None, None], occ_indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]]
 
     return fock_two_int

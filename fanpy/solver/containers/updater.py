@@ -2,13 +2,11 @@ r"""FANPT updater."""
 
 from functools import partial
 from math import factorial
-
 import numpy as np
-
 import pyci
 
-from .base_fanpt_container import FANPTContainer
-from .fanpt_constant_terms import FANPTConstantTerms
+from .base import FANPTContainer
+from .constant_terms import FANPTConstantTerms
 
 
 class FANPTUpdater:
@@ -78,7 +76,9 @@ class FANPTUpdater:
         Return the energy calculated as the sum of the FANPT responses of the E variable.
     """
 
-    def __init__(self, fanpt_container, final_order=1, final_l=1.0, solver=None, resum=False):
+    def __init__(
+        self, fanpt_container, final_order=1, final_l=1.0, solver=None, resum=False
+    ):
         r"""Initialize the updater.
 
         Parameters
@@ -204,7 +204,8 @@ class FANPTUpdater:
             self.final_l
             * np.dot(
                 np.linalg.inv(
-                    self.final_l * self.A_matrix + np.identity(self.fanpt_container.nequation)
+                    self.final_l * self.A_matrix
+                    + np.identity(self.fanpt_container.nequation)
                 ),
                 self.b_vector,
             )
@@ -259,7 +260,7 @@ class FANPTUpdater:
     def assign_solver(self, solver):
         r"""Assign solver."""
         if solver is None:
-            #self.solver = partial(np.linalg.lstsq, rcond=None)
+            # self.solver = partial(np.linalg.lstsq, rcond=None)
             self.solver = partial(np.linalg.lstsq, rcond=1e-6)
 
     def get_responses(self):
@@ -280,10 +281,13 @@ class FANPTUpdater:
                 previous_responses=resp_matrix[: o - 1, :],
             )
             constant_terms = c_terms.constant_terms
-            resp_matrix[o - 1] = self.solver(self.fanpt_container.c_matrix, constant_terms)[0]
+            resp_matrix[o - 1] = self.solver(
+                self.fanpt_container.c_matrix, constant_terms
+            )[0]
         self.responses = resp_matrix
-        #print("response_matrix",self.responses)
-        #print("length of response matrix",self.responses.shape) 
+        # print("response_matrix",self.responses)
+        # print("length of response matrix",self.responses.shape)
+
     def params_updater(self):
         r"""Update the wavefunction parameters with the new responses up to the given value of
         final_lambda.
@@ -314,14 +318,16 @@ class FANPTUpdater:
                 wfn_responses = self.responses[:, :-1]
             else:
                 wfn_responses = self.responses
-            corrections = np.sum(wfn_responses * dl.reshape(self.final_order, 1), axis=0)
+            corrections = np.sum(
+                wfn_responses * dl.reshape(self.final_order, 1), axis=0
+            )
         active_wfn_indices = np.where(self.fanpt_container.fanci_wfn.mask[:-1])[0]
         for c, active_index in zip(corrections, active_wfn_indices):
             wfn_params[active_index] += c
         self.new_wfn_params = wfn_params
 
     def energy_ham_ovlp_updater(self):
-        r""""Update the energy, Hamiltonian sparse operator, and wavefunctoin overlaps.
+        r""" "Update the energy, Hamiltonian sparse operator, and wavefunctoin overlaps.
 
         Generates
         ---------
@@ -337,18 +343,25 @@ class FANPTUpdater:
         This E satisfies the 2n + 1 rule.
         """
         new_ham = FANPTContainer.linear_comb_ham(
-            self.fanpt_container.ham1, self.fanpt_container.ham0, self.final_l, 1 - self.final_l
+            self.fanpt_container.ham1,
+            self.fanpt_container.ham0,
+            self.final_l,
+            1 - self.final_l,
         )
         new_ham_op = pyci.sparse_op(
             new_ham, self.fanpt_container.fanci_wfn.wfn, self.fanpt_container.nproj
         )
-        new_ovlp_s = self.fanpt_container.fanci_wfn.compute_overlap(self.new_wfn_params, "S")
+        new_ovlp_s = self.fanpt_container.fanci_wfn.compute_overlap(
+            self.new_wfn_params, "S"
+        )
         f = np.empty(self.fanpt_container.nproj, dtype=pyci.c_double)
         new_ham_op(new_ovlp_s, out=f)
         if self.fanpt_container.inorm:
             energy = f[self.fanpt_container.ref_sd]
         else:
-            energy = f[self.fanpt_container.ref_sd] / new_ovlp_s[self.fanpt_container.ref_sd]
+            energy = (
+                f[self.fanpt_container.ref_sd] / new_ovlp_s[self.fanpt_container.ref_sd]
+            )
         self.new_energy = energy
         self.new_ham_op = new_ham_op
         self.new_ovlp_s = new_ovlp_s
