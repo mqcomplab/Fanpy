@@ -4,13 +4,9 @@ FanCI base class module.
 """
 
 from abc import ABCMeta, abstractmethod
-
 from collections import OrderedDict
-
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
-
 import numpy as np
-
 from scipy.optimize import OptimizeResult, least_squares, root
 
 import pyci
@@ -205,7 +201,9 @@ class FanCI(metaclass=ABCMeta):
         elif isinstance(constraints, dict):
             constraints = OrderedDict(constraints)
         else:
-            raise TypeError(f"Invalid `constraints` type `{type(constraints)}`; must be dictionary")
+            raise TypeError(
+                f"Invalid `constraints` type `{type(constraints)}`; must be dictionary"
+            )
 
         # Add norm_det and norm_param constraints
         norm_param = list() if norm_param is None else norm_param
@@ -225,7 +223,9 @@ class FanCI(metaclass=ABCMeta):
             if mask.dtype == np.bool_:
                 # Check length of boolean mask
                 if mask.size != nparam:
-                    raise ValueError(f"Mask size is {mask.size}; must have size `nparam={nparam}`")
+                    raise ValueError(
+                        f"Mask size is {mask.size}; must have size `nparam={nparam}`"
+                    )
             else:
                 # Convert integer mask to boolean
                 ints = mask
@@ -236,15 +236,17 @@ class FanCI(metaclass=ABCMeta):
         nequation = nproj + len(constraints)
         nactive = mask.sum()
         if nequation < nactive:
-            print(f"WARNING: System is underdetermined with dimensions {nequation}, {nactive}. Continuing anyways")
-            #raise Warning(f"System is underdetermined with dimensions {nequation}, {nactive}")
-            #raise ValueError(f"System is underdetermined with dimensions {nequation}, {nactive}")
+            print(
+                f"WARNING: System is underdetermined with dimensions {nequation}, {nactive}. Continuing anyways"
+            )
+            # raise Warning(f"System is underdetermined with dimensions {nequation}, {nactive}")
+            # raise ValueError(f"System is underdetermined with dimensions {nequation}, {nactive}")
 
         # Generate determinant spaces
         wfn = fill_wavefunction(wfn, nproj, fill)
 
         # Compute CI matrix operator with nproj rows and len(wfn) columns
-        ci_op = pyci.sparse_op(ham, wfn, nrow=nproj, ncol=len(wfn))
+        ci_op = pyci.sparse_op(ham, wfn, nrow=nproj, ncol=len(wfn), symmetric=False)
 
         # Compute arrays of occupations
         sspace = wfn.to_occ_array()
@@ -402,7 +404,9 @@ class FanCI(metaclass=ABCMeta):
                 self,
                 ham,
                 # Generate new determinants from "S" space via alias method
-                ci_cls(nbasis, nocc_up, nocc_dn, self.sspace[Alias(np.abs(coeffs))(nproj)]),
+                ci_cls(
+                    nbasis, nocc_up, nocc_dn, self.sspace[Alias(np.abs(coeffs))(nproj)]
+                ),
                 nproj,
                 nparam,
                 constraints=constraints,
@@ -708,7 +712,9 @@ class FanCI(metaclass=ABCMeta):
         return masked_f
 
     @abstractmethod
-    def compute_overlap(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
+    def compute_overlap(
+        self, x: np.ndarray, occs_array: Union[np.ndarray, str]
+    ) -> np.ndarray:
         r"""
         Compute the FanCI overlap vector.
 
@@ -783,7 +789,9 @@ def fill_wavefunction(wfn: pyci.wavefunction, nproj: int, fill: str) -> None:
         s_max = min(wfn.nocc_up, wfn.nvir_up)
         connections = (1, 2)
     else:
-        raise TypeError(f"invalid `wfn` type `{type(wfn)}`; must be `pyci.wavefunction`")
+        raise TypeError(
+            f"invalid `wfn` type `{type(wfn)}`; must be `pyci.wavefunction`"
+        )
 
     # Use new wavefunction; don't modify original object
     wfn = wfn.__class__(wfn)
@@ -815,7 +823,9 @@ def fill_wavefunction(wfn: pyci.wavefunction, nproj: int, fill: str) -> None:
 
     # Truncate wave function if we generated > nproj determinants
     if len(wfn) > nproj:
-        wfn = wfn.__class__(wfn.nbasis, wfn.nocc_up, wfn.nocc_dn, wfn.to_det_array(nproj))
+        wfn = wfn.__class__(
+            wfn.nbasis, wfn.nocc_up, wfn.nocc_dn, wfn.to_det_array(nproj)
+        )
 
     # Fill wfn with S space determinants
     for det in wfn.to_det_array(nproj):
