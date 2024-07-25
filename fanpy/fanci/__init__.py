@@ -3,7 +3,6 @@ FanCI module.
 
 """
 
-
 __all__ = [
     "FanCI",
     "APIG",
@@ -11,8 +10,7 @@ __all__ = [
     "DetRatio",
 ]
 
-
 from .fanci import FanCI
-from .apig import APIG
-from .ap1rog import AP1roG
-from .detratio import DetRatio
+from .wfn.apig import APIG
+from .wfn.ap1rog import AP1roG
+from .wfn.detratio import DetRatio

@@ -4,7 +4,7 @@ import numpy as np
 import pyci
 
 from .fanci import FanCI
-from .fanpt import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
+from .containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
 
 def solve_fanpt(
