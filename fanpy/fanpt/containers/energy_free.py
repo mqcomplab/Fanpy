@@ -2,7 +2,7 @@ r"""Class that contains the elements required to perform a FANPT calculation wit
 
 import numpy as np
 
-from energy_param import FANPTContainerEParam
+from .energy_param import FANPTContainerEParam
 
 
 class FANPTContainerEFree(FANPTContainerEParam):
