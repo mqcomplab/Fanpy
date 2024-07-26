@@ -45,11 +45,11 @@ class PYSCF:
         info("> Number of spin orbitals: %i", self.nspinorb)
 
         # Hartree-Fock energy
-        self.energy_total = mf.e_tot
+        self.energy_total = self.mol.e_tot
         info("> Hartree-Fock total energy: %.15f", self.energy_total)
 
         # Electronic energy
-        self.energy_elec = mf.energy_elec()[0]
+        self.energy_elec = self.mol.energy_elec()[0]
         info("> Electronic energy: %.15f", self.energy_elec)
 
         # Nuclear-nuclear repulsion
@@ -60,7 +60,13 @@ class PYSCF:
         self.one_int_ao = mf.get_hcore()
 
         info("> Transforming one-electron integrals from AO to MO basis...")
-        self.one_int = np.einsum("ji,jk,kl->il", self.mo_coeff, self.one_int_ao, self.mo_coeff, optimize="greedy")
+        self.one_int = np.einsum(
+            "ji,jk,kl->il",
+            self.mo_coeff,
+            self.one_int_ao,
+            self.mo_coeff,
+            optimize="greedy",
+        )
 
         # Two-electron integrals
         from pyscf import ao2mo
@@ -73,10 +79,14 @@ class PYSCF:
 
         info("> Transforming two-electron integrals from AO to MO basis...")
         self.two_int = ao2mo.general(
-            self.two_int_ao, (self.mo_coeff, self.mo_coeff, self.mo_coeff, self.mo_coeff), compact=False
+            self.two_int_ao,
+            (self.mo_coeff, self.mo_coeff, self.mo_coeff, self.mo_coeff),
+            compact=False,
         )
 
         ## Convert integrals to Physicist's notation
-        self.two_int = self.two_int.reshape(self.nmo, self.nmo, self.nmo, self.nmo).transpose(0, 2, 1, 3)
+        self.two_int = self.two_int.reshape(
+            self.nmo, self.nmo, self.nmo, self.nmo
+        ).transpose(0, 2, 1, 3)
 
         note("Importing PySCF objects completed.")
