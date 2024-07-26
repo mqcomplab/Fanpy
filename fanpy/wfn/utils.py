@@ -1,6 +1,7 @@
 """Utility function for constructing Wavefunction instances."""
+
 import os
-from typing import List, Tuple
+from typing import List
 
 from fanpy.eqn.utils import ComponentParameterIndices
 from fanpy.wfn.base import BaseWavefunction
@@ -9,7 +10,7 @@ from fanpy.tools import slater
 
 import numpy as np
 
-#from scipy.optimize import OptimizeResult, least_squares, root, minimi
+# from scipy.optimize import OptimizeResult, least_squares, root, minimi
 from scipy.optimize import OptimizeResult, root, minimize
 from fanpy.solver.least_squares_fanci import least_squares
 import cma
@@ -158,9 +159,23 @@ def wfn_factory(olp, olp_deriv, nelec, nspin, params, memory=None, assign_params
     return GeneratedWavefunction(nelec, nspin, params=params, memory=memory)
 
 
-def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=None,
-                     step_print=None, step_save=None, tmpfile=None, param_selection=None, mask=None,
-                     objective_type=None, constraints=None, norm_det=None, **kwargs):
+def convert_to_fanci(
+    wfn,
+    ham,
+    nproj=None,
+    proj_wfn=None,
+    fill=None,
+    seniority=None,
+    step_print=None,
+    step_save=None,
+    tmpfile=None,
+    param_selection=None,
+    mask=None,
+    objective_type=None,
+    constraints=None,
+    norm_det=None,
+    **kwargs,
+):
     """Covert the given wavefunction instance to that of FanCI class.
 
     https://github.com/QuantumElephant/FanCI
@@ -193,6 +208,7 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
         Does not work for composite wavefunctions.
 
         """
+
         def __init__(
             self,
             ham: pyci.hamiltonian,
@@ -205,7 +221,7 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
             step_print: bool = True,
             step_save: bool = True,
             tmpfile: str = "",
-            param_selection = None,
+            param_selection=None,
             mask=None,
             objective_type: str = "projected",
             constraints=None,
@@ -246,7 +262,9 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
 
             """
             if not isinstance(ham, pyci.hamiltonian):
-                raise TypeError(f"Invalid `ham` type `{type(ham)}`; must be `pyci.hamiltonian`")
+                raise TypeError(
+                    f"Invalid `ham` type `{type(ham)}`; must be `pyci.hamiltonian`"
+                )
 
             # Save sub-class -specific attributes
             self._fanpy_wfn = fanpy_wfn
@@ -295,9 +313,22 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                 constraints = {"<\\Phi|\\Psi> - 1>": self.make_norm_constraint()}
 
             # Initialize base class
-            FanCI.__init__(self, ham, wfn, nproj, nparam, fill=fill, mask=mask, constraints=constraints, norm_det=norm_det, **kwargs)
+            FanCI.__init__(
+                self,
+                ham,
+                wfn,
+                nproj,
+                nparam,
+                fill=fill,
+                mask=mask,
+                constraints=constraints,
+                norm_det=norm_det,
+                **kwargs,
+            )
 
-        def compute_overlap(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
+        def compute_overlap(
+            self, x: np.ndarray, occs_array: Union[np.ndarray, str]
+        ) -> np.ndarray:
             r"""
             Compute the FanCI overlap vector.
 
@@ -329,7 +360,7 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
             # a waste
             # convert slater determinants
             sds = []
-            if isinstance(occs_array[0,0], np.ndarray):
+            if isinstance(occs_array[0, 0], np.ndarray):
                 for i, occs in enumerate(occs_array):
                     # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
                     # convert occupation vector to sd
@@ -396,7 +427,7 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
             # a waste
             # convert slater determinants
             sds = []
-            if isinstance(occs_array[0,0], np.ndarray):
+            if isinstance(occs_array[0, 0], np.ndarray):
                 for i, occs in enumerate(occs_array):
                     # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
                     # convert occupation vector to sd
@@ -419,7 +450,10 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                 component.assign_params(new_params)
 
             # Shape of y is (no. determinants, no. active parameters excluding energy)
-            y = np.zeros((occs_array.shape[0], self._nactive - self._mask[-1]), dtype=pyci.c_double)
+            y = np.zeros(
+                (occs_array.shape[0], self._nactive - self._mask[-1]),
+                dtype=pyci.c_double,
+            )
 
             # Compute derivatives of overlaps
             deriv_indices = self.indices_component_params[self._fanpy_wfn]
@@ -432,7 +466,9 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                     inds_component = self.indices_component_params[wfn]
                     if inds_component.size > 0:
                         inds_objective = self.indices_objective_params[wfn]
-                        y[:, inds_objective] = self._fanpy_wfn.get_overlaps(sds, (wfn, inds_component))
+                        y[:, inds_objective] = self._fanpy_wfn.get_overlaps(
+                            sds, (wfn, inds_component)
+                        )
             elif hasattr(self._fanpy_wfn, "get_overlaps"):
                 y += self._fanpy_wfn.get_overlaps(sds, deriv=deriv_indices)
             else:
@@ -460,13 +496,25 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
             if self.objective_type == "projected":
                 output = super().compute_objective(x)
                 self.print_queue["Electronic Energy"] = x[-1]
-                self.print_queue["Cost"] = np.sum(output[:self._nproj] ** 2)
-                self.print_queue["Cost from constraints"] = np.sum(output[self._nproj:] ** 2)
+                self.print_queue["Cost"] = np.sum(output[: self._nproj] ** 2)
+                self.print_queue["Cost from constraints"] = np.sum(
+                    output[self._nproj :] ** 2
+                )
                 if self.step_print:
-                    print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
-                    print("(Mid Optimization) Cost: {}".format(self.print_queue["Cost"]))
+                    print(
+                        "(Mid Optimization) Electronic Energy: {}".format(
+                            self.print_queue["Electronic Energy"]
+                        )
+                    )
+                    print(
+                        "(Mid Optimization) Cost: {}".format(self.print_queue["Cost"])
+                    )
                     if self.constraints:
-                        print("(Mid Optimization) Cost from constraints: {}".format(self.print_queue["Cost from constraints"]))
+                        print(
+                            "(Mid Optimization) Cost from constraints: {}".format(
+                                self.print_queue["Cost from constraints"]
+                            )
+                        )
             else:
                 # NOTE: ignores energy and constraints
                 # Allocate objective vector
@@ -484,11 +532,15 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                 #
                 # Note: we update ovlp in-place here
                 self._ci_op(ovlp, out=output)
-                output = np.sum(output * ovlp[:self._nproj])
-                output /= np.sum(ovlp[:self._nproj] ** 2)
+                output = np.sum(output * ovlp[: self._nproj])
+                output /= np.sum(ovlp[: self._nproj] ** 2)
                 self.print_queue["Electronic Energy"] = output
                 if self.step_print:
-                    print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
+                    print(
+                        "(Mid Optimization) Electronic Energy: {}".format(
+                            self.print_queue["Electronic Energy"]
+                        )
+                    )
 
             if self.step_save:
                 self.save_params()
@@ -516,11 +568,17 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                 output = super().compute_jacobian(x)
                 self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
                 if self.step_print:
-                    print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
+                    print(
+                        "(Mid Optimization) Norm of the Jacobian: {}".format(
+                            self.print_queue["Norm of the Jacobian"]
+                        )
+                    )
             else:
                 # NOTE: ignores energy and constraints
                 # Allocate Jacobian matrix (in transpose memory order)
-                output = np.zeros((self._nproj, self._nactive), order="F", dtype=pyci.c_double)
+                output = np.zeros(
+                    (self._nproj, self._nactive), order="F", dtype=pyci.c_double
+                )
                 integrals = np.zeros(self._nproj, dtype=pyci.c_double)
 
                 # Compute Jacobian:
@@ -542,14 +600,16 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                 #   d(c_m)/d(p_k)
                 #
                 overlaps = self.compute_overlap(x[:-1], "S")
-                norm = np.sum(overlaps[:self._nproj] ** 2)
+                norm = np.sum(overlaps[: self._nproj] ** 2)
                 self._ci_op(overlaps, out=integrals)
-                energy_integral = np.sum(overlaps[:self._nproj] * integrals)
+                energy_integral = np.sum(overlaps[: self._nproj] * integrals)
 
                 d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
 
                 # Iterate over remaining columns of Jacobian and d_ovlp
-                for output_col, d_ovlp_col in zip(output.transpose(), d_ovlp.transpose()):
+                for output_col, d_ovlp_col in zip(
+                    output.transpose(), d_ovlp.transpose()
+                ):
                     #
                     # Compute each column of the Jacobian:
                     #
@@ -559,15 +619,26 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                     #
                     # Note: we update d_ovlp in-place here
                     self._ci_op(d_ovlp_col, out=output_col)
-                    output_col *= overlaps[:self._nproj]
-                    output_col += d_ovlp_col[:self._nproj] * integrals
+                    output_col *= overlaps[: self._nproj]
+                    output_col += d_ovlp_col[: self._nproj] * integrals
                     output_col *= norm
-                    output_col -= 2 * energy_integral * overlaps[:self._nproj] * d_ovlp_col[:self._nproj]
-                    output_col /= norm ** 2
+                    output_col -= (
+                        2
+                        * energy_integral
+                        * overlaps[: self._nproj]
+                        * d_ovlp_col[: self._nproj]
+                    )
+                    output_col /= norm**2
                 output = np.sum(output, axis=0)
-                self.print_queue["Norm of the gradient of the energy"] = np.linalg.norm(output)
+                self.print_queue["Norm of the gradient of the energy"] = np.linalg.norm(
+                    output
+                )
                 if self.step_print:
-                    print("(Mid Optimization) Norm of the gradient of the energy: {}".format(self.print_queue["Norm of the gradient of the energy"]))
+                    print(
+                        "(Mid Optimization) Norm of the gradient of the energy: {}".format(
+                            self.print_queue["Norm of the gradient of the energy"]
+                        )
+                    )
 
             if self.step_save:
                 self.save_params()
@@ -585,7 +656,10 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
             """
             if self.tmpfile != "":
                 root, ext = os.path.splitext(self.tmpfile)
-                names = [type(component).__name__ for component in self.indices_component_params]
+                names = [
+                    type(component).__name__
+                    for component in self.indices_component_params
+                ]
                 names_totalcount = {name: names.count(name) for name in set(names)}
                 names_count = {name: 0 for name in set(names)}
 
@@ -637,7 +711,10 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
 
             """
             return np.hstack(
-                [comp.params.ravel()[inds] for comp, inds in self.indices_component_params.items()]
+                [
+                    comp.params.ravel()[inds]
+                    for comp, inds in self.indices_component_params.items()
+                ]
             )
 
         def make_norm_constraint(self):
@@ -659,13 +736,19 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                 y = np.zeros(self._nactive, dtype=pyci.c_double)
                 ovlp = self.compute_overlap(x[:-1], "S")
                 d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
-                y[: self._nactive - self._mask[-1]] = np.sum(2 * ovlp[:, None] * d_ovlp, axis=0)
+                y[: self._nactive - self._mask[-1]] = np.sum(
+                    2 * ovlp[:, None] * d_ovlp, axis=0
+                )
                 return y
 
             return f, dfdx
 
         def optimize(
-            self, x0: np.ndarray, mode: str = "lstsq", use_jac: bool = False, **kwargs: Any
+            self,
+            x0: np.ndarray,
+            mode: str = "lstsq",
+            use_jac: bool = False,
+            **kwargs: Any,
         ) -> OptimizeResult:
             r"""
             Optimize the wave function parameters.
@@ -751,8 +834,8 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                 if self.objective_type != "energy":
                     raise ValueError("objective_type must be energy")
                 optimizer = minimize
-                opt_kwargs['method'] = 'bfgs'
-                opt_kwargs.setdefault('options', {"gtol": 1e-8})
+                opt_kwargs["method"] = "bfgs"
+                opt_kwargs.setdefault("options", {"gtol": 1e-8})
                 # opt_kwargs["options"]['schrodinger'] = objective
                 self.step_print = False
                 opt_kwargs.setdefault("callback", self.print)
@@ -821,23 +904,25 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
             isamp = 1
             result = []
             # Iterate until nsamp samples are reached
-            #**kwargs: Any,
+            # **kwargs: Any,
             while True:
                 # Optimize this FanCI wave function and get the result
                 opt = self.optimize(x0, mode=mode, use_jac=use_jac, **kwargs)
                 energy = opt.x[-1]
                 if opt.success:
-                    print('Optimization was successful')
+                    print("Optimization was successful")
                 else:
-                    print('Optimization was not successful: {}'.format(opt.message))
-                print('Final Electronic Energy for sample {isamp}: {}'.format(energy))
+                    print("Optimization was not successful: {}".format(opt.message))
+                print("Final Electronic Energy for sample {isamp}: {}".format(energy))
                 x0 = opt.x
                 coeffs = self.compute_overlap(x0[:-1], "S")
-                prob = (coeffs ** 2)
+                prob = coeffs**2
                 prob /= np.sum(prob)
                 nonzero_prob = prob[prob > 0]
                 if nproj > nonzero_prob.size:
-                    print(f"Number of nonzero coefficients, {nonzero_prob.size}, is less than the projection space, {nproj}. Truncating projectionspace")
+                    print(
+                        f"Number of nonzero coefficients, {nonzero_prob.size}, is less than the projection space, {nproj}. Truncating projectionspace"
+                    )
                     nproj = nonzero_prob.size
                 # Add the result to our list
                 result.append((np.copy(self.sspace), coeffs, x0))
@@ -855,8 +940,22 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                     nocc_up + nocc_dn,
                     nproj=nproj,
                     # Generate new determinants from "S" space via alias method
-                    wfn=ci_cls(nbasis, nocc_up, nocc_dn, self.sspace[sorted(np.random.choice(np.arange(prob.size), size=nproj, p=prob, replace=False))]),
-                    #wfn=ci_cls(nbasis, nocc_up, nocc_dn, self.sspace[Alias(coeffs ** 2)(nproj)]),
+                    wfn=ci_cls(
+                        nbasis,
+                        nocc_up,
+                        nocc_dn,
+                        self.sspace[
+                            sorted(
+                                np.random.choice(
+                                    np.arange(prob.size),
+                                    size=nproj,
+                                    p=prob,
+                                    replace=False,
+                                )
+                            )
+                        ],
+                    ),
+                    # wfn=ci_cls(nbasis, nocc_up, nocc_dn, self.sspace[Alias(coeffs ** 2)(nproj)]),
                     constraints=constraints,
                     mask=mask,
                     fill=fill,
@@ -870,6 +969,21 @@ def convert_to_fanci(wfn, ham, nproj=None, proj_wfn=None, fill=None, seniority=N
                 # Go to next iteration
                 isamp += 1
 
-    return GeneratedFanCI(ham, wfn, wfn.nelec, nproj=nproj, wfn=proj_wfn, fill=fill, seniority=seniority,
-                          step_print=step_print, step_save=step_save, tmpfile=tmpfile, param_selection=param_selection, mask=mask,
-                          objective_type=objective_type, constraints=constraints, norm_det=norm_det, **kwargs)
+    return GeneratedFanCI(
+        ham,
+        wfn,
+        wfn.nelec,
+        nproj=nproj,
+        wfn=proj_wfn,
+        fill=fill,
+        seniority=seniority,
+        step_print=step_print,
+        step_save=step_save,
+        tmpfile=tmpfile,
+        param_selection=param_selection,
+        mask=mask,
+        objective_type=objective_type,
+        constraints=constraints,
+        norm_det=norm_det,
+        **kwargs,
+    )
