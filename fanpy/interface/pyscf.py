@@ -45,11 +45,11 @@ class PYSCF:
         info("> Number of spin orbitals: %i", self.nspinorb)
 
         # Hartree-Fock energy
-        self.energy_total = self.mf.e_tot
+        self.energy_total = mf.e_tot
         info("> Hartree-Fock total energy: %.15f", self.energy_total)
 
         # Electronic energy
-        self.energy_elec = self.mf.energy_elec()[0]
+        self.energy_elec = mf.energy_elec()[0]
         info("> Electronic energy: %.15f", self.energy_elec)
 
         # Nuclear-nuclear repulsion
