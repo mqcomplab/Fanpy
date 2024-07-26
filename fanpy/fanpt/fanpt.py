@@ -4,6 +4,7 @@ import numpy as np
 import pyci
 
 from .fanci import FanCI
+from fanpy.wfn.base import BaseWavefunction
 from .containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
 
@@ -62,8 +63,8 @@ def solve_fanpt(
         params: np.ndarray
         Solution of the FANPT calculation.
     """
-    if not isinstance(fanci_wfn, FanCI):
-        raise TypeError("fanci_wfn must be a FanCI wavefunction")
+    if not isinstance(fanci_wfn, BaseWavefunction):
+        raise TypeError("fanci_wfn must be a Fanpy wavefunction")
     if kwargs is None:
         kwargs = {}
     if solver_kwargs is None:
