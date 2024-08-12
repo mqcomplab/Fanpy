@@ -201,14 +201,14 @@ class FANPTContainer(metaclass=ABCMeta):
 
     @staticmethod
     def linear_comb_ham(ham1, ham0, a1, a0):
-        r"""Return a linear combination of two PyCI Hamiltonians.
+        r"""Return a linear combination of two Fanpy Hamiltonians.
 
         Parameters
         ----------
-        ham1 : pyci.hamiltonian
-            PyCI Hamiltonian of the real system.
-        ham0 : pyci.hamiltonian
-            PyCI Hamiltonian of the ideal system.
+        ham1 : BaseHamiltonian
+            Hamiltonian of the real system.
+        ham0 : BaseHamiltonian
+            Hamiltonian of the ideal system.
         a1 : float
             Coefficient of the real Hamiltonian.
         a0 : float
@@ -216,12 +216,15 @@ class FANPTContainer(metaclass=ABCMeta):
 
         Returns
         -------
-        pyci.hamiltonian
+        BaseHamiltonian
         """
-        ecore = a1 * ham1.ecore + a0 * ham0.ecore
-        one_mo = a1 * ham1.one_mo + a0 * ham0.one_mo
-        two_mo = a1 * ham1.two_mo + a0 * ham0.two_mo
-        return pyci.hamiltonian(ecore, one_mo, two_mo)
+        one_int = a1 * ham1.one_int + a0 * ham0.one_int
+        two_int = a1 * ham1.two_int + a0 * ham0.two_int
+
+        # Keep the class of the real Hamiltonian
+        hamiltonian = ham1.__class__
+
+        return hamiltonian(one_int, two_int)
 
     @property
     def nactive(self):
