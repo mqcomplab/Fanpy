@@ -175,11 +175,11 @@ class FANPTContainer(metaclass=ABCMeta):
         if ovlp_s:
             self.ovlp_s = ovlp_s
         else:
-            self.ovlp_s = self.fanci_wfn.compute_overlap(self.wfn_params, "S")
+            self.ovlp_s = self.fanci_wfn.get_overlap(self.wfn_params)
         if d_ovlp_s:
             self.d_ovlp_s = d_ovlp_s
         else:
-            self.d_ovlp_s = self.fanci_wfn.compute_overlap_deriv(self.wfn_params, "S")
+            self.d_ovlp_s = self.fanci_wfn.get_overlap(self.wfn_params, deriv=True)
 
         # Update Hamiltonian in the fanci_wfn.
         self.fanci_wfn._ham = self.ham
