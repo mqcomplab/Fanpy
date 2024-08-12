@@ -1,18 +1,32 @@
 """ Solver using FanPT"""
 
 import numpy as np
-import pyci
 
-from .fanci import FanCI
 from fanpy.wfn.base import BaseWavefunction
 from .containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
 
+# def solve_fanpt(
+#     fanci_wfn,
+#     ham0,
+#     ham1,
+#     guess_params,
+#     fill,
+#     energy_active=True,
+#     resum=False,
+#     ref_sd=0,
+#     final_order=1,
+#     lambda_i=0.0,
+#     lambda_f=1.0,
+#     steps=1,
+#     kwargs=None,
+#     solver_kwargs=None,
+# ):
 def solve_fanpt(
     fanci_wfn,
     ham0,
     ham1,
-    guess_params,
+    params,
     fill,
     energy_active=True,
     resum=False,
@@ -29,7 +43,7 @@ def solve_fanpt(
     Args:
         fanci_wfn : FanCI class
             FanCI wavefunction.
-        guess_params : np.ndarray
+        params : np.ndarray
             Initial guess for wave function parameters.
         ham0 : pyci.hamiltonian
             PyCI Hamiltonian of the ideal system.
@@ -72,45 +86,56 @@ def solve_fanpt(
 
     # Check for normalization constraint in FANCI wfn
     # Assumes intermediate normalization relative to ref_sd only
-    if f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}" in fanci_wfn.constraints:
-        inorm = True
-        norm_det = [(ref_sd, 1.0)]
-    else:
-        inorm = False
-        norm_det = None
+    # TODO: Check how to implement it in Fanpy. Temporarily disabled.
+    # if f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}" in fanci_wfn.constraints:
+    #     inorm = True
+    #     norm_det = [(ref_sd, 1.0)]
+    # else:
+    #     inorm = False
+    #     norm_det = None
 
+    # TODO: Improve parameters selection
+    ## As the objective is defined outside fanpt function, it's required to check if the energy_active parameter is correct.
+    ## This first implementation follows the parameters definition and, then, pick the correct FanPT approach.
+    ## Another option is be able to change it later. It would require BaseSchrodinger to be able to handle with this parameters changes.
     # Select FANPT method
+    # param_selection = [(wfn, np.ones(wfn.nparams, dtype=bool)), (ham, np.ones(ham.nparams, dtype=bool))]
+    # if energy_active:
+    #     fanptcontainer = FANPTContainerEParam
+    #     # for component, indices in param_selection:
+    #     if not fanci_wfn.mask[-1]:
+    #         fanci_wfn.unfreeze_parameter(-1)
+    # else:
+    #     fanptcontainer = FANPTContainerEFree
+    #     if fanci_wfn.mask[-1]:
+    #         fanci_wfn.freeze_parameter(-1)
     if energy_active:
         fanptcontainer = FANPTContainerEParam
-        if not fanci_wfn.mask[-1]:
-            fanci_wfn.unfreeze_parameter(-1)
     else:
         fanptcontainer = FANPTContainerEFree
-        if fanci_wfn.mask[-1]:
-            fanci_wfn.freeze_parameter(-1)
 
-    if resum:
-        if energy_active:
-            raise ValueError(
-                "The energy parameter must be inactive with the resumation option."
-            )
-        nequation = fanci_wfn.nequation
-        nactive = fanci_wfn.nactive
-        steps = 1
-        if not inorm and (nequation == nactive):
-            norm_det = [(ref_sd, 1.0)]
-        elif inorm and (nequation - 1) == nactive:
-            fanci_wfn.remove_constraint(f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}")
-            inorm = False
-        else:
-            raise ValueError(
-                "The necesary condition of a determined system of equations is not met."
-            )
+    # TODO: Temporarily Disabled
+    # if resum:
+    #     if energy_active:
+    #         raise ValueError(
+    #             "The energy parameter must be inactive with the resumation option."
+    #         )
+    #     nequation = fanci_wfn.nequation
+    #     nactive = fanci_wfn.nactive
+    #     steps = 1
+    #     if not inorm and (nequation == nactive):
+    #         norm_det = [(ref_sd, 1.0)]
+    #     elif inorm and (nequation - 1) == nactive:
+    #         fanci_wfn.remove_constraint(f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}")
+    #         inorm = False
+    #     else:
+    #         raise ValueError(
+    #             "The necesary condition of a determined system of equations is not met."
+    #         )
 
     # Get initial guess for parameters at initial lambda value.
-    results = fanci_wfn.optimize(guess_params, **solver_kwargs)
-    guess_params[fanci_wfn.mask] = results.x
-    params = guess_params
+    numerical_zero = 1e-12
+    params = np.where(params == 0, numerical_zero, params)
 
     # Solve FANPT equations
     for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
@@ -140,11 +165,7 @@ def solve_fanpt(
 
         # These params serve as initial guess to solve the fanci equations for the given lambda.
         fanpt_params = np.append(new_wfn_params, new_energy)
-        print(
-            "Frobenius Norm of parameters: {}".format(
-                np.linalg.norm(fanpt_params - params)
-            )
-        )
+        print("Frobenius Norm of parameters: {}".format(np.linalg.norm(fanpt_params - params)))
         print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - params[-1])))
 
         # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.

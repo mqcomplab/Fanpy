@@ -112,6 +112,7 @@ class FANPTContainer(metaclass=ABCMeta):
         f_pot_ci_op=None,
         ovlp_s=None,
         d_ovlp_s=None,
+        active_energy=None,
     ):
         r"""Initialize the FANPT container.
 
@@ -143,7 +144,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.params = params
         self.wfn_params = params[:-1]
         self.energy = params[-1]
-        self.active_energy = fanci_wfn.mask[-1]
+        self.active_energy = active_energy
         self.inorm = inorm
 
         # Assign ideal and real Hamiltonians.
@@ -157,24 +158,18 @@ class FANPTContainer(metaclass=ABCMeta):
         self.fanci_wfn = fanci_wfn
 
         # Build the perturbed Hamiltonian.
-        self.ham = FANPTContainer.linear_comb_ham(
-            self.ham1, self.ham0, self.l, 1 - self.l
-        )
+        self.ham = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, self.l, 1 - self.l)
 
         # Construct the perturbed Hamiltonian and fluctuation potential sparse operators.
         if ham_ci_op:
             self.ham_ci_op = ham_ci_op
         else:
-            self.ham_ci_op = pyci.sparse_op(
-                self.ham, self.fanci_wfn.wfn, self.fanci_wfn.nproj
-            )
+            self.ham_ci_op = pyci.sparse_op(self.ham, self.fanci_wfn.wfn, self.fanci_wfn.nproj)
         if f_pot_ci_op:
             self.f_pot_ci_op = f_pot_ci_op
         else:
             self.f_pot = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, 1.0, -1.0)
-            self.f_pot_ci_op = pyci.sparse_op(
-                self.f_pot, self.fanci_wfn.wfn, self.fanci_wfn.nproj
-            )
+            self.f_pot_ci_op = pyci.sparse_op(self.f_pot, self.fanci_wfn.wfn, self.fanci_wfn.nproj)
 
         if ovlp_s:
             self.ovlp_s = ovlp_s
@@ -190,15 +185,11 @@ class FANPTContainer(metaclass=ABCMeta):
 
         # Assign ref_sd.
         if self.inorm:
-            if (
-                f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}"
-                in self.fanci_wfn.constraints
-            ):
+            if f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}" in self.fanci_wfn.constraints:
                 self.ref_sd = ref_sd
             else:
                 raise KeyError(
-                    "The normalization of the Slater determinant is not constrained"
-                    "in the FanCI wavefunction."
+                    "The normalization of the Slater determinant is not constrained" "in the FanCI wavefunction."
                 )
         else:
             self.ref_sd = ref_sd

@@ -119,6 +119,7 @@ class FANPTContainerEParam(FANPTContainer):
         f_pot_ci_op=None,
         ovlp_s=None,
         d_ovlp_s=None,
+        active_energy=True,
     ):
         r"""Initialize the FANPT container.
 
@@ -145,6 +146,9 @@ class FANPTContainerEParam(FANPTContainer):
             Overlaps in the "S" projection space.
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
+        energy_active : bool, optional
+            Whether the energy is an active parameter.
+            Defaults to True when FANPTContainerEParam is used.
         """
         super().__init__(
             fanci_wfn,
@@ -158,6 +162,7 @@ class FANPTContainerEParam(FANPTContainer):
             f_pot_ci_op,
             ovlp_s,
             d_ovlp_s,
+            active_energy=active_energy,
         )
         self.der2_g_e_wfnparams()
 
@@ -195,9 +200,7 @@ class FANPTContainerEParam(FANPTContainer):
             ncolumns = self.nactive
         f = np.zeros((self.nequation, ncolumns), order="F")
         f_proj = f[: self.nproj]
-        for f_proj_col, d_ovlp_col in zip(
-            f_proj.transpose(), self.d_ovlp_s.transpose()
-        ):
+        for f_proj_col, d_ovlp_col in zip(f_proj.transpose(), self.d_ovlp_s.transpose()):
             self.f_pot_ci_op(d_ovlp_col, out=f_proj_col)
         self.d2_g_lambda_wfnparams = f
 
