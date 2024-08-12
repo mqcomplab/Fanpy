@@ -165,12 +165,12 @@ class FANPTContainer(metaclass=ABCMeta):
         if ham_ci_op:
             self.ham_ci_op = ham_ci_op
         else:
-            self.ham_ci_op = ProjectedSchrodinger(self.ham, self.fanci_wfn)
+            self.ham_ci_op = ProjectedSchrodinger(self.fanci_wfn, self.ham)
         if f_pot_ci_op:
             self.f_pot_ci_op = f_pot_ci_op
         else:
             self.f_pot = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, 1.0, -1.0)
-            self.f_pot_ci_op = ProjectedSchrodinger(self.f_pot, self.fanci_wfn)
+            self.f_pot_ci_op = ProjectedSchrodinger(self.fanci_wfn, self.f_pot)
 
         if ovlp_s:
             self.ovlp_s = ovlp_s
