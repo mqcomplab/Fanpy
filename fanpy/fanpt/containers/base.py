@@ -2,6 +2,7 @@ r"""Base class that contains the elements required to perform a FANPT calculatio
 
 from abc import ABCMeta, abstractmethod
 
+from fanpy.eqn import ProjectedSchrodinger
 import pyci
 
 
@@ -131,10 +132,10 @@ class FANPTContainer(metaclass=ABCMeta):
         ref_sd : int
             Index of the Slater determinant used to impose intermediate normalization.
             <n[ref_sd]|Psi(l)> = 1.
-        ham_ci_op : {pyci.sparse_op, None}
-            PyCI sparse operator of the perturbed Hamiltonian.
-        f_pot_ci_op : {pyci.sparse_op, None}
-            PyCI sparse operator of the fluctuation potential.
+        ham_ci_op : {ProjectedSchrodinger, None}
+            Projected Schrodinger sparse operator of the perturbed Hamiltonian.
+        f_pot_ci_op : {ProjectedSchrodinger, None}
+            Projected Schrodinger sparse operator of the  fluctuation potential.
         ovlp_s : {np.ndarray, None}
             Overlaps in the "S" projection space.
         d_ovlp_s : {np.ndarray, None}
@@ -164,12 +165,12 @@ class FANPTContainer(metaclass=ABCMeta):
         if ham_ci_op:
             self.ham_ci_op = ham_ci_op
         else:
-            self.ham_ci_op = pyci.sparse_op(self.ham, self.fanci_wfn.wfn, self.fanci_wfn.nproj)
+            self.ham_ci_op = ProjectedSchrodinger(self.ham, self.fanci_wfn.wfn)
         if f_pot_ci_op:
             self.f_pot_ci_op = f_pot_ci_op
         else:
             self.f_pot = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, 1.0, -1.0)
-            self.f_pot_ci_op = pyci.sparse_op(self.f_pot, self.fanci_wfn.wfn, self.fanci_wfn.nproj)
+            self.f_pot_ci_op = ProjectedSchrodinger(self.f_pot, self.fanci_wfn.wfn)
 
         if ovlp_s:
             self.ovlp_s = ovlp_s
