@@ -2,7 +2,7 @@ r"""Base class that contains the elements required to perform a FANPT calculatio
 
 from abc import ABCMeta, abstractmethod
 
-from fanpy.eqn import ProjectedSchrodinger
+from fanpy.eqn.projected import ProjectedSchrodinger
 import pyci
 
 
