@@ -176,11 +176,11 @@ class FANPTContainer(metaclass=ABCMeta):
         if ovlp_s:
             self.ovlp_s = ovlp_s
         else:
-            self.ovlp_s = FANPTContainer.compute_overlap(self.fanci_wfn, "S")
+            self.ovlp_s = FANPTContainer.compute_overlap(self.ham_ci_op, "S")
         if d_ovlp_s:
             self.d_ovlp_s = d_ovlp_s
         else:
-            self.d_ovlp_s = FANPTContainer.compute_overlap_deriv(self.fanci_wfn, "S")
+            self.d_ovlp_s = FANPTContainer.compute_overlap_deriv(self.ham_ci_op, "S")
 
         # Update Hamiltonian in the fanci_wfn.
         self.fanci_wfn._ham = self.ham
@@ -229,14 +229,14 @@ class FANPTContainer(metaclass=ABCMeta):
         return hamiltonian(one_int, two_int)
 
     @staticmethod
-    def compute_overlap(self, wfn, occs_array):
+    def compute_overlap(objective, occs_array):
         r"""
         Compute the FanCI overlap vector.
 
         Parameters
         ----------
-        wfn : BaseWavefunction
-            FanCI wavefunction.
+        objective : BaseWavefunction
+            Schroedinger equation to FanCI wavefunction.
         occs_array : (np.ndarray | 'P' | 'S')
             Array of determinant occupations for which to compute overlap. A string "P" or "S" can
             be passed instead that indicates whether ``occs_array`` corresponds to the "P" space
@@ -251,9 +251,9 @@ class FANPTContainer(metaclass=ABCMeta):
         if isinstance(occs_array, np.ndarray):
             pass
         elif occs_array == "P":
-            occs_array = self.ham_ci_op.pspace
+            occs_array = objective.pspace
         elif occs_array == "S":
-            occs_array = wfn.ref_sd
+            occs_array = objective.refwfn
         else:
             raise ValueError("invalid `occs_array` argument")
 
@@ -267,7 +267,7 @@ class FANPTContainer(metaclass=ABCMeta):
                 if occs.dtype == bool:
                     occs = np.where(occs)[0]
                 sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
+                sd = slater.create(sd, *(occs[1] + objective.wfn.nspatial))
                 sds.append(sd)
         # else:
         #     for i, occs in enumerate(occs_array):
@@ -280,11 +280,11 @@ class FANPTContainer(metaclass=ABCMeta):
         y = np.zeros(occs_array.shape[0])
 
         # Compute overlaps of occupation vectors
-        if hasattr(self._fanpy_wfn, "get_overlaps"):
-            y += self._fanpy_wfn.get_overlaps(sds)
+        if hasattr(objective.wfn, "get_overlaps"):
+            y += objective.wfn.get_overlaps(sds)
         else:
             for i, sd in enumerate(sds):
-                y[i] = self._fanpy_wfn.get_overlap(sd)
+                y[i] = objective.wfn.get_overlap(sd)
         return y
 
     @property
