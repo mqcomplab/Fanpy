@@ -1,9 +1,10 @@
 r"""Base class that contains the elements required to perform a FANPT calculation."""
 
 from abc import ABCMeta, abstractmethod
+import numpy as np
 
 from fanpy.eqn.projected import ProjectedSchrodinger
-import pyci
+from fanpy.tools import slater
 
 
 class FANPTContainer(metaclass=ABCMeta):
@@ -175,11 +176,11 @@ class FANPTContainer(metaclass=ABCMeta):
         if ovlp_s:
             self.ovlp_s = ovlp_s
         else:
-            self.ovlp_s = self.fanci_wfn.get_overlap(self.fanci_wfn)
+            self.ovlp_s = FANPTContainer.compute_overlap(self.fanci_wfn, "S")
         if d_ovlp_s:
             self.d_ovlp_s = d_ovlp_s
         else:
-            self.d_ovlp_s = self.fanci_wfn.get_overlap(self.fanci_wfn, deriv=True)
+            self.d_ovlp_s = FANPTContainer.compute_overlap_deriv(self.fanci_wfn, "S")
 
         # Update Hamiltonian in the fanci_wfn.
         self.fanci_wfn._ham = self.ham
@@ -226,6 +227,65 @@ class FANPTContainer(metaclass=ABCMeta):
         hamiltonian = ham1.__class__
 
         return hamiltonian(one_int, two_int)
+
+    @abstractmethod
+    def compute_overlap(self, wfn, occs_array):
+        r"""
+        Compute the FanCI overlap vector.
+
+        Parameters
+        ----------
+        wfn : BaseWavefunction
+            FanCI wavefunction.
+        occs_array : (np.ndarray | 'P' | 'S')
+            Array of determinant occupations for which to compute overlap. A string "P" or "S" can
+            be passed instead that indicates whether ``occs_array`` corresponds to the "P" space
+            or "S" space, so that a more efficient, specialized computation can be done for these.
+
+        Returns
+        -------
+        ovlp : np.ndarray
+            Overlap vector.
+
+        """
+        if isinstance(occs_array, np.ndarray):
+            pass
+        elif occs_array == "P":
+            occs_array = self.ham_ci_op.pspace
+        elif occs_array == "S":
+            occs_array = wfn.ref_sd
+        else:
+            raise ValueError("invalid `occs_array` argument")
+
+        # FIXME: converting occs_array to slater determinants to be converted back to indices is a waste
+        # convert slater determinants
+        sds = []
+        if isinstance(occs_array[0, 0], np.ndarray):
+            for i, occs in enumerate(occs_array):
+                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
+                # convert occupation vector to sd
+                if occs.dtype == bool:
+                    occs = np.where(occs)[0]
+                sd = slater.create(0, *occs[0])
+                sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
+                sds.append(sd)
+        # else:
+        #     for i, occs in enumerate(occs_array):
+        #         if occs.dtype == bool:
+        #             occs = np.where(occs)
+        #         sd = slater.create(0, *occs)
+        #         sds.append(sd)
+
+        # initialize
+        y = np.zeros(occs_array.shape[0])
+
+        # Compute overlaps of occupation vectors
+        if hasattr(self._fanpy_wfn, "get_overlaps"):
+            y += self._fanpy_wfn.get_overlaps(sds)
+        else:
+            for i, sd in enumerate(sds):
+                y[i] = self._fanpy_wfn.get_overlap(sd)
+        return y
 
     @property
     def nactive(self):
