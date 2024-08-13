@@ -253,7 +253,7 @@ class FANPTContainer(metaclass=ABCMeta):
         elif occs_array == "P":
             sds = objective.pspace
         elif occs_array == "S":
-            sds = objective.refwfn
+            sds = np.array(objective.refwfn)
         else:
             raise ValueError("invalid `occs_array` argument")
 
