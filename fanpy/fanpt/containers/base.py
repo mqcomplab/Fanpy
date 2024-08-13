@@ -228,7 +228,7 @@ class FANPTContainer(metaclass=ABCMeta):
 
         return hamiltonian(one_int, two_int)
 
-    @abstractmethod
+    @staticmethod
     def compute_overlap(self, wfn, occs_array):
         r"""
         Compute the FanCI overlap vector.
