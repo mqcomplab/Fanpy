@@ -251,33 +251,34 @@ class FANPTContainer(metaclass=ABCMeta):
         if isinstance(occs_array, np.ndarray):
             pass
         elif occs_array == "P":
-            occs_array = objective.pspace
+            sds = objective.pspace
         elif occs_array == "S":
-            occs_array = objective.refwfn
+            sds = objective.refwfn
         else:
             raise ValueError("invalid `occs_array` argument")
 
         # FIXME: converting occs_array to slater determinants to be converted back to indices is a waste
         # convert slater determinants
-        sds = []
-        if isinstance(occs_array[0], np.ndarray):
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + objective.wfn.nspatial))
-                sds.append(sd)
-        else:
-            for i, occs in enumerate(occs_array):
-                if occs.dtype == bool:
-                    occs = np.where(occs)
-                sd = slater.create(0, *occs)
-                sds.append(sd)
+        # sds = []
+        # if isinstance(occs_array[0], np.ndarray):
+        #     for i, occs in enumerate(occs_array):
+        #         # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
+        #         # convert occupation vector to sd
+        #         if occs.dtype == bool:
+        #             occs = np.where(occs)[0]
+        #         sd = slater.create(0, *occs[0])
+        #         sd = slater.create(sd, *(occs[1] + objective.wfn.nspatial))
+        #         sds.append(sd)
+        # else:
+        #     for i, occs in enumerate(occs_array):
+        #         if occs.dtype == bool:
+        #             occs = np.where(occs)
+        #         sd = slater.create(0, *occs)
+        #         sds.append(sd)
 
         # initialize
-        y = np.zeros(occs_array.shape[0])
+        # y = np.zeros(occs_array.shape[0])
+        y = np.zeros(occs_array.shape)
 
         # Compute overlaps of occupation vectors
         if hasattr(objective.wfn, "get_overlaps"):
