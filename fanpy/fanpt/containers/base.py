@@ -278,7 +278,7 @@ class FANPTContainer(metaclass=ABCMeta):
 
         # initialize
         # y = np.zeros(occs_array.shape[0])
-        y = np.zeros(occs_array.shape)
+        y = np.zeros(sds.shape)
 
         # Compute overlaps of occupation vectors
         if hasattr(objective.wfn, "get_overlaps"):
