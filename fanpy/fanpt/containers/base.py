@@ -180,7 +180,7 @@ class FANPTContainer(metaclass=ABCMeta):
         if d_ovlp_s:
             self.d_ovlp_s = d_ovlp_s
         else:
-            self.d_ovlp_s = FANPTContainer.compute_overlap_deriv(self.ham_ci_op, "S")
+            self.d_ovlp_s = FANPTContainer.compute_overlap(self.ham_ci_op, "S", deriv=True)
 
         # Update Hamiltonian in the fanci_wfn.
         self.fanci_wfn._ham = self.ham
@@ -229,7 +229,7 @@ class FANPTContainer(metaclass=ABCMeta):
         return hamiltonian(one_int, two_int)
 
     @staticmethod
-    def compute_overlap(objective, occs_array):
+    def compute_overlap(objective, occs_array, deriv=False):
         r"""
         Compute the FanCI overlap vector.
 
@@ -249,43 +249,40 @@ class FANPTContainer(metaclass=ABCMeta):
 
         """
         if isinstance(occs_array, np.ndarray):
-            pass
+            # FIXME: converting occs_array to slater determinants to be converted back to indices is a waste
+            # convert slater determinants
+            sds = []
+            if isinstance(occs_array[0, 0], np.ndarray):
+                for i, occs in enumerate(occs_array):
+                    # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
+                    # convert occupation vector to sd
+                    if occs.dtype == bool:
+                        occs = np.where(occs)[0]
+                    sd = slater.create(0, *occs[0])
+                    sd = slater.create(sd, *(occs[1] + objective.wfn.nspatial))
+                    sds.append(sd)
+            else:
+                for i, occs in enumerate(occs_array):
+                    if occs.dtype == bool:
+                        occs = np.where(occs)
+                    sd = slater.create(0, *occs)
+                    sds.append(sd)
         elif occs_array == "P":
             sds = objective.pspace
         elif occs_array == "S":
             sds = np.array(objective.refwfn)
         else:
-            raise ValueError("invalid `occs_array` argument")
-
-        # FIXME: converting occs_array to slater determinants to be converted back to indices is a waste
-        # convert slater determinants
-        # sds = []
-        # if isinstance(occs_array[0], np.ndarray):
-        #     for i, occs in enumerate(occs_array):
-        #         # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-        #         # convert occupation vector to sd
-        #         if occs.dtype == bool:
-        #             occs = np.where(occs)[0]
-        #         sd = slater.create(0, *occs[0])
-        #         sd = slater.create(sd, *(occs[1] + objective.wfn.nspatial))
-        #         sds.append(sd)
-        # else:
-        #     for i, occs in enumerate(occs_array):
-        #         if occs.dtype == bool:
-        #             occs = np.where(occs)
-        #         sd = slater.create(0, *occs)
-        #         sds.append(sd)
+            raise ValueError("invalid `sds` argument")
 
         # initialize
-        # y = np.zeros(occs_array.shape[0])
         y = np.zeros(sds.shape)
 
         # Compute overlaps of occupation vectors
         if hasattr(objective.wfn, "get_overlaps"):
-            y += objective.wfn.get_overlaps(sds)
+            y += objective.wfn.get_overlaps(sds, deriv=deriv)
         else:
             for i, sd in enumerate(sds):
-                y[i] = objective.wfn.get_overlap(sd)
+                y[i] = objective.wfn.get_overlap(sd, deriv=deriv)
         return y
 
     @property
