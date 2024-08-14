@@ -180,7 +180,8 @@ class FANPTContainer(metaclass=ABCMeta):
         if d_ovlp_s:
             self.d_ovlp_s = d_ovlp_s
         else:
-            self.d_ovlp_s = FANPTContainer.compute_overlap(self.ham_ci_op, "S", deriv=True)
+            deriv_list = np.arange[0, len(self.params)]  # TODO: Improve
+            self.d_ovlp_s = FANPTContainer.compute_overlap(self.ham_ci_op, "S", deriv=deriv_list)
 
         # Update Hamiltonian in the fanci_wfn.
         self.fanci_wfn._ham = self.ham
@@ -229,7 +230,7 @@ class FANPTContainer(metaclass=ABCMeta):
         return hamiltonian(one_int, two_int)
 
     @staticmethod
-    def compute_overlap(objective, occs_array, deriv=False):
+    def compute_overlap(objective, occs_array, deriv=None):
         r"""
         Compute the FanCI overlap vector.
 
@@ -241,6 +242,8 @@ class FANPTContainer(metaclass=ABCMeta):
             Array of determinant occupations for which to compute overlap. A string "P" or "S" can
             be passed instead that indicates whether ``occs_array`` corresponds to the "P" space
             or "S" space, so that a more efficient, specialized computation can be done for these.
+        deriv: ?
+            TODO.
 
         Returns
         -------
