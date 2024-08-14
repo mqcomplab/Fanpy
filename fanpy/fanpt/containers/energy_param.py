@@ -182,7 +182,7 @@ class FANPTContainerEParam(FANPTContainer):
         # self.f_pot_ci_op(self.ovlp_s, out=f_proj)  # TODO: How to compute this in Fanpy?
         from fanpy.solver.least_squares_fanci import least_squares
 
-        f_proj[:] = least_squares(self.f_pot_ci_op, self.ovlp_s)
+        f_proj[:] = least_squares(self.f_pot_ci_op.objective, self.ovlp_s)
         self.d_g_lambda = f
 
     def der2_g_lambda_wfnparams(self):
