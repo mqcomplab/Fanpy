@@ -180,7 +180,7 @@ class FANPTContainer(metaclass=ABCMeta):
         if d_ovlp_s:
             self.d_ovlp_s = d_ovlp_s
         else:
-            deriv_list = np.arange[0, len(self.params)]  # TODO: Improve
+            deriv_list = np.arange(0, len(self.params))  # TODO: Improve
             self.d_ovlp_s = FANPTContainer.compute_overlap(self.ham_ci_op, "S", deriv=deriv_list)
 
         # Update Hamiltonian in the fanci_wfn.
