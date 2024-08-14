@@ -277,8 +277,11 @@ class FANPTContainer(metaclass=ABCMeta):
         else:
             raise ValueError("invalid `sds` argument")
 
-        # initialize
-        y = np.zeros(sds.shape)
+        # initialize #TODO: Improve and add better argument type tests
+        if deriv is None:
+            y = np.zeros(sds.shape)
+        else:
+            y = np.zeros((sds.shape, sds.shape))
 
         # Compute overlaps of occupation vectors
         if hasattr(objective.wfn, "get_overlaps"):
