@@ -322,7 +322,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.fanci_wfn.nproj
             Number of determinants in the "P" space.
         """
-        return self.fanci_wfn.nproj
+        return self.ham_ci_op.nproj
 
     @abstractmethod
     def der_g_lambda(self):
