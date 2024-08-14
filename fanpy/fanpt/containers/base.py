@@ -311,7 +311,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.fanci_wfn.nequation : int
             Number of equations (includes the number of constraints).
         """
-        return self.fanci_wfn.nequation
+        return self.ham_ci_op.nproj + len(self.ham_ci_op.constraints)  # TODO: check if it's correct and optimze
 
     @property
     def nproj(self):
