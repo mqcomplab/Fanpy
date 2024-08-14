@@ -281,7 +281,7 @@ class FANPTContainer(metaclass=ABCMeta):
         if deriv is None:
             y = np.zeros(sds.shape)
         else:
-            y = np.zeros((sds.shape, sds.shape))
+            y = np.zeros((sds.shape[0], len(deriv)))
 
         # Compute overlaps of occupation vectors
         if hasattr(objective.wfn, "get_overlaps"):
