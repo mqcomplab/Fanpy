@@ -1,7 +1,9 @@
 import numpy as np
+from itertools import combinations
 
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.tools import math_tools, slater
+
 
 class CreationCC(BaseWavefunction):
     def __init__(self, nelec, nspin, memory=None, orbpairs=None, params=None):
@@ -51,23 +53,29 @@ class CreationCC(BaseWavefunction):
             raise NotImplementedError("Odd number of electrons is not supported.")
         
     def assign_params(self, params=None, add_noise=False):
-        """Assign the parameters of the creation cc wavefunction.
+        """Assign the parameters of the exponential geminal wavefunction.
 
         Parameters
         ----------
         params : {np.ndarray, None}
-            Parameters of creation cc. Default: None
+            Parameters of the exponential geminal. Default: None
         add_noise : bool
             Option to add noise to the given parameters. Default: False
         """
         
         elec_pairs = int(self.nelec / 2)
         if params is None:
-            n_spin = self.nspatial * 2
-            number_params = int(n_spin*(n_spin-1)/2) 
+            number_params = int(self.nspin*(self.nspin-1)/2) 
             params = np.zeros(number_params)
+        orbpairs = []
         for i in range(elec_pairs):
-            col_ind = self.get_col_ind((i*self.nspatial, i*self.nspatial + 1))
+            orbpairs.append((i, self.nspatial+i))
+        orbpairs = np.array(orbpairs)
+        orbpairs = orbpairs.flatten()
+        orbpairs = np.sort(orbpairs)
+        orbpairs = orbpairs.reshape((elec_pairs, 2))
+        for pair in orbpairs:
+            col_ind = self.get_col_ind(tuple(pair.tolist()))
             params[col_ind] = 1
         super().assign_params(params=params, add_noise=add_noise)
     
@@ -150,8 +158,55 @@ class CreationCC(BaseWavefunction):
                 f"Given orbital pair, {orbpair}, is not included in the wavefunction."
             )
     
+    def get_permutations(self, indices: list[int]):
+        """Get the permutations of the given indices.
+
+        Parameters
+        ----------
+        indices : list of int
+            Indices of the orbitals.
+
+        Returns
+        -------
+        perms : list of list of int
+            Permutations of the given indices.
+
+        """
+        perm_list = list(combinations(indices, r=2))
+
+        olp_list = list(combinations(perm_list, r=int(len(indices)/2)))
+        olp_list_no_dup = []
+        for element in olp_list:
+            element_flat = [item for sublist in element for item in sublist]
+            no_dup = list(set(element_flat))
+            if len(no_dup) == len(indices):
+                olp_list_no_dup.append(element)
+        return olp_list_no_dup
+    
+    def get_sign(self, indices: list[int]):
+        """Get the sign of the permutation of the given indices.
+
+        Parameters
+        ----------
+        indices : list of int
+            Indices of the orbitals.
+
+        Returns
+        -------
+        sign : int
+            Sign of the permutation of the given indices.
+
+        """
+        olp = [item for pair in indices for item in pair]
+        sign = 1
+        for i in range(len(olp)):
+            for j in range(i+1, len(olp)):
+                if olp[i] > olp[j]:
+                    sign *= -1
+        return sign
+
     def _olp(self, sd: int):
-        """ Calculate overlap with Slater determinant. Only 4 e- supported.
+        """ Calculate overlap with Slater determinant.
         
         Parameters
         ----------
@@ -164,42 +219,18 @@ class CreationCC(BaseWavefunction):
             Overlap of the Slater determinant with the exponential geminal.
             
         """
-        
-        olp = 0
         occ_indices = slater.occ_indices(sd)
-        param_indices = np.zeros((4,4), dtype=int)
-        for i in range(4):
-            for j in range(i+1, 4):
-                orbpair = (occ_indices[i], occ_indices[j])
-                param_indices[i, j] = int(self.get_col_ind(orbpair))
-        olp += self.params[param_indices[0, 1]]*self.params[param_indices[2, 3]]
-        olp -= self.params[param_indices[0, 2]]*self.params[param_indices[1, 3]]
-        olp += self.params[param_indices[0, 3]]*self.params[param_indices[1, 2]]
+        olp = 0
+        perms = self.get_permutations(occ_indices)
+        for p in perms:
+            sign = self.get_sign(p)
+            prod = 1
+            prod = np.prod([self.params[self.get_col_ind(pair)] for pair in p])
+            olp += sign*prod
         return olp
     
-    def get_possible_pairs(self, indices: list[int]):
-        """ Generate possible orbital pairs that can construct a given Slater determinant.
-        
-        Parameters
-        ----------
-        indices : tuple/list of int
-            Indices for which 
-            
-        Returns
-        -------
-        pairs : list of ints 
-            List of all possible orbital pairs.
-        """
-        
-        pairs = []
-        num_indices = len(indices)
-        for i in range(num_indices):
-            for j in range(i+1, num_indices):
-                pairs.append((indices[i], indices[j]))
-        return pairs
-    
     def _olp_deriv(self, sd: int):
-        """ Calculate the derivative of the overlap. Only 4 e- supported.
+        """ Calculate the derivative of the overlap
         
         Parameters
         ----------
@@ -215,23 +246,18 @@ class CreationCC(BaseWavefunction):
         
         occ_indices = slater.occ_indices(sd)
         output = np.zeros(len(self.params))
-        param_indices = np.zeros((4,4), dtype=int)
-        for i in range(4):
-            for j in range(i+1, 4):
-                orbpair = (occ_indices[i], occ_indices[j])
-                param_indices[i, j] = int(self.get_col_ind(orbpair))
-        output[param_indices[0,1]] = self.params[param_indices[2,3]]
-        output[param_indices[2,3]] = self.params[param_indices[0,1]]
-        output[param_indices[0,2]] = - self.params[param_indices[1,3]]
-        output[param_indices[1,3]] = - self.params[param_indices[0,2]]
-        output[param_indices[0,3]] = self.params[param_indices[1,2]]
-        output[param_indices[1,2]] = self.params[param_indices[0,3]]
+        permutations = self.get_permutations(occ_indices)
+        for perm in permutations:
+            sign = self.get_sign(perm)
+            for pair in perm:
+                col_ind = self.get_col_ind(pair)
+                output[col_ind] += sign*np.prod([self.params[self.get_col_ind(p)] for p in perm if p != pair])
         return output
         
     
     def get_overlap(self, sd: int, deriv=None):
         """Return the overlap of the wavefunction with a Slater determinant.
-        Inlcude math later. Currently only 4 e- supported. 
+        Inlcude math later. 
         
         Parameters
         ----------
@@ -249,9 +275,6 @@ class CreationCC(BaseWavefunction):
         """
         
         if deriv is None:
-            olp = 0
-            occ_indices = slater.occ_indices(sd)
             return self._olp(sd)
         else:
             return self._olp_deriv(sd)[deriv]
-
