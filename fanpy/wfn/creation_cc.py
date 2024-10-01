@@ -20,7 +20,7 @@ class CreationCC(BaseWavefunction):
             If string is provided, it should end iwth either "mb" or "gb" to specify the units.
             Default does not limit memory usage (i.e. infinite).
         orbpairs : iterable of 2-tuple of ints
-            Indices of the orbital pairs that will be used to construct the exponential geminal.
+            Indices of the orbital pairs that will be used to construct creation cc.
         params : np.ndarray
             Coefficients.
         """
@@ -53,12 +53,11 @@ class CreationCC(BaseWavefunction):
             raise NotImplementedError("Odd number of electrons is not supported.")
         
     def assign_params(self, params=None, add_noise=False):
-        """Assign the parameters of the exponential geminal wavefunction.
-
+        """Assign the parameters of the creation cc wfn.
         Parameters
         ----------
         params : {np.ndarray, None}
-            Parameters of the exponential geminal. Default: None
+            Parameters of the creation CC wavefunction. Default: None
         add_noise : bool
             Option to add noise to the given parameters. Default: False
         """
@@ -216,7 +215,7 @@ class CreationCC(BaseWavefunction):
         Returns
         -------
         olp : float
-            Overlap of the Slater determinant with the exponential geminal.
+            Overlap of the Slater determinant with creation CC wavefunction.
             
         """
         occ_indices = slater.occ_indices(sd)
