@@ -46,3 +46,6 @@ qaworkdir
 # backup file
 *.bak
 *DS_Store
+
+# Ignore ipynb_checkpoints
+.ipynb_checkpoints
