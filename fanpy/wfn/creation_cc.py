@@ -28,6 +28,7 @@ class CreationCC(BaseWavefunction):
         super().__init__(nelec, nspin, memory=memory)
         self.assign_orbpairs(orbpairs=orbpairs)
         self.assign_params(params=params)
+        self.permutations, self.signs = self.get_permutations()
         
     def assign_nelec(self, nelec: int):
         """Assign the number of electrons.
@@ -151,13 +152,15 @@ class CreationCC(BaseWavefunction):
 
         """
         try:
+            if isinstance(orbpair, np.ndarray):
+                orbpair = tuple(orbpair)
             return self.dict_orbpair_ind[orbpair]
         except (KeyError, TypeError):
             raise ValueError(
                 f"Given orbital pair, {orbpair}, is not included in the wavefunction."
             )
     
-    def get_permutations(self, indices: list[int]):
+    def get_permutations(self):
         """Get the permutations of the given indices.
 
         Parameters
@@ -171,16 +174,19 @@ class CreationCC(BaseWavefunction):
             Permutations of the given indices.
 
         """
+        indices = np.arange(self.nelec, dtype=int)
         perm_list = list(combinations(indices, r=2))
 
         olp_list = list(combinations(perm_list, r=int(len(indices)/2)))
-        olp_list_no_dup = []
+        perms = []
+        signs = []
         for element in olp_list:
             element_flat = [item for sublist in element for item in sublist]
             no_dup = list(set(element_flat))
             if len(no_dup) == len(indices):
-                olp_list_no_dup.append(element)
-        return olp_list_no_dup
+                perms.append(element)
+                signs.append(self.get_sign(element))
+        return perms, signs
     
     def get_sign(self, indices: list[int]):
         """Get the sign of the permutation of the given indices.
@@ -218,15 +224,15 @@ class CreationCC(BaseWavefunction):
             Overlap of the Slater determinant with creation CC wavefunction.
             
         """
-        occ_indices = slater.occ_indices(sd)
-        olp = 0
-        perms = self.get_permutations(occ_indices)
-        for p in perms:
-            sign = self.get_sign(p)
-            prod = 1
-            prod = np.prod([self.params[self.get_col_ind(pair)] for pair in p])
-            olp += sign*prod
+        occ_indices = [slater.occ_indices(sd)]*len(self.permutations)
+        single_prods = np.fromiter(map(self.calculate_product, occ_indices, self.permutations, self.signs), dtype=float)
+        olp = np.sum(single_prods)
         return olp
+    
+    def calculate_product(self, occ_indices, permutation, sign):
+        col_inds = list(map(self.get_col_ind, occ_indices.take(permutation)))
+        prod = sign*np.prod(self.params[col_inds])
+        return prod
     
     def _olp_deriv(self, sd: int):
         """ Calculate the derivative of the overlap
@@ -277,3 +283,5 @@ class CreationCC(BaseWavefunction):
             return self._olp(sd)
         else:
             return self._olp_deriv(sd)[deriv]
+
+
