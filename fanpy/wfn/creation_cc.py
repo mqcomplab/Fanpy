@@ -251,8 +251,9 @@ class CreationCC(BaseWavefunction):
         
         occ_indices = slater.occ_indices(sd)
         output = np.zeros(len(self.params))
-        permutations = self.get_permutations(occ_indices)
-        for perm in permutations:
+        mapped_permutations = (tuple((occ_indices[i], occ_indices[j]) for i, j in perm) for perm in self.permutations)
+
+        for perm in mapped_permutations:
             sign = self.get_sign(perm)
             for pair in perm:
                 col_ind = self.get_col_ind(pair)
