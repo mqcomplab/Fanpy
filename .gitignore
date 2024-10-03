@@ -48,4 +48,8 @@ qaworkdir
 *DS_Store
 
 # Ignore ipynb_checkpoints
-.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# Ignore Cython generated files
+fanpy/upgrades/*.c
+fanpy/eqn/schrodinger/*.c
