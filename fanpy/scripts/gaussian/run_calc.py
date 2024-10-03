@@ -1,5 +1,5 @@
 """Script for running calculations."""
-from fanpy.scripts.make_script import make_script
+from fanpy.scripts.gaussian.make_script import make_script
 from fanpy.scripts.utils import parser
 
 
