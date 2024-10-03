@@ -3,7 +3,7 @@ import os
 import textwrap
 
 from fanpy.scripts.utils import check_inputs, parser
-
+from fanpy.scripts.gaussian.wavefunction_info import get_wfn_info
 
 def make_script(  # pylint: disable=R1710,R0912,R0915
     nelec,
@@ -13,7 +13,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     nuc_nuc=0.0,
     optimize_orbs=False,
     pspace_exc=(1, 2),
-    nproj=None,
     objective="projected",
     solver="least_squares",
     solver_kwargs=None,
@@ -134,180 +133,14 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         wfn_noise=wfn_noise,
     )
 
-    imports = ["numpy as np", "os", "sys", "pyci"]
-    from_imports = [("fanpy.wfn.utils", "convert_to_fanci")]
+    imports = ["numpy as np", "os", "sys"]
+    from_imports = []
 
     wfn_type = wfn_type.lower()
-    if wfn_type == "ci_pairs":
-        from_imports.append(("fanpy.wfn.ci.ci_pairs", "CIPairs"))
-        wfn_name = "CIPairs"
-        if wfn_kwargs is None:
-            wfn_kwargs = ""
-    elif wfn_type == "cisd":
-        from_imports.append(("fanpy.wfn.ci.cisd", "CISD"))
-        wfn_name = "CISD"
-        if wfn_kwargs is None:
-            wfn_kwargs = ""
-    elif wfn_type == "fci":
-        from_imports.append(("fanpy.wfn.ci.fci", "FCI"))
-        wfn_name = "FCI"
-        if wfn_kwargs is None:
-            wfn_kwargs = "spin=None"
-    elif wfn_type == "hci":
-        from_imports.append(("fanpy.wfn.ci.hci", "hCI"))
-        wfn_name = "hCI"
-        if wfn_kwargs is None:
-            wfn_kwargs = "alpha1=0.5, alpha2=0.25, hierarchy=1"
-    elif wfn_type == "doci":
-        from_imports.append(("fanpy.wfn.ci.doci", "DOCI"))
-        wfn_name = "DOCI"
-        if wfn_kwargs is None:
-            wfn_kwargs = ""
-    elif wfn_type == "mps":
-        from_imports.append(("fanpy.wfn.network.mps", "MatrixProductState"))
-        wfn_name = "MatrixProductState"
-        if wfn_kwargs is None:
-            wfn_kwargs = "dimension=None"
-    elif wfn_type == "determinant-ratio":
-        from_imports.append(("fanpy.wfn.quasiparticle.det_ratio", "DeterminantRatio"))
-        wfn_name = "DeterminantRatio"
-        if wfn_kwargs is None:
-            wfn_kwargs = "numerator_mask=None"
-    elif wfn_type == "ap1rog":
-        from_imports.append(("fanpy.wfn.geminal.ap1rog", "AP1roG"))
-        wfn_name = "AP1roG"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ref_sd=None, ngem=None"
-    elif wfn_type == "apr2g":
-        from_imports.append(("fanpy.wfn.geminal.apr2g", "APr2G"))
-        wfn_name = "APr2G"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ngem=None"
-    elif wfn_type == "apig":
-        from_imports.append(("fanpy.wfn.geminal.apig", "APIG"))
-        wfn_name = "APIG"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ngem=None"
-    elif wfn_type == "apsetg":
-        from_imports.append(("fanpy.wfn.geminal.apsetg", "BasicAPsetG"))
-        wfn_name = "BasicAPsetG"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ngem=None"
-    elif wfn_type == "apg":  # pragma: no branch
-        from_imports.append(("fanpy.wfn.geminal.apg", "APG"))
-        wfn_name = "APG"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ngem=None"
-    elif wfn_type == "network":
-        from_imports.append(("fanpy.upgrades.numpy_network", "NumpyNetwork"))
-        wfn_name = "NumpyNetwork"
-        if wfn_kwargs is None:
-            wfn_kwargs = "num_layers=2"
-    elif wfn_type == "rbm":
-        from_imports.append(("fanpy.wfn.network.rbm", "RestrictedBoltzmannMachine"))
-        wfn_name = "RestrictedBoltzmannMachine"
-        if wfn_kwargs is None:
-            wfn_kwargs = "nbath=nspin, num_layers=1, orders=(1, 2)"
 
-    elif wfn_type == "basecc":
-        from_imports.append(("fanpy.wfn.cc.base", "BaseCC"))
-        wfn_name = "BaseCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "standardcc":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "generalizedcc":
-        from_imports.append(("fanpy.wfn.cc.generalized_cc", "GeneralizedCC"))
-        wfn_name = "GeneralizedCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "senioritycc":
-        from_imports.append(("fanpy.wfn.cc.seniority", "SeniorityCC"))
-        wfn_name = "SeniorityCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "pccd":
-        from_imports.append(("fanpy.wfn.cc.pccd_ap1rog", "PCCD"))
-        wfn_name = "PCCD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ap1rogsd":
-        from_imports.append(("fanpy.wfn.cc.ap1rog_generalized", "AP1roGSDGeneralized"))
-        wfn_name = "AP1roGSDGeneralized"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ap1rogsd_spin":
-        from_imports.append(("fanpy.wfn.cc.ap1rog_spin", "AP1roGSDSpin"))
-        wfn_name = "AP1roGSDSpin"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "apsetgd":
-        from_imports.append(("fanpy.wfn.cc.apset1rog_d", "APset1roGD"))
-        wfn_name = "APset1roGD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "apsetgsd":
-        from_imports.append(("fanpy.wfn.cc.apset1rog_sd", "APset1roGSD"))
-        wfn_name = "APset1roGSD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "apg1rod":
-        from_imports.append(("fanpy.wfn.cc.apg1ro_d", "APG1roD"))
-        wfn_name = "APG1roD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "apg1rosd":
-        from_imports.append(("fanpy.wfn.cc.apg1ro_sd", "APG1roSD"))
-        wfn_name = "APG1roSD"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccsdsen0":
-        from_imports.append(("fanpy.wfn.cc.ccsd_sen0", "CCSDsen0"))
-        wfn_name = "CCSDsen0"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccsdqsen0":
-        from_imports.append(("fanpy.wfn.cc.ccsdq_sen0", "CCSDQsen0"))
-        wfn_name = "CCSDQsen0"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccsdtqsen0":
-        from_imports.append(("fanpy.wfn.cc.ccsdtq_sen0", "CCSDTQsen0"))
-        wfn_name = "CCSDTQsen0"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccsdtsen2qsen0":
-        from_imports.append(("fanpy.wfn.cc.ccsdt_sen2_q_sen0", "CCSDTsen2Qsen0"))
-        wfn_name = "CCSDTsen2Qsen0"
-        if wfn_kwargs is None:
-            wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
-    elif wfn_type == "ccs":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
-        wfn_kwargs = f"ranks=[1], {wfn_kwargs}"
-    elif wfn_type == "ccsd":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
-        wfn_kwargs = f"ranks=[1, 2], {wfn_kwargs}"
-    elif wfn_type == "ccsdt":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
-        wfn_kwargs = f"ranks=[1, 2, 3], {wfn_kwargs}"
-    elif wfn_type == "ccsdtq":
-        from_imports.append(("fanpy.wfn.cc.standard_cc", "StandardCC"))
-        wfn_name = "StandardCC"
-        if wfn_kwargs is None:
-            wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
-        wfn_kwargs = f"ranks=[1, 2, 3, 4], {wfn_kwargs}"
+    wfn_info = get_wfn_info(wfn_type)
+    import_line, wfn_name, wfn_kwargs = wfn_info(wfn_kwargs)
+    from_imports.append(import_line)
 
     if wfn_name in ["DOCI", "CIPairs"] and not optimize_orbs:
         from_imports.append(("fanpy.ham.senzero", "SeniorityZeroHamiltonian"))
@@ -318,42 +151,51 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
 
     from_imports.append(("fanpy.tools.sd_list", "sd_list"))
 
-    if solver == "least_squares":
-        if solver_kwargs is None:
-            solver_kwargs = (
-                "xtol=5.0e-7, ftol=1.0e-9, gtol=5.0e-7, "
-                "max_nfev=fanci_wfn.nactive, verbose=2"
-            )
-        solver_kwargs = ", ".join(["mode='lstsq', use_jac=True", solver_kwargs])
-    elif solver == "root":  # pragma: no branch
-        if solver_kwargs is None:
-            solver_kwargs = "method='hybr', options={'xtol': 1.0e-9}"
-        solver_kwargs = ", ".join(["mode='root', use_jac=True", solver_kwargs])
-    elif solver == "cma":
+    if objective == "projected":
+        from_imports.append(("fanpy.eqn.projected", "ProjectedSchrodinger"))
+    elif objective == "least_squares":
+        from_imports.append(("fanpy.eqn.least_squares", "LeastSquaresEquations"))
+    elif objective == "variational":
+        from_imports.append(("fanpy.eqn.energy_twoside", "EnergyTwoSideProjection"))
+    elif objective == "one_energy":  # pragma: no branch
+        from_imports.append(("fanpy.eqn.energy_oneside", "EnergyOneSideProjection"))
+
+    if constraint == 'norm':
+        from_imports.append(("fanpy.eqn.constraints.norm", "NormConstraint"))
+    elif constraint == 'energy':
+        from_imports.append(("fanpy.eqn.constraints.energy", "EnergyConstraint"))
+
+    if solver == "cma":
+        from_imports.append(("fanpy.solver.equation", "cma"))
+        solver_name = "cma"
         if solver_kwargs is None:
             solver_kwargs = (
                 "sigma0=0.01, options={'ftarget': None, 'timeout': np.inf, "
                 "'tolfun': 1e-11, 'verb_filenameprefix': 'outcmaes', 'verb_log': 1}"
             )
-        solver_kwargs = ", ".join(["mode='cma', use_jac=False", solver_kwargs])
+    elif solver == "diag":
+        from_imports.append(("fanpy.solver.ci", "brute"))
+        solver_name = "brute"
     elif solver == "minimize":
+        # from_imports.append(("fanpy.solver.equation", "minimize"))
+        # solver_name = "minimize"
+        from_imports.append(("fanpy.upgrades.bfgs_fanpy", "bfgs_minimize"))
+        solver_name = "bfgs_minimize"
         if solver_kwargs is None:
-            solver_kwargs = "method='BFGS', options={'gtol': 5e-7, 'disp':True}"
-        solver_kwargs = ", ".join(["mode='bfgs', use_jac=True", solver_kwargs])
-    elif solver == "fanpt":
-        from_imports.append(("fanci.fanpt_wrapper", "reduce_to_fock, solve_fanpt"))
+            solver_kwargs = "method='BFGS', jac=objective.gradient, options={'gtol': 5e-7, 'disp':True}"
+    elif solver == "least_squares":
+        from_imports.append(("fanpy.solver.system", "least_squares"))
+        solver_name = "least_squares"
         if solver_kwargs is None:
             solver_kwargs = (
-                "fill=fill, energy_active=True, resum=False, ref_sd=0, final_order=1, "
-                "lambda_i=0.0, lambda_f=1.0, steps=50, "
-                "solver_kwargs={'mode':'lstsq', 'use_jac':True, 'xtol':1.0e-8, 'ftol':1.0e-8, "
-                "'gtol':1.0e-5, 'max_nfev':fanci_wfn.nactive, 'verbose':2, 'vtol':1e-5}"
+                "xtol=1.0e-15, ftol=1.0e-15, gtol=1.0e-15, "
+                "max_nfev=1000*objective.active_params.size, jac=objective.jacobian"
             )
-    else:
-        raise ValueError("Unsupported solver")
-
-    if nproj == 0:
-        from_imports.append(("scipy.special", "comb"))
+    elif solver == "root":  # pragma: no branch
+        from_imports.append(("fanpy.solver.system", "root"))
+        solver_name = "root"
+        if solver_kwargs is None:
+            solver_kwargs = "method='hybr', jac=objective.jacobian, options={'xtol': 1.0e-9}"
 
     if memory is not None:
         memory = "'{}'".format(memory)
@@ -370,6 +212,23 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     if 'ci' in wfn_type or wfn_type == 'network':
         # output += "import fanpy.upgrades.speedup_objective\n"
         pass
+    if solver == "trustregion":
+        output += "from fanpy.upgrades.trustregion_qmc_fanpy import minimize\n"
+        output += "from fanpy.upgrades.trf_fanpy import least_squares\n"
+        if solver_kwargs is None:
+            solver_kwargs = (
+                'constraint_bounds=(-1e-1, 1e-1), energy_bound=-np.inf, norm_constraint=True, '
+                "options={'gtol': 1e-8, 'xtol': 1e-8, 'maxiter': 1000}"
+            )
+        solver_name = "minimize"
+    elif solver == "least_squares":
+        output += "from fanpy.upgrades.trf_fanpy import least_squares\n"
+        solver_name = "least_squares"
+        if solver_kwargs is None:
+            solver_kwargs = (
+                "xtol=1.0e-10, ftol=1.0e-10, gtol=1.0e-10, "
+                "max_nfev=1000*objective.params.size, jac=objective.jacobian"
+            )
 
     output += "\n\n"
 
@@ -419,7 +278,10 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
 
     output += "# Initialize wavefunction\n"
     wfn_init1 = "wfn = {}(".format(wfn_name)
-    wfn_init2 = "nelec, nspin, params={}, memory={}, {})\n".format(wfn_params, memory, wfn_kwargs)
+    if len(wfn_kwargs) > 0:
+        wfn_init2 = "nelec, nspin, params={}, memory={}, {})\n".format(wfn_params, memory, wfn_kwargs)
+    else:
+        wfn_init2 = "nelec, nspin, params={}, memory={})\n".format(wfn_params, memory)
     output += "\n".join(
         textwrap.wrap(wfn_init1 + wfn_init2, width=100, subsequent_indent=" " * len(wfn_init1))
     )
@@ -433,29 +295,15 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "\n"
 
     output += "# Initialize Hamiltonian\n"
-
-    if solver != "fanpt":
-        ham_init1 = "ham = {}(".format(ham_name)
-        ham_init2 = "one_int, two_int"
-        if solver == 'cma':
-            ham_init2 += ')\n'
-        else:
-            ham_init2 += ', update_prev_params=True)\n'
-        output += "\n".join(
-            textwrap.wrap(ham_init1 + ham_init2, width=100, subsequent_indent=" " * len(ham_init1))
-        )
+    ham_init1 = "ham = {}(".format(ham_name)
+    ham_init2 = "one_int, two_int"
+    if solver == 'cma':
+        ham_init2 += ')\n'
     else:
-        ham_final = "ham = {}(one_int, two_int)".format(ham_name)
-        output += "\n".join(
-            textwrap.wrap(ham_final, width=100, subsequent_indent=" " * len(ham_final))
-        )
-        output += "\n"
-        ham_init = "fock = {}(one_int, reduce_to_fock(two_int))".format(ham_name)
-        output += "\n".join(
-            textwrap.wrap(ham_init, width=100, subsequent_indent=" " * len(ham_init))
-        )
-        output += "\n"
-        output += "print('Hamiltonian: Fock Hamiltonian to {}')\n".format(ham_name)
+        ham_init2 += ', update_prev_params=True)\n'
+    output += "\n".join(
+        textwrap.wrap(ham_init1 + ham_init2, width=100, subsequent_indent=" " * len(ham_init1))
+    )
 
     if load_ham_um is not None:
         output += "# Load unitary matrix of the Hamiltonian\n"
@@ -495,7 +343,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
             output += "# Load checkpoint\n"
             output += "chk_point_file = '{}'\n".format(load_chk)
             output += "chk_point = np.load(chk_point_file)\n"
-            if objective in ["projected", "system_qmc", "least_squares", "one_energy_system", "projected_stochastic"]:
+            if objective in ["projected", "system_qmc", "least_squares", "one_energy_system"]:
                 output += "if chk_point.size == objective.params.size - 1 and objective.energy_type == 'variable':\n"
                 output += '    objective.assign_params(np.hstack([chk_point, 0]))\n'
                 output += "elif chk_point.size - 1 == objective.params.size and objective.energy_type != 'variable':\n"
@@ -521,112 +369,190 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
             output += "chk_point_file, ext = os.path.splitext(chk_point_file)\n"
             dirname, chk_point_file = os.path.split(load_chk)
             chk_point_file, ext = os.path.splitext(chk_point_file)
+            print(os.path.join(dirname, chk_point_file + '_' + wfn_name + ext), 'x'*99)
             if os.path.isfile(os.path.join(dirname, chk_point_file + '_' + wfn_name + ext)):
                 output += "wfn.assign_params(np.load(os.path.join(dirname, chk_point_file + '_' + wfn.__class__.__name__ + ext)))\n"
             else:
                 output += "wfn.assign_params(np.load(os.path.join(dirname, chk_point_file + '_wfn' + ext)))\n"
             if os.path.isfile(os.path.join(dirname, chk_point_file + '_' + ham_name + ext)):
                 output += "ham.assign_params(np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + ext)))\n"
+            else:
+                output += "ham.assign_params(np.load(os.path.join(dirname, chk_point_file + '_ham' + ext)))\n"
             if os.path.isfile(os.path.join(dirname, chk_point_file + '_' + ham_name + '_prev' + ext)):
                 output += "ham._prev_params = np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + '_prev' + ext))\n"
+            else:
+                output += "ham._prev_params = ham.params.copy()\n"
             if os.path.isfile(os.path.join(dirname, chk_point_file + '_' + ham_name + '_um' + ext)):
                 output += "ham._prev_unitary = np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + '_um' + ext))\n"
+            else:
+                output += "ham._prev_unitary = np.load(os.path.join(dirname, chk_point_file + '_ham_um' + ext))\n"
             output += "ham.assign_params(ham.params)\n\n"
 
-    output += "# Projection space\n"
-    output += "print('Projection space by excitation')\n"
-    output += "fill = 'excitation'\n"
-    if nproj == 0:
-        output += "nproj = int(comb(nspin // 2, nelec - nelec // 2) * comb(nspin // 2, nelec // 2))\n"
-    elif nproj < 0:
-        output += f"nproj = int(wfn.nparams * {-nproj}) + 1\n"
+            #output += "import os\n"
+            #output += "dirname, chk_point_file = os.path.split('{}')\n".format(load_chk)
+            #output += "chk_point_file, ext = os.path.splitext(chk_point_file)\n"
+            #output += "try:\n"
+            #output += "    wfn.assign_params(np.load(os.path.join(dirname, chk_point_file + '_' + wfn.__class__.__name__ + ext)))\n"
+            #output += "except FileNotFoundError:\n"
+            #output += "    wfn.assign_params(np.load(os.path.join(dirname, chk_point_file + '_wfn' + ext)))\n"
+            #output += "try:\n"
+            #output += "    ham.assign_params(np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + ext)))\n"
+            #output += "except FileNotFoundError:\n"
+            #output += "    ham.assign_params(np.load(os.path.join(dirname, chk_point_file + '_ham' + ext)))\n"
+            #output += "try:\n"
+            #output += "    ham._prev_params = np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + '_prev' + ext))\n"
+            #output += "except FileNotFoundError:\n"
+            #output += "    ham._prev_params = ham.params.copy()\n"
+            #output += "try:\n"
+            #output += "    ham._prev_unitary = np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + '_um' + ext))\n"
+            #output += "except FileNotFoundError:\n"
+            #output += "    ham._prev_unitary = np.load(os.path.join(dirname, chk_point_file + '_ham_um' + ext))\n"
+            #output += "ham.assign_params(ham.params)\n\n"
+
+    if pspace_exc is None:  # pragma: no cover
+        pspace = "[1, 2]"
     else:
-        output += f"nproj = {nproj}\n"
+        pspace = str([int(i) for i in pspace_exc])
+    output += "# Projection space\n"
+    pspace1 = "pspace = sd_list("
+    pspace2 = (
+        "nelec, nspin, num_limit=None, exc_orders={}, spin=None, "
+        "seniority=wfn.seniority)\n".format(pspace)
+    )
+    output += "\n".join(
+        textwrap.wrap(pspace1 + pspace2, width=100, subsequent_indent=" " * len(pspace1))
+    )
+    output += "\n"
+    output += "print('Projection space (orders of excitations): {}')\n".format(pspace)
     output += "\n"
 
     output += "# Select parameters that will be optimized\n"
     if optimize_orbs:
-        raise ValueError("Orbital optimization not supported.")
-    output += "param_selection = [(wfn, np.ones(wfn.nparams, dtype=bool))]\n"
+        output += (
+            "param_selection = [(wfn, np.ones(wfn.nparams, dtype=bool)), "
+            "(ham, np.ones(ham.nparams, dtype=bool))]\n"
+        )
+    else:
+        output += "param_selection = [(wfn, np.ones(wfn.nparams, dtype=bool))]\n"
     output += "\n"
+
+    if objective in ['projected', 'least_squares']:
+        if constraint == 'norm':
+            output += "# Set up constraints\n"
+            output += "norm = NormConstraint(wfn, refwfn=pspace, param_selection=param_selection)\n"
+            output += "weights = np.ones(len(pspace) + 1)\n"
+            output += "weights[-1] = 100\n\n"
+        elif constraint == 'energy':
+            output += "# Set up constraints\n"
+            output += "energy = EnergyConstraint(wfn, ham, param_selection=param_selection, refwfn=pspace,\n"
+            output += "                          ref_energy=-100, queue_size=4, min_diff=1e-2, simple=True)\n"
+            output += "weights = np.ones(len(pspace) + 1)\n"
+            output += "weights[-1] = 100\n\n"
+        else:
+            output += '# Set up weights\n'
+            output += "weights = np.ones(len(pspace))\n\n"
 
     output += "# Initialize objective\n"
-    if solver != "fanpt":
-        output += "pyci_ham = pyci.hamiltonian(nuc_nuc, ham.one_int, ham.two_int)\n"
-    else:
-        output += "pyci_ham = pyci.hamiltonian(nuc_nuc, ham.one_int, ham.two_int)\n"
-        output += "pyci_fock = pyci.hamiltonian(nuc_nuc, fock.one_int, fock.two_int)\n"
-    seniority = 'wfn.seniority' if wfn_type != 'pccd' else '0'
-    if solver == "fanpt":
-        output += "\n".join(
-                textwrap.wrap(
-                    f"fanci_wfn = convert_to_fanci(wfn, pyci_fock, seniority={seniority}, "
-                    "param_selection=param_selection, nproj=nproj, objective_type='projected', "
-                    "norm_det=[(0, 1)])",
-                    width=100, subsequent_indent=" " * len("fanci_wfn = convert_to_fanci(")
+    if objective == "projected":
+        if solver == 'trustregion':
+            objective1 = "objective = ProjectedSchrodinger("
+            if wfn_type != 'ap1rog':
+                objective2 = (
+                    "wfn, ham, param_selection=param_selection, "
+                    "pspace=pspace, refwfn=pspace, energy_type='compute', "
+                    "energy=None, constraints=[], eqn_weights=weights)\n"
+                )
+            else:
+                objective2 = (
+                    "wfn, ham, param_selection=param_selection, "
+                    "pspace=pspace, refwfn=[pspace[0]], energy_type='compute', "
+                    "energy=None, constraints=[], eqn_weights=weights)\n"
+                )
+        else:
+            objective1 = "objective = ProjectedSchrodinger("
+            objective2 = (
+                "wfn, ham, param_selection=param_selection, "
+                "pspace=pspace, refwfn={}, energy_type='variable', "
+                "energy=0.0, constraints=[{}], eqn_weights=weights)\n".format(
+                    'pspace' if wfn_type != 'ap1rog' else 'None', constraint if constraint else ''
                 )
             )
-        output += "\n"
-    elif objective in ["projected_stochastic", "projected"]:
-        output += f"fanci_wfn = convert_to_fanci(wfn, pyci_ham, seniority={seniority}, param_selection=param_selection, nproj=nproj, objective_type='projected')\n"
-    elif objective in ["energy", "one_energy", "variational"]:
-        output += f"fanci_wfn = convert_to_fanci(wfn, pyci_ham, seniority={seniority}, param_selection=param_selection, nproj=nproj, objective_type='energy')\n"
-    output += "fanci_wfn.tmpfile = '{}'\n".format(save_chk)
-    output += "fanci_wfn.step_print = True\n"
-    output += "\n"
-
-    # output += "# Normalize\n"
-    # output += "wfn.normalize(pspace)\n\n"
-
-    # load energy
-    output += "# Set energies\n"
-    output += "integrals = np.zeros(fanci_wfn._nproj, dtype=pyci.c_double)\n"
-    output += "olps = fanci_wfn.compute_overlap(fanci_wfn.active_params, 'S')[:fanci_wfn._nproj]\n"
-    output += "fanci_wfn._ci_op(olps, out=integrals)\n"
-    output += "energy_val = np.sum(integrals * olps) / np.sum(olps ** 2)\n"
-    output += "print('Initial energy:', energy_val)\n"
-    output += "\n"
-
-    output += "# Solve\n"
-    if solver == "fanpt":
-        results1 = "fanci_results = solve_fanpt("
-        results2 = "fanci_wfn, pyci_fock, pyci_ham, np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
-    elif objective == "projected_stochastic":
-        results1 = "fanci_results = fanci_wfn.optimize_stochastic("
-        results2 = "100, np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
-    else:
-        results1 = "fanci_results = fanci_wfn.optimize("
-        results2 = "np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
-    output += "print('Optimizing wavefunction: solver')\n"
+    elif objective == "least_squares":
+        objective1 = "objective = LeastSquaresEquations("
+        objective2 = (
+            "wfn, ham, param_selection=param_selection, "
+            "pspace=pspace, refwfn={}, energy_type='variable', "
+            "energy=0.0, constraints=[{}], eqn_weights=weights)\n".format(
+                'pspace' if wfn_type != 'ap1rog' else 'None', constraint if constraint else ''
+            )
+        )
+    elif objective == "variational":
+        objective1 = "objective = EnergyTwoSideProjection("
+        objective2 = (
+            "wfn, ham, param_selection=param_selection, "
+            "pspace_l=pspace, pspace_r=pspace, pspace_n=pspace)\n"
+        )
+    elif objective == "one_energy":  # pragma: no branch
+        objective1 = "objective = EnergyOneSideProjection("
+        objective2 = (
+            "wfn, ham, param_selection=param_selection, "
+            "refwfn=pspace)\n"
+        )
     output += "\n".join(
-        textwrap.wrap(results1 + results2, width=100, subsequent_indent=" " * len(results1))
+        textwrap.wrap(objective1 + objective2, width=100, subsequent_indent=" " * len(objective1))
     )
     output += "\n"
-    output += "results = {}\n"
-    if solver != "cma":
-        output += "results['success'] = fanci_results.success\n"
-        output += "results['params'] = fanci_results.x\n"
-        output += "results['message'] = fanci_results.message\n"
-        output += "results['internal'] = fanci_results\n"
-        if solver == "minimize":
-            output += "results['energy'] = fanci_results.fun\n"
+    output += "objective.tmpfile = '{}'".format(save_chk)
+    output += "\n\n"
+    if objective == 'projected':
+        output += 'objective.print_energy = False\n'
+    if objective == 'least_squares':
+        output += 'objective.print_energy = True\n'
+    if solver != 'cma' and objective in ['one_energy', 'one_energy_system']:
+        output += "objective.print_energy = True\n\n"
+    if constraint == 'energy':
+        output += 'objective.adaptive_weights = True\n'
+        output += 'objective.num_count = 10\n'
+        output += 'objective.decrease_factor = 5\n\n'
+    if solver == 'trustregion':
+        if wfn_type == 'ap1rog':
+            output += "objective.adapt_type = []\n"
         else:
-            output += "results['energy'] = fanci_results.x[-1]\n"
-        output += "\n"
-    else:
-        output += "results['success'] = fanci_results[-3] != {}\n"
-        output += "results['params'] = fanci_results[0]\n"
-        output += "results['function'] = fanci_results[1]\n"
-        output += "results['energy'] = fanci_results[1]\n"
-        output += "if results['success']:\n"
-        output += "    results['message'] = 'Following termination conditions are satisfied:' + ''.join(\n"
-        output += "        ' {0}: {1},'.format(key, val) for key, val in fanci_results[-3].items()\n"
-        output += "    )\n"
-        output += "    results['message'] = results['message'][:-1] + '.' \n"
-        output += "else:\n"
-        output += "    results['message'] = 'Optimization did not succeed.'\n"
-        output += "results['internal'] = fanci_results\n"
+            # output += "objective.adapt_type = ['norm', 'energy']\n"
+            output += "objective.adapt_type = []\n"
+        output += "wfn.olp_threshold = 0.001\n"
+        output += "objective.weight_type = 'ones'\n"
+        output += "objective.sample_size = len(pspace)\n"
+        output += "wfn.pspace_norm = objective.refwfn\n"
 
+    if wfn_type in ['apg', 'apig', 'apsetg', 'apg2', 'apg3', 'apg4', 'apg5', 'apg6', 'apg7', 'doci', 'network']:
+        output += "# Normalize\n"
+        output += "wfn.normalize(pspace)\n\n"
+
+    # load energy
+    if objective in ["projected", "system_qmc", "least_squares", "one_energy_system"] and solver != 'trustregion':
+        output += "# Set energies\n"
+        output += "energy_val = objective.get_energy_one_proj(pspace)\n"
+        output += "print('Initial energy:', energy_val)\n"
+        output += "if objective.energy_type != 'compute':\n"
+        output += "    objective.energy.params = np.array([energy_val])\n\n"
+        if constraint == 'energy':
+            output += "# Set energy constraint\n"
+            output += "energy.ref_energy = energy_val - 15\n\n"
+
+    output += "# Solve\n"
+    if solver_name == "brute":
+        output += "results = brute(wfn, ham, save_file='')\n"
+        output += "print('Optimizing wavefunction: brute force diagonalization of CI matrix')\n"
+    else:
+        results1 = "results = {}(".format(solver_name)
+        results2 = "objective, {})\n".format(solver_kwargs)
+        output += "print('Optimizing wavefunction: {} solver')\n".format(solver_name)
+        output += "\n".join(
+            textwrap.wrap(results1 + results2, width=100, subsequent_indent=" " * len(results1))
+        )
+        output += "\n"
+    output += "\n"
 
     output += "# Results\n"
     output += "if results['success']:\n"
@@ -635,7 +561,8 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "    print('Optimization was not successful: {}'.format(results['message']))\n"
     output += "print('Final Electronic Energy: {}'.format(results['energy']))\n"
     output += "print('Final Total Energy: {}'.format(results['energy'] + nuc_nuc))\n"
-    # output += "print('Residuals: {}'.format(results['residuals']))\n"
+    #if objective in ["projected", "system_qmc"]:
+    #    output += "print('Residuals: {}'.format(results['residuals']))\n"
 
     if filename is None:  # pragma: no cover
         print(output)
@@ -667,7 +594,6 @@ def main():  # pragma: no cover
         nuc_nuc=args.nuc_nuc,
         optimize_orbs=args.optimize_orbs,
         pspace_exc=args.pspace_exc,
-        nproj=args.nproj,
         objective=args.objective,
         solver=args.solver,
         solver_kwargs=args.solver_kwargs,

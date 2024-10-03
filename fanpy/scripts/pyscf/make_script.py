@@ -4,13 +4,8 @@ import textwrap
 
 from fanpy.scripts.utils import check_inputs, parser
 
-
 def make_script(  # pylint: disable=R1710,R0912,R0915
-    nelec,
-    one_int_file,
-    two_int_file,
     wfn_type,
-    nuc_nuc=0.0,
     optimize_orbs=False,
     pspace_exc=(1, 2),
     objective="projected",
@@ -27,27 +22,16 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     save_chk="",
     filename=None,
     memory=None,
-    constraint=None,
-):
+    constraint=None):
+
     """Make a script for running calculations.
 
     Parameters
     ----------
-    nelec : int
-        Number of electrons.
-    one_int_file : str
-        Path to the one electron integrals (for restricted orbitals).
-        One electron integrals should be stored as a numpy array of dimension (nspin/2, nspin/2).
-    two_int_file : str
-        Path to the two electron integrals (for restricted orbitals).
-        Two electron integrals should be stored as a numpy array of dimension
-        (nspin/2, nspin/2, nspin/2, nspin/2).
     wfn_type : str
         Type of wavefunction.
         One of `ci_pairs`, `cisd`, `fci`, `doci`, `mps`, `determinant-ratio`, `ap1rog`, `apr2g`,
         `apig`, `apsetg`, or `apg`.
-    nuc_nuc : float
-        Nuclear-nuclear repulsion energy.
     optimize_orbs : bool
         If True, orbitals are optimized.
         If False, orbitals are not optimized.
@@ -110,28 +94,24 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
 
     """
     # check inputs
-    check_inputs(
-        nelec,
-        one_int_file,
-        two_int_file,
-        wfn_type,
-        pspace_exc,
-        objective,
-        solver,
-        nuc_nuc,
-        optimize_orbs=optimize_orbs,
-        load_orbs=load_orbs,
-        load_ham=load_ham,
-        load_ham_um=load_ham_um,
-        load_wfn=load_wfn,
-        save_chk=save_chk,
-        filename=filename if filename != -1 else None,
-        memory=memory,
-        solver_kwargs=solver_kwargs,
-        wfn_kwargs=wfn_kwargs,
-        ham_noise=ham_noise,
-        wfn_noise=wfn_noise,
-    )
+    # check_inputs(
+    #     wfn_type,
+    #     pspace_exc,
+    #     objective,
+    #     solver,
+    #     optimize_orbs=optimize_orbs,
+    #     load_orbs=load_orbs,
+    #     load_ham=load_ham,
+    #     load_ham_um=load_ham_um,
+    #     load_wfn=load_wfn,
+    #     save_chk=save_chk,
+    #     filename=filename if filename != -1 else None,
+    #     memory=memory,
+    #     solver_kwargs=solver_kwargs,
+    #     wfn_kwargs=wfn_kwargs,
+    #     ham_noise=ham_noise,
+    #     wfn_noise=wfn_noise,
+    # )
 
     imports = ["numpy as np", "os", "sys"]
     from_imports = []
@@ -395,36 +375,15 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "\n\n"
 
     output += "# Number of electrons\n"
-    output += "nelec = {:d}\n".format(nelec)
-    output += "print('Number of Electrons: {}'.format(nelec))\n"
-    output += "\n"
-
-    output += "# One-electron integrals\n"
-    output += "one_int_file = '{}'\n".format(one_int_file)
-    output += "one_int = np.load(one_int_file)\n"
-    output += (
-        "print('One-Electron Integrals: {{}}'"  # noqa: F523 # pylint: disable=E1305
-        ".format(os.path.abspath(one_int_file)))\n".format(one_int_file)
-    )
-    output += "\n"
-
-    output += "# Two-electron integrals\n"
-    output += "two_int_file = '{}'\n".format(two_int_file)
-    output += "two_int = np.load(two_int_file)\n"
-    output += (
-        "print('Two-Electron Integrals: {{}}'"  # noqa: F523 # pylint: disable=E1305
-        ".format(os.path.abspath(two_int_file)))\n".format(two_int_file)
-    )
+    output += "print('Number of Electrons: {}'.format(interface.nelec))\n"
     output += "\n"
 
     output += "# Number of spin orbitals\n"
-    output += "nspin = one_int.shape[0] * 2\n"
-    output += "print('Number of Spin Orbitals: {}'.format(nspin))\n"
+    output += "print('Number of Spin Orbitals: {}'.format(interface.nspinorb))\n"
     output += "\n"
 
     output += "# Nuclear-nuclear repulsion\n"
-    output += "nuc_nuc = {}\n".format(nuc_nuc)
-    output += "print('Nuclear-nuclear repulsion: {}'.format(nuc_nuc))\n"
+    output += "print('Nuclear-nuclear repulsion: {}'.format(interface.energy_nuc))\n"
     output += "\n"
 
     if load_wfn is not None:
@@ -440,7 +399,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
 
     output += "# Initialize wavefunction\n"
     wfn_init1 = "wfn = {}(".format(wfn_name)
-    wfn_init2 = "nelec, nspin, params={}, memory={}, {})\n".format(wfn_params, memory, wfn_kwargs)
+    wfn_init2 = "interface.nelec, interface.nspinorb, params={}, memory={}, {})\n".format(wfn_params, memory, wfn_kwargs)
     output += "\n".join(
         textwrap.wrap(wfn_init1 + wfn_init2, width=100, subsequent_indent=" " * len(wfn_init1))
     )
@@ -455,7 +414,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
 
     output += "# Initialize Hamiltonian\n"
     ham_init1 = "ham = {}(".format(ham_name)
-    ham_init2 = "one_int, two_int"
+    ham_init2 = "interface.one_int, interface.two_int"
     if solver == 'cma':
         ham_init2 += ')\n'
     else:
@@ -547,27 +506,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
                 output += "ham._prev_unitary = np.load(os.path.join(dirname, chk_point_file + '_ham_um' + ext))\n"
             output += "ham.assign_params(ham.params)\n\n"
 
-            #output += "import os\n"
-            #output += "dirname, chk_point_file = os.path.split('{}')\n".format(load_chk)
-            #output += "chk_point_file, ext = os.path.splitext(chk_point_file)\n"
-            #output += "try:\n"
-            #output += "    wfn.assign_params(np.load(os.path.join(dirname, chk_point_file + '_' + wfn.__class__.__name__ + ext)))\n"
-            #output += "except FileNotFoundError:\n"
-            #output += "    wfn.assign_params(np.load(os.path.join(dirname, chk_point_file + '_wfn' + ext)))\n"
-            #output += "try:\n"
-            #output += "    ham.assign_params(np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + ext)))\n"
-            #output += "except FileNotFoundError:\n"
-            #output += "    ham.assign_params(np.load(os.path.join(dirname, chk_point_file + '_ham' + ext)))\n"
-            #output += "try:\n"
-            #output += "    ham._prev_params = np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + '_prev' + ext))\n"
-            #output += "except FileNotFoundError:\n"
-            #output += "    ham._prev_params = ham.params.copy()\n"
-            #output += "try:\n"
-            #output += "    ham._prev_unitary = np.load(os.path.join(dirname, chk_point_file + '_' + ham.__class__.__name__ + '_um' + ext))\n"
-            #output += "except FileNotFoundError:\n"
-            #output += "    ham._prev_unitary = np.load(os.path.join(dirname, chk_point_file + '_ham_um' + ext))\n"
-            #output += "ham.assign_params(ham.params)\n\n"
-
     if pspace_exc is None:  # pragma: no cover
         pspace = "[1, 2]"
     else:
@@ -575,7 +513,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "# Projection space\n"
     pspace1 = "pspace = sd_list("
     pspace2 = (
-        "nelec, nspin, num_limit=None, exc_orders={}, spin=None, "
+        "interface.nelec, interface.nspinorb, num_limit=None, exc_orders={}, spin=None, "
         "seniority=wfn.seniority)\n".format(pspace)
     )
     output += "\n".join(
@@ -719,7 +657,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "else:\n"
     output += "    print('Optimization was not successful: {}'.format(results['message']))\n"
     output += "print('Final Electronic Energy: {}'.format(results['energy']))\n"
-    output += "print('Final Total Energy: {}'.format(results['energy'] + nuc_nuc))\n"
+    output += "print('Final Total Energy: {}'.format(results['energy'] + interface.energy_nuc))\n"
     #if objective in ["projected", "system_qmc"]:
     #    output += "print('Residuals: {}'.format(results['residuals']))\n"
 
@@ -730,9 +668,8 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     elif filename == -1:
         return output
     else:
-        with open(filename, "w") as f:  # pylint: disable=C0103
+        with open(filename, "a") as f:  # pylint: disable=C0103
             f.write(output)
-
 
 def main():  # pragma: no cover
     """Run script for run_calc using arguments obtained via argparse."""
@@ -745,12 +682,9 @@ def main():  # pragma: no cover
         help="Name of the file that contains the output of the script.",
     )
     args = parser.parse_args()
+
     make_script(
-        args.nelec,
-        args.one_int_file,
-        args.two_int_file,
         args.wfn_type,
-        nuc_nuc=args.nuc_nuc,
         optimize_orbs=args.optimize_orbs,
         pspace_exc=args.pspace_exc,
         objective=args.objective,

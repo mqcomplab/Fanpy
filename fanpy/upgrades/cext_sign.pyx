@@ -6,7 +6,7 @@ cimport cython
 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
-def sign_excite_one(np.int_t[:] occ_indices, np.int_t[:] vir_indices):
+def sign_excite_one(np.int64_t[:] occ_indices, np.int64_t[:] vir_indices):
     cdef Py_ssize_t num_occ = occ_indices.size
 
     bin_sizes = [0] * (num_occ + 1)
@@ -40,7 +40,7 @@ def sign_excite_one(np.int_t[:] occ_indices, np.int_t[:] vir_indices):
 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
-def sign_excite_two(np.int_t[:] occ_indices, np.int_t[:] vir_indices):
+def sign_excite_two(np.int64_t[:] occ_indices, np.int64_t[:] vir_indices):
     cdef int num_occ = len(occ_indices)
 
     bin_sizes = [0] * (num_occ + 1)
@@ -100,10 +100,10 @@ def sign_excite_two(np.int_t[:] occ_indices, np.int_t[:] vir_indices):
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 def sign_excite_two_ab(
-        np.int_t[:] occ_alpha,
-        np.int_t[:] occ_beta,
-        np.int_t[:] vir_alpha,
-        np.int_t[:] vir_beta,
+        np.int64_t[:] occ_alpha,
+        np.int64_t[:] occ_beta,
+        np.int64_t[:] vir_alpha,
+        np.int64_t[:] vir_beta,
 ):
     cdef int num_occ_alpha = len(occ_alpha)
     cdef int num_occ_beta = len(occ_beta)
