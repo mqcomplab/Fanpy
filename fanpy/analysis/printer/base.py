@@ -2,7 +2,7 @@ r"""Collection of functions to print Slater determinants and related features.
 
 Functions
 ---------
-print_sds(sds, nspatial) : {tuple, int}
+sds_occ(sds, nspatial, nprint, threshold) : {tuple, int, int, float}
     Print Slater determinants from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
 sds_occ_indices(sds, nspatial) : {tuple, int}
     Print Slater determinants from a wavefunction as lists of occupied MO indices.
@@ -11,7 +11,8 @@ sds_occ_indices(sds, nspatial) : {tuple, int}
 from fanpy.tools import slater
 
 
-def sds_occ(sds, nspatial=None):
+# TODO: Check for which BaseWavefunctions can be applied
+def sds_occ(sds, nspatial=None, nprint=None, threshold=1e-8):
     """Print Slater determinants from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
 
     Parameters
@@ -21,6 +22,10 @@ def sds_occ(sds, nspatial=None):
         It can be obtained from BaseWavefunction objects by the sds attribute.
     nspatial : int, optional
         Number of spatial orbitals.
+    nprint : int, optional
+        Number of determinants to print (if specified).
+    threshold : float, optional
+        Only print determinants with |param| greater than this value.
 
     """
     # Check if sds is an instance of BaseWavefunction, if so, use its `sds` attribute
@@ -37,6 +42,17 @@ def sds_occ(sds, nspatial=None):
         for sd in sds
     ]
 
+    # Sort by the param value
+    sds_str.sort(key=lambda x: abs(x[2]), reverse=True)  # Sort in descending order by param
+
+    # Apply threshold filtering (if specified)
+    if threshold is not None:
+        sds_str = [sd_str for sd_str in sds_str if abs(sd_str[2]) > threshold]
+
+    # Applying nprint (if specified) to select the number of sds to be printed
+    if nprint is not None:
+        sds_str = sds_str[:nprint]
+
     # Print header
     print("> Slater determinants represented by MO occupancies\n")
     print(f"{'Alpha':<{nspatial}}  |  {'Beta':<{nspatial}}")
@@ -48,7 +64,7 @@ def sds_occ(sds, nspatial=None):
     print("-" * (nspatial * 2 + 6) + "\n")
 
 
-def sds_occ_indices(sds, nspatial=None):
+def sds_occ_indices(sds, nspatial=None, nprint=None, threshold=1e-8):
     """Print Slater determinants from a wavefunction as lists of occupied MO indices.
 
     Parameters
@@ -58,6 +74,10 @@ def sds_occ_indices(sds, nspatial=None):
         It can be obtained from BaseWavefunction objects by the sds attribute.
     nspatial : int, optional
         Number of spatial orbitals.
+    nprint : int, optional
+        Number of determinants to print (if specified).
+    threshold : float, optional
+        Only print determinants with |param| greater than this value.
 
     """
     # Check if sds is an instance of BaseWavefunction, if so, use its `sds` attribute
@@ -73,6 +93,17 @@ def sds_occ_indices(sds, nspatial=None):
         ]
         for sd in sds
     ]
+
+    # Sort by the param value
+    sds_str.sort(key=lambda x: abs(x[2]), reverse=True)  # Sort in descending order by param
+
+    # Apply threshold filtering (if specified)
+    if threshold is not None:
+        sds_str = [sd_str for sd_str in sds_str if abs(sd_str[2]) > threshold]
+
+    # Applying nprint (if specified) to select the number of sds to be printed
+    if nprint is not None:
+        sds_str = sds_str[:nprint]
 
     # Find the maximum lengths for formatting
     alpha_len = max(len(sd_str[0]) for sd_str in sds_str)

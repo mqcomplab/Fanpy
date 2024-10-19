@@ -2,9 +2,9 @@ r"""Collection of functions to print Slater determinants and related features.
 
 Functions
 ---------
-print_sds(sds, nspatial) : {tuple, int}
+sds_occ(wfn, nprint, threshold) : {tuple, int, float}
     Print Slater determinants from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
-sds_occ_indices(sds, nspatial) : {tuple, int}
+sds_occ_indices(wfn, nprint, threshold) : {tuple, int, float}
     Print Slater determinants from a wavefunction as lists of occupied MO indices.
 """
 
@@ -39,11 +39,11 @@ def sds_occ(wfn, nprint=None, threshold=1e-8):
     ]
 
     # Sort by the param value
-    sds_str.sort(key=lambda x: abs(x[2]), reverse=True)  # Sort in descending order by param
+    sds_str.sort(key=lambda x: abs(x[-1]), reverse=True)  # Sort in descending order by param
 
     # Apply threshold filtering (if specified)
     if threshold is not None:
-        sds_str = [sd_str for sd_str in sds_str if abs(sd_str[2]) > threshold]
+        sds_str = [sd_str for sd_str in sds_str if abs(sd_str[-1]) > threshold]
 
     # Applying nprint (if specified) to select the number of sds to be printed
     if nprint is not None:
@@ -92,7 +92,7 @@ def sds_occ_indices(wfn, nprint=None, threshold=1e-8):
 
     # Apply threshold filtering (if specified)
     if threshold is not None:
-        sds_str = [sd_str for sd_str in sds_str if abs(sd_str[2]) > threshold]
+        sds_str = [sd_str for sd_str in sds_str if abs(sd_str[-1]) > threshold]
 
     # Applying nprint (if specified) to select the number of sds to be printed
     if nprint is not None:
