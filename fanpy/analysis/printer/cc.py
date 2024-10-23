@@ -2,8 +2,11 @@ r"""Collection of functions to print Slater determinants and related features.
 
 Functions
 ---------
+exops(wfn, nprint, threshold) : {tuple, int, float}
+    Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
 exops_indices(wfn, nprint, threshold) : {tuple, int, float}
-    Print Slater determinants from a wavefunction as lists of occupied MO indices.
+    Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied MO indices.
+
 """
 
 from fanpy.tools import slater
@@ -131,7 +134,7 @@ def exops_indices(wfn, nprint=None, threshold=1e-8):
     vir_len = max(15, alpha_vir_len + beta_vir_len)
 
     # Print header
-    print("> Amplitudes amplitudes represented by MO indices\n")
+    print("> Coupled-Cluster Amplitudes represented by MO indices\n")
     print(f"{'Annihilation':<{vir_len}}  |  {'Creation':<{occ_len}}  |")
     print(
         f"{'Alpha':<{alpha_occ_len}}  |  {'Beta':<{beta_occ_len}}  |  {'Alpha':<{alpha_vir_len}}  |  {'Beta':<{beta_vir_len}}  |  CC Parameter"
