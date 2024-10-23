@@ -2,19 +2,20 @@
 
 Functions
 ---------
-satisfies_conditions(sd, nspatial, spin, seniority)
+satisfies_conditions(sd, nspatial, spin, seniority, hierarchy)
     Checks to see if Slater determinant has the desired spin and seniority
 sd_list(nspatial, nelec, num_limit=None, exc_orders=None, spin=None, seniority=None)
     Generates a list of Slater determinants with the specified excitations from ground state, spin,
     and seniority
 
 """
+
 from itertools import combinations, product
 
 from fanpy.tools import slater
 
 
-def satisfies_conditions(sd, nspatial, spin, seniority):
+def satisfies_conditions(sd, nspatial, spin, seniority, hierarchy):
     r"""Check to see if Slater determinant has the desired spin and seniority.
 
     Paramaters
@@ -31,6 +32,8 @@ def satisfies_conditions(sd, nspatial, spin, seniority):
         Seniority of the desired Slater determinant.
         Maximum number of unpaired electrons.
         If `None` then all seniority is allowed.
+    hierarchy : bool
+        Applies specific conditions to hierarchy-based wavefunctions.
 
     Returns
     -------
@@ -40,13 +43,18 @@ def satisfies_conditions(sd, nspatial, spin, seniority):
 
     """
     # pylint: disable=C0103
-    return spin in [None, slater.get_spin(sd, nspatial)] and (
-        seniority is None or seniority >= slater.get_seniority(sd, nspatial)
-        #seniority == slater.get_seniority(sd, nspatial)
-    )
+    if hierarchy:
+        condition = spin in [None, 1, slater.get_spin(sd, nspatial)] and (
+            seniority == slater.get_seniority(sd, nspatial)
+        )
+    else:
+        condition = spin in [None, slater.get_spin(sd, nspatial)] and (
+            seniority is None or seniority >= slater.get_seniority(sd, nspatial)
+        )
+    return condition
 
 
-def sd_list(nelec, nspin, num_limit=None, exc_orders=None, spin=None, seniority=None):
+def sd_list(nelec, nspin, num_limit=None, exc_orders=None, spin=None, seniority=None, hierarchy=None):
     r"""Return a list of Slater determinants.
 
     Parameters
@@ -119,15 +127,13 @@ def sd_list(nelec, nspin, num_limit=None, exc_orders=None, spin=None, seniority=
     sds = []
     # ASSUME: spin orbitals are ordered by increasing energy
     ground = slater.ground(nelec, nspin)
-    if satisfies_conditions(ground, nspatial, spin, seniority):
+    if satisfies_conditions(ground, nspatial, spin, seniority, hierarchy):
         sds.append(ground)
 
     occ_indices = slater.occ_indices(ground).tolist()
     vir_indices = slater.vir_indices(ground, nspin).tolist()
     # order by energy
-    occ_indices = sorted(
-        occ_indices, key=lambda x: x - nspatial if x >= nspatial else x, reverse=True
-    )
+    occ_indices = sorted(occ_indices, key=lambda x: x - nspatial if x >= nspatial else x, reverse=True)
     vir_indices = sorted(vir_indices, key=lambda x: x - nspatial if x >= nspatial else x)
 
     if num_limit is not None and num_limit == 1:
@@ -139,7 +145,7 @@ def sd_list(nelec, nspin, num_limit=None, exc_orders=None, spin=None, seniority=
         vir_combinations = combinations(vir_indices, nexc)
         for occ, vir in product(occ_combinations, vir_combinations):
             sd = slater.excite(ground, *(occ + vir))
-            if not satisfies_conditions(sd, nspatial, spin, seniority):
+            if not satisfies_conditions(sd, nspatial, spin, seniority, hierarchy):
                 continue
             sds.append(sd)
             count += 1
