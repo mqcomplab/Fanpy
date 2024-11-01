@@ -2,133 +2,132 @@ r"""Collection of functions to print Slater determinants and related features.
 
 Functions
 ---------
-exops(wfn, nprint, threshold) : {tuple, int, float}
+print_excitation_operators(wavefunction, max_print, threshold) : {tuple, int, float}
     Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
-exops_indices(wfn, nprint, threshold) : {tuple, int, float}
+print_excitation_operators_indices(wavefunction, max_print, threshold) : {tuple, int, float}
     Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied MO indices.
-
 """
 
 from fanpy.tools import slater
 import numpy as np
 
 
-def exops(wfn, nprint=None, threshold=1e-8):
+def print_excitation_operators(wfn, max_print=None, threshold=1e-8):
     """
     Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
-    Creation and annihilation operators indices represented by (+) and (-).
+    Creation and annihilation operators are represented by (+) and (-).
 
     Parameters
     ----------
     wfn : BaseCC
         Wavefunction object containing T operators and CC parameters.
-    nprint : int, optional
+    max_print : int, optional
         Number of determinants to print (if specified).
     threshold : float, optional
         Only print determinants with |param| greater than this value.
     """
-    nspatial = wfn.nspatial
-    nspin = wfn.nspin
-    exops = wfn.exops.keys()
-    params = wfn.params
+    n_spatial = wfn.nspatial
+    n_spin = wfn.nspin
+    excitation_ops = wfn.exops.keys()
+    ci_params = wfn.params
 
     # Create a list of binary values (0 or 1) representing the reference wavefunction, reversed
-    ref_wfn_str = list(format(wfn.refwfn, f"0{nspin}b")[::-1])
+    ref_wavefunction_str = list(format(wfn.refwfn, f"0{n_spin}b")[::-1])
 
     # Prepare the list to store formatted excitation operators
-    exops_str = []
+    excitation_ops_str = []
 
-    # For each excitation operator, modify the reference wavefunction string
-    for exop, param in zip(exops, params):
-        temp_wfn = ref_wfn_str.copy()  # Copy reference wavefunction
-        for ind in exop:
+    # Modify the reference wavefunction string for each excitation operator
+    for ex_op, param in zip(excitation_ops, ci_params):
+        temp_wavefunction = ref_wavefunction_str.copy()  # Copy reference wavefunction
+        for index in ex_op:
             # Change to '-' if occupied, '+' if unoccupied
-            if temp_wfn[ind] == "1":
-                temp_wfn[ind] = "-"  # Annihilation (occupied orbital)
-            elif temp_wfn[ind] == "0":
-                temp_wfn[ind] = "+"  # Creation (unoccupied orbital)
+            if temp_wavefunction[index] == "1":
+                temp_wavefunction[index] = "-"  # Annihilation (occupied orbital)
+            elif temp_wavefunction[index] == "0":
+                temp_wavefunction[index] = "+"  # Creation (unoccupied orbital)
 
         # Split the result into alpha and beta components
-        alpha_str = "".join(temp_wfn[:nspatial])
-        beta_str = "".join(temp_wfn[nspatial:])
+        alpha_str = "".join(temp_wavefunction[:n_spatial])
+        beta_str = "".join(temp_wavefunction[n_spatial:])
 
         # Add the formatted excitation operator and parameter to the list
-        exops_str.append([alpha_str, beta_str, param])
+        excitation_ops_str.append([alpha_str, beta_str, param])
 
     # Sort by the absolute value of the parameter, in descending order
-    exops_str.sort(key=lambda x: abs(x[-1]), reverse=True)
+    excitation_ops_str.sort(key=lambda x: abs(x[-1]), reverse=True)
 
-    # Apply the threshold filtering (only keep parameters larger than the threshold)
+    # Apply threshold filtering (only keep parameters larger than the threshold)
     if threshold is not None:
-        exops_str = [exop_str for exop_str in exops_str if abs(exop_str[-1]) > threshold]
+        excitation_ops_str = [ex_op_str for ex_op_str in excitation_ops_str if abs(ex_op_str[-1]) > threshold]
 
-    # Limit the output to the top nprint results (if specified)
-    if nprint is not None:
-        exops_str = exops_str[:nprint]
+    # Limit the output to the top max_print results (if specified)
+    if max_print is not None:
+        excitation_ops_str = excitation_ops_str[:max_print]
 
     # Print header
     print("> Coupled-Cluster Amplitudes represented by MO indices\n")
-    print(f"{'Alpha':<{nspatial}}  |  {'Beta':<{nspatial}}  |  CC Parameter")
-    print("-" * (nspatial * 2 + 23))
+    print(f"{'Alpha':<{n_spatial}}  |  {'Beta':<{n_spatial}}  |  CC Parameter")
+    print("-" * (n_spatial * 2 + 23))
 
     # Print the formatted results
-    for alpha, beta, param in exops_str:
-        print(f"{alpha:<{nspatial}}  |  {beta:<{nspatial}}  |  {param:12.8f}")
+    for alpha, beta, param in excitation_ops_str:
+        print(f"{alpha:<{n_spatial}}  |  {beta:<{n_spatial}}  |  {param:12.8f}")
 
     # Print a footer separator
-    print("-" * (nspatial * 2 + 23) + "\n")
+    print("-" * (n_spatial * 2 + 23) + "\n")
 
 
-def exops_indices(wfn, nprint=None, threshold=1e-8):
+def print_excitation_operators_indices(wfn, max_print=None, threshold=1e-8):
     """Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied MO indices.
 
     Parameters
     ----------
     wfn : BaseCC
         Wavefunction object containing T operators and CC parameters.
-    nprint : int, optional
+    max_print : int, optional
         Number of determinants to print (if specified).
     threshold : float, optional
         Only print determinants with |param| greater than this value.
 
     """
-    nspatial = wfn.nspatial
-    exops = wfn.exops.keys()
-    params = wfn.params
+    n_spatial = wfn.nspatial
+    excitation_ops = wfn.exops.keys()
+    ci_params = wfn.params
 
     # Occupied reference indices (for both alpha and beta spins)
-    occ_ref_inds = np.concatenate(
+    occupied_ref_indices = np.concatenate(
         (
-            slater.occ_indices(slater.split_spin(wfn.refwfn, nspatial)[0]),  # Alpha
-            slater.occ_indices(slater.split_spin(wfn.refwfn, nspatial)[1]) + nspatial,  # Beta (shifted by nspatial)
+            slater.occ_indices(slater.split_spin(wfn.refwfn, n_spatial)[0]),  # Alpha
+            slater.occ_indices(slater.split_spin(wfn.refwfn, n_spatial)[1]) + n_spatial,  # Beta (shifted by n_spatial)
         )
     )
 
     # Create list of strings for alpha and beta spin indices (annihilation and creation operators)
-    exops_str = []
-    for exop, param in zip(exops, params):
-        alpha_occ = [str(x) for x in exop if x < nspatial and x in occ_ref_inds]
-        beta_occ = [str(x - nspatial) for x in exop if x >= nspatial and x in occ_ref_inds]
-        alpha_vir = [str(x) for x in exop if x < nspatial and x not in occ_ref_inds]
-        beta_vir = [str(x - nspatial) for x in exop if x >= nspatial and x not in occ_ref_inds]
-        exops_str.append([alpha_occ, beta_occ, alpha_vir, beta_vir, param])
+    excitation_ops_str = []
+    for ex_op, param in zip(excitation_ops, ci_params):
+        alpha_occupied = [str(x) for x in ex_op if x < n_spatial and x in occupied_ref_indices]
+        beta_occupied = [str(x - n_spatial) for x in ex_op if x >= n_spatial and x in occupied_ref_indices]
+        alpha_virtual = [str(x) for x in ex_op if x < n_spatial and x not in occupied_ref_indices]
+        beta_virtual = [str(x - n_spatial) for x in ex_op if x >= n_spatial and x not in occupied_ref_indices]
+        excitation_ops_str.append([alpha_occupied, beta_occupied, alpha_virtual, beta_virtual, param])
 
     # Sort by the absolute value of param (in descending order)
-    exops_str.sort(key=lambda x: abs(x[-1]), reverse=True)
+    excitation_ops_str.sort(key=lambda x: abs(x[-1]), reverse=True)
 
     # Apply threshold filtering (if specified)
     if threshold is not None:
-        exops_str = [exop_str for exop_str in exops_str if abs(exop_str[-1]) > threshold]
+        excitation_ops_str = [ex_op_str for ex_op_str in excitation_ops_str if abs(ex_op_str[-1]) > threshold]
 
-    # Applying nprint (if specified) to limit the number of determinants printed
-    if nprint is not None:
-        exops_str = exops_str[:nprint]
+    # Limit the number of printed results based on max_print (if specified)
+    if max_print is not None:
+        excitation_ops_str = excitation_ops_str[:max_print]
 
     # Determine maximum lengths for formatting
-    alpha_occ_len = max(5, max(len(" ".join(exop_str[0])) for exop_str in exops_str))
-    beta_occ_len = max(5, max(len(" ".join(exop_str[1])) for exop_str in exops_str))
-    alpha_vir_len = max(5, max(len(" ".join(exop_str[2])) for exop_str in exops_str))
-    beta_vir_len = max(5, max(len(" ".join(exop_str[3])) for exop_str in exops_str))
+    alpha_occ_len = max(5, max(len(" ".join(ex_op_str[0])) for ex_op_str in excitation_ops_str))
+    beta_occ_len = max(5, max(len(" ".join(ex_op_str[1])) for ex_op_str in excitation_ops_str))
+    alpha_vir_len = max(5, max(len(" ".join(ex_op_str[2])) for ex_op_str in excitation_ops_str))
+    beta_vir_len = max(5, max(len(" ".join(ex_op_str[3])) for ex_op_str in excitation_ops_str))
 
     occ_len = max(15, alpha_occ_len + beta_occ_len)
     vir_len = max(15, alpha_vir_len + beta_vir_len)
@@ -141,8 +140,8 @@ def exops_indices(wfn, nprint=None, threshold=1e-8):
     )
     print("-" * (vir_len + occ_len + 23))
 
-    # Print the Slater determinant strings with aligned formatting
-    for alpha_occ, beta_occ, alpha_vir, beta_vir, param in exops_str:
+    # Print the formatted results with aligned formatting
+    for alpha_occ, beta_occ, alpha_vir, beta_vir, param in excitation_ops_str:
         print(
             f"{' '.join(alpha_occ):<{alpha_occ_len}}  |  {' '.join(beta_occ):<{beta_occ_len}}  |  "
             f"{' '.join(alpha_vir):<{alpha_vir_len}}  |  {' '.join(beta_vir):<{beta_vir_len}}  |  {param:12.8f}"
