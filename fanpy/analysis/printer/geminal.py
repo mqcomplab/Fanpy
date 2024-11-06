@@ -81,7 +81,7 @@ def print_geminal_ops(wfn, max_print=None, threshold=1e-8):
         geminal_strings = geminal_strings[:max_print]
 
     # Print header
-    print("> Geminal Coefficients represented by MO indices\n")
+    print("\n> Geminal Coefficients represented by MO indices\n")
     print(f"{'Alpha':<{n_spatial_orbitals}}  |  {'Beta':<{n_spatial_orbitals}}  |  Gem Parameter")
     print("-" * (n_spatial_orbitals * 2 + 24))
 
@@ -158,7 +158,7 @@ def print_geminal_ops_indices(wfn, max_print=None, threshold=1e-8):
     vir_len = max(15, alpha_vir_len + beta_vir_len)
 
     # Print header
-    print("> Geminal Coefficients represented by MO indices\n")
+    print("\n> Geminal Coefficients represented by MO indices\n")
     print(f"{'Occupied':<{vir_len}}  |  {'Creation':<{occ_len}}  |")
     print(
         f"{'Alpha':<{alpha_occ_len}}  |  {'Beta':<{beta_occ_len}}  |  {'Alpha':<{alpha_vir_len}}  |  {'Beta':<{beta_vir_len}}  |  Gem Parameter"

@@ -66,7 +66,7 @@ def print_excitation_operators(wfn, max_print=None, threshold=1e-8):
         excitation_ops_str = excitation_ops_str[:max_print]
 
     # Print header
-    print("> Coupled-Cluster Amplitudes represented by MO indices\n")
+    print("\n> Coupled-Cluster Amplitudes represented by MO indices\n")
     print(f"{'Alpha':<{n_spatial}}  |  {'Beta':<{n_spatial}}  |  CC Parameter")
     print("-" * (n_spatial * 2 + 23))
 
@@ -133,7 +133,7 @@ def print_excitation_operators_indices(wfn, max_print=None, threshold=1e-8):
     vir_len = max(15, alpha_vir_len + beta_vir_len)
 
     # Print header
-    print("> Coupled-Cluster Amplitudes represented by MO indices\n")
+    print("\n> Coupled-Cluster Amplitudes represented by MO indices\n")
     print(f"{'Annihilation':<{vir_len}}  |  {'Creation':<{occ_len}}  |")
     print(
         f"{'Alpha':<{alpha_occ_len}}  |  {'Beta':<{beta_occ_len}}  |  {'Alpha':<{alpha_vir_len}}  |  {'Beta':<{beta_vir_len}}  |  CC Parameter"

@@ -50,7 +50,7 @@ def print_determinants(wfn, max_print=None, threshold=1e-8):
         sds_occupancies = sds_occupancies[:max_print]
 
     # Print header
-    print("> Slater determinants represented by MO occupancies\n")
+    print("\n> Slater determinants represented by MO occupancies\n")
     print(f"{'Alpha':<{n_spatial_orbitals}}  |  {'Beta':<{n_spatial_orbitals}}  |  CI Parameter")
     print("-" * (n_spatial_orbitals * 2 + 23))
 
@@ -103,7 +103,7 @@ def print_determinants_indices(wfn, max_print=None, threshold=1e-8):
     beta_len = max(5, max(len(sd_ind[1]) for sd_ind in sds_occupancies))
 
     # Print header
-    print("> Slater determinants represented by occupied MO indices\n")
+    print("\n> Slater determinants represented by occupied MO indices\n")
     print(f"{'Alpha':<{alpha_len}}  |  {'Beta':<{beta_len}}  |  CI Parameter")
     print("-" * (alpha_len + beta_len + 23))
 
