@@ -70,7 +70,7 @@ def add_wfn_to_dataframe(df, wfn, label=None):
     param_series = pd.Series(params, index=sds)
 
     # Map parameters to existing Slater determinants in the DataFrame
-    df[label] = param_series.reindex(df.index).fillna(False)
+    df[label] = param_series.reindex(df.index)
 
 
 def concatenate_dataframes(*dfs):
@@ -82,6 +82,6 @@ def concatenate_dataframes(*dfs):
         Multiple DataFrames containg previously extracted CIWavefunction data.
     """
 
-    df = pd.concat(dfs, axis=1).fillna(False)
+    df = pd.concat(dfs, axis=1)
 
     return df
