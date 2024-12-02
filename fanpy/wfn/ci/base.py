@@ -67,6 +67,8 @@ class CIWavefunction(BaseWavefunction):
         Assign memory available for the wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign parameters of the wavefunction.
+    import_params(self, guess)
+        Transfers parameters from a guess wavefunction to the wavefunction.
     enable_cache(self)
         Load the functions whose values will be cached.
     clear_cache(self)
@@ -322,7 +324,7 @@ class CIWavefunction(BaseWavefunction):
         super().assign_params(params=params, add_noise=add_noise)
 
     def import_params(self, guess):
-        """Transfers parameters from a guess wavefunction to a target wavefunction, ensuring compatibility with the wavefunction base.
+        """Transfers parameters from a guess wavefunction to the wavefunction.
 
         Parameters
         ----------
@@ -330,15 +332,12 @@ class CIWavefunction(BaseWavefunction):
             The wavefunction object providing the guess parameters.
 
         """
+        # Extract Slater determinants and parameters
         if isinstance(guess, CIWavefunction):
-            # Extract Slater determinants and parameters
-            guess_slater_determinants = guess.sds
-            guess_params = guess.params.copy()
-
-            for index, slater_determinant in enumerate(self.sds):
-                if slater_determinant in guess_slater_determinants:
-                    target_index = guess_slater_determinants.index(slater_determinant)
-                    self.params[target_index] = guess_params[index]
+            for index, sd in enumerate(self.sds):
+                if sd in guess.sds:
+                    guess_index = guess.sds.index(sd)
+                    self.params[index] = guess.params[guess_index]
         else:
             raise TypeError("Wavefunctions not supported. Both wavefunctions must be an instance of CIWavefunction.")
 
