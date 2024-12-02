@@ -2,9 +2,9 @@ r"""Collection of functions to print Slater determinants and related features.
 
 Functions
 ---------
-print_excitation_operators(wavefunction, max_print, threshold) : {tuple, int, float}
+print_excitation_operators(wavefunction, max_print, threshold) : {BaseCC, int, float}
     Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
-print_excitation_operators_indices(wavefunction, max_print, threshold) : {tuple, int, float}
+print_excitation_operators_indices(wavefunction, max_print, threshold) : {BaseCC, int, float}
     Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied MO indices.
 """
 

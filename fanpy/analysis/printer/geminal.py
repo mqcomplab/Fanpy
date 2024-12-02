@@ -2,9 +2,9 @@ r"""Collection of functions to print Slater determinants and related features.
 
 Functions
 ---------
-print_geminal_ops(wfn, nprint, threshold) : {tuple, int, float}
+print_geminal_ops(wfn, nprint, threshold) : {BaseGeminal, int, float}
     Print Geminal parameters from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
-print_geminal_ops_indices(wfn, nprint, threshold) : {tuple, int, float}
+print_geminal_ops_indices(wfn, nprint, threshold) : {BaseGeminal, int, float}
     Print Geminal parameters from a wavefunction as lists of occupied MO indices.
 
 """

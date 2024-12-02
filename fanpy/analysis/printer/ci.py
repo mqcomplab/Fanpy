@@ -2,9 +2,9 @@ r"""Collection of functions to print Slater determinants and related features.
 
 Functions
 ---------
-print_determinants(wavefunction, max_print, threshold) : {tuple, int, float}
+print_determinants(wavefunction, max_print, threshold) : {CIWavefunction, int, float}
     Print Slater determinants from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
-print_determinants_indices(wavefunction, max_print, threshold) : {tuple, int, float}
+print_determinants_indices(wavefunction, max_print, threshold) : {CIWavefunction, int, float}
     Print Slater determinants from a wavefunction as lists of occupied MO indices.
 """
 

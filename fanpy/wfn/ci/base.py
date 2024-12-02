@@ -321,6 +321,27 @@ class CIWavefunction(BaseWavefunction):
 
         super().assign_params(params=params, add_noise=add_noise)
 
+    def import_params(self, guess):
+        """Transfers parameters from a guess wavefunction to a target wavefunction, ensuring compatibility with the wavefunction base.
+
+        Parameters
+        ----------
+        guess : BaseWavefunction
+            The wavefunction object providing the guess parameters.
+
+        """
+        if isinstance(guess, CIWavefunction):
+            # Extract Slater determinants and parameters
+            guess_slater_determinants = guess.sds
+            guess_params = guess.params.copy()
+
+            for index, slater_determinant in enumerate(self.sds):
+                if slater_determinant in guess_slater_determinants:
+                    target_index = guess_slater_determinants.index(slater_determinant)
+                    self.params[target_index] = guess_params[index]
+        else:
+            raise TypeError("Wavefunctions not supported. Both wavefunctions must be an instance of CIWavefunction.")
+
     def get_overlap(self, sd, deriv=None):
         r"""Return the overlap of the CI wavefunction with a Slater determinant.
 
