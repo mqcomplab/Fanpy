@@ -394,3 +394,43 @@ class CIWavefunction(BaseWavefunction):
         except KeyError:
             pass
         return output[deriv]
+
+    def compute_1rdm(self):
+        """Compute the one-particle reduced density matrix (1-RDM) for a CI wavefunction.
+
+        Returns
+        -------
+        rdm1 : np.ndarray
+            NumPy array representing the computed 1-RDM.
+
+        """
+        # Initialize the one-particle reduced density matrix (1-RDM)
+        rdm1 = np.zeros((self.nspin, self.nspin))
+
+        # Loop through Slater determinants and their corresponding parameters
+        for sd, param in zip(self.sds, self.params):
+            # Get occupied and virtual orbital indices
+            occupied_indices = slater.occ_indices(sd)
+            virtual_indices = slater.vir_indices(sd, self.nspin)
+
+            # Diagonal contributions to 1-RDM
+            rdm1[occupied_indices, occupied_indices] += param * param
+
+            # Single excitation contributions to 1-RDM
+            for occ_index in occupied_indices:
+                for vir_index in virtual_indices:
+                    # Generate the singly-excited determinant
+                    excited_sd = slater.excite(sd, occ_index, vir_index)
+
+                    # Check if the excited determinant exists in the wavefunction
+                    if excited_sd in self.sds:
+                        excited_param = self.params[self.dict_sd_index[excited_sd]]
+
+                        # Compute the contribution with the excitation phase
+                        phase = slater.sign_excite(sd, [occ_index], [vir_index])
+                        contribution = param * excited_param * phase
+
+                        # Update the 1-RDM with the off-diagonal term
+                        rdm1[occ_index, vir_index] += contribution
+
+        return rdm1
