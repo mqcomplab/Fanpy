@@ -82,6 +82,8 @@ class CIWavefunction(BaseWavefunction):
     get_overlap(self, sd, deriv=None) : {float, np.ndarray}
         Return the overlap (or derivative of the overlap) of the wavefunction with a Slater
         determinant.
+    compute_1rdm(self) : np.ndarray
+        Compute the one-particle reduced density matrix (1-RDM) for a CI wavefunction.
 
     """
 
