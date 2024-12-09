@@ -88,7 +88,7 @@ def compute_natural_orbitals(wfn, mo_coeff=None):
     # Concatenate spin natural orbitals
     natural_orbitals = np.zeros((wfn.nspatial, wfn.nspin))
     natural_orbitals[:, :wfn.nspatial] = natural_orbitals_alpha
-    natural_orbitals[:, wfn.spatial:] = natural_orbitals_beta
+    natural_orbitals[:, wfn.nspatial:] = natural_orbitals_beta
 
     return occ_numbers, natural_orbitals
 
