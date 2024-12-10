@@ -85,8 +85,6 @@ class PYSCF:
         )
 
         ## Convert integrals to Physicist's notation
-        self.two_int = self.two_int.reshape(
-            self.nmo, self.nmo, self.nmo, self.nmo
-        ).transpose(0, 2, 1, 3)
+        self.two_int = self.two_int.reshape(self.nmo, self.nmo, self.nmo, self.nmo).transpose(0, 2, 1, 3)
 
         note("Importing PySCF objects completed.")

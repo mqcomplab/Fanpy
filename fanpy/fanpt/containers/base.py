@@ -271,7 +271,7 @@ class FANPTContainer(metaclass=ABCMeta):
                     sd = slater.create(0, *occs)
                     sds.append(sd)
         elif occs_array == "P":
-            sds = objective.pspace
+            sds = np.array(objective.pspace)
         elif occs_array == "S":
             sds = np.array(objective.refwfn)
         else:
