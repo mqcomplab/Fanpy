@@ -736,9 +736,8 @@ def convert_to_fanci(
                 y = np.zeros(self._nactive, dtype=pyci.c_double)
                 ovlp = self.compute_overlap(x[:-1], "S")
                 d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
-                y[: self._nactive - self._mask[-1]] = np.sum(
-                    2 * ovlp[:, None] * d_ovlp, axis=0
-                )
+                y[: self._nactive - self._mask[-1]] = np.einsum('i,ij->j', 2 * ovlp, d_ovlp, optimize='greedy')
+
                 return y
 
             return f, dfdx
