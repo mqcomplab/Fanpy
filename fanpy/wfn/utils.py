@@ -761,7 +761,7 @@ def convert_to_fanci(
                 y = np.zeros(self._nactive, dtype=pyci.c_double)
                 ovlp = self.compute_overlap(x[:-1], "S")
 
-                chunks = calculate_overlap_deriv_chunks()
+                chunks = self.calculate_overlap_deriv_chunks()
                 for s_chunk, f_chunk in chunks:
 
                     # Compute overlap derivative for the current chunk
