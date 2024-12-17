@@ -228,6 +228,7 @@ def convert_to_fanci(
             objective_type: str = "projected",
             constraints=None,
             norm_det=None,
+            max_memory=1024,
             **kwargs: Any,
         ) -> None:
             r"""
@@ -259,6 +260,10 @@ def convert_to_fanci(
                 By default, the parameter values are not stored.
                 If a file name is provided, then parameters are stored upon execution of the objective
                 method.
+            max_memory = int
+                Maximum memory available for this calculations in Megabytes.
+                It is utilized in specific loops to avoid potential memory leaks.
+                Default is 1024MB (1GB).
             kwargs : Any, optional
                 Additional keyword arguments for base FanCI class.
 
