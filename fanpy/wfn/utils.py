@@ -175,7 +175,7 @@ def convert_to_fanci(
     objective_type=None,
     constraints=None,
     norm_det=None,
-    max_memory=None,
+    max_memory=1024,
     **kwargs,
 ):
     """Covert the given wavefunction instance to that of FanCI class.
@@ -228,7 +228,7 @@ def convert_to_fanci(
             objective_type: str = "projected",
             constraints=None,
             norm_det=None,
-            max_memory=1024,
+            max_memory=max_memory,
             **kwargs: Any,
         ) -> None:
             r"""
