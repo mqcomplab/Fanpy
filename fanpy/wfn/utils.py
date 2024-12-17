@@ -13,6 +13,7 @@ import numpy as np
 # from scipy.optimize import OptimizeResult, least_squares, root, minimi
 from scipy.optimize import OptimizeResult, root, minimize
 from fanpy.solver.least_squares_fanci import least_squares
+from fanpy.tools.performance import current_memory
 import cma
 
 
@@ -174,6 +175,7 @@ def convert_to_fanci(
     objective_type=None,
     constraints=None,
     norm_det=None,
+    max_memory=None,
     **kwargs,
 ):
     """Covert the given wavefunction instance to that of FanCI class.
@@ -271,6 +273,8 @@ def convert_to_fanci(
 
             self.step_print = step_print
             self.step_save = step_save
+            self.max_memory = max_memory
+
             if param_selection is None:
                 param_selection = [(fanpy_wfn, np.arange(fanpy_wfn.nparams))]
             if isinstance(param_selection, ComponentParameterIndices):
@@ -394,7 +398,7 @@ def convert_to_fanci(
             return y
 
         def compute_overlap_deriv(
-            self, x: np.ndarray, occs_array: Union[np.ndarray, str]
+            self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx = None
         ) -> np.ndarray:
             r"""
             Compute the FanCI overlap derivative matrix.
@@ -407,6 +411,8 @@ def convert_to_fanci(
                 Array of determinant occupations for which to compute overlap. A string "P" or "S" can
                 be passed instead that indicates whether ``occs_array`` corresponds to the "P" space
                 or "S" space, so that a more efficient, specialized computation can be done for these.
+            chunk_idx : np.array
+                List of start and end positions of the chunks to be computed.
 
             Returns
             -------
@@ -422,6 +428,12 @@ def convert_to_fanci(
                 occs_array = self._sspace
             else:
                 raise ValueError("invalid `occs_array` argument")
+
+            if chunk_idx is not None:
+                s_chunk, f_chunk = chunk_idx
+            else:
+                s_chunk = 0
+                f_chunk = -1
 
             # FIXME: converting occs_array to slater determinants to be converted back to indices is
             # a waste
@@ -443,6 +455,9 @@ def convert_to_fanci(
                     sd = slater.create(0, *occs)
                     sds.append(sd)
 
+            # Select sds according to selected chunks
+            sds = sds[s_chunk:f_chunk]
+
             # Feed in parameters into fanpy wavefunction
             for component, indices in self.indices_component_params.items():
                 new_params = component.params.ravel()
@@ -455,9 +470,13 @@ def convert_to_fanci(
                 dtype=pyci.c_double,
             )
 
+            # Select parameters according to selected chunks
+            y = y[s_chunk:f_chunk]
+
             # Compute derivatives of overlaps
             deriv_indices = self.indices_component_params[self._fanpy_wfn]
             deriv_indices = np.arange(self.nparam - 1)[self._mask[:-1]]
+
             if isinstance(self._fanpy_wfn, ProductWavefunction):
                 wfns = self._fanpy_wfn.wfns
                 for wfn in wfns:
@@ -474,6 +493,7 @@ def convert_to_fanci(
             else:
                 for i, sd in enumerate(sds):
                     y[i] = self._fanpy_wfn.get_overlap(sd, deriv=deriv_indices)
+
             return y
 
         def compute_objective(self, x: np.ndarray) -> np.ndarray:
@@ -735,8 +755,17 @@ def convert_to_fanci(
                 """
                 y = np.zeros(self._nactive, dtype=pyci.c_double)
                 ovlp = self.compute_overlap(x[:-1], "S")
-                d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
-                y[: self._nactive - self._mask[-1]] = np.einsum('i,ij->j', 2 * ovlp, d_ovlp, optimize='greedy')
+
+                chunks = calculate_overlap_deriv_chunks()
+                for s_chunk, f_chunk in chunks:
+
+                    # Compute overlap derivative for the current chunk
+                    d_ovlp_chunk = self.compute_overlap_deriv(x[:-1], "S", [s_chunk, f_chunk])
+
+                    # Compute the partial contribution to y
+                    y[: self._nactive - self._mask[-1]] += np.einsum(
+                        'i,ij->j', 2 * ovlp[s_chunk:f_chunk], d_ovlp_chunk, optimize='greedy'
+                    )
 
                 return y
 
@@ -968,6 +997,23 @@ def convert_to_fanci(
                 # Go to next iteration
                 isamp += 1
 
+    def calculate_overlap_deriv_chunks(self):
+
+        tensor_mem = self._nactive * 8/1e6
+        avail_mem = (self.max_memory - current_memory()) * 0.9
+
+        chunk_size = int(avail_mem / tensor_mem)
+
+        if chunk_size <= 0:
+            chunk_size = 1
+
+        chunks_list = []
+        for s_chunk in range(0, self._nactive, chunk_size):
+            f_chunk = min(self._nactive, s_chunk + chunk_size)
+            chunks_list.append([s_chunk, f_chunk])
+
+        return chunks_list
+
     return GeneratedFanCI(
         ham,
         wfn,
@@ -984,5 +1030,6 @@ def convert_to_fanci(
         objective_type=objective_type,
         constraints=constraints,
         norm_det=norm_det,
+        max_memory=max_memory,
         **kwargs,
     )
