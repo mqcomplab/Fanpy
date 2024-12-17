@@ -1002,22 +1002,22 @@ def convert_to_fanci(
                 # Go to next iteration
                 isamp += 1
 
-    def calculate_overlap_deriv_chunks(self):
+        def calculate_overlap_deriv_chunks(self):
 
-        tensor_mem = self._nactive * 8/1e6
-        avail_mem = (self.max_memory - current_memory()) * 0.9
+            tensor_mem = self._nactive * 8/1e6
+            avail_mem = (self.max_memory - current_memory()) * 0.9
 
-        chunk_size = int(avail_mem / tensor_mem)
+            chunk_size = int(avail_mem / tensor_mem)
 
-        if chunk_size <= 0:
-            chunk_size = 1
+            if chunk_size <= 0:
+                chunk_size = 1
 
-        chunks_list = []
-        for s_chunk in range(0, self._nactive, chunk_size):
-            f_chunk = min(self._nactive, s_chunk + chunk_size)
-            chunks_list.append([s_chunk, f_chunk])
+            chunks_list = []
+            for s_chunk in range(0, self._nactive, chunk_size):
+                f_chunk = min(self._nactive, s_chunk + chunk_size)
+                chunks_list.append([s_chunk, f_chunk])
 
-        return chunks_list
+            return chunks_list
 
     return GeneratedFanCI(
         ham,
