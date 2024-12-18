@@ -175,7 +175,7 @@ def convert_to_fanci(
     objective_type=None,
     constraints=None,
     norm_det=None,
-    max_memory=1024,
+    max_memory=8192,
     **kwargs,
 ):
     """Covert the given wavefunction instance to that of FanCI class.
@@ -263,7 +263,7 @@ def convert_to_fanci(
             max_memory = int
                 Maximum memory available for this calculations in Megabytes.
                 It is utilized in specific loops to avoid potential memory leaks.
-                Default is 1024MB (1GB).
+                Default is 8192MB (8GB).
             kwargs : Any, optional
                 Additional keyword arguments for base FanCI class.
 
