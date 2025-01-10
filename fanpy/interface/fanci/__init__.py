@@ -1,4 +1,3 @@
 """Module for interface Fanpy with external quantum chemistry packages."""
 
-from .pyscf import PYSCF
-from .pyci import PYCI
+from .legacy import LegacyFanCI
