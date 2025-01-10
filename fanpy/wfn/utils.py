@@ -9,6 +9,7 @@ from fanpy.wfn.composite.product import ProductWavefunction
 from fanpy.tools import slater
 
 import numpy as np
+import math
 
 # from scipy.optimize import OptimizeResult, least_squares, root, minimi
 from scipy.optimize import OptimizeResult, root, minimize
@@ -403,7 +404,7 @@ def convert_to_fanci(
             return y
 
         def compute_overlap_deriv(
-            self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx = None
+            self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx = [0, -1]
         ) -> np.ndarray:
             r"""
             Compute the FanCI overlap derivative matrix.
@@ -434,12 +435,6 @@ def convert_to_fanci(
             else:
                 raise ValueError("invalid `occs_array` argument")
 
-            if chunk_idx is not None:
-                s_chunk, f_chunk = chunk_idx
-            else:
-                s_chunk = 0
-                f_chunk = -1
-
             # FIXME: converting occs_array to slater determinants to be converted back to indices is
             # a waste
             # convert slater determinants
@@ -461,6 +456,7 @@ def convert_to_fanci(
                     sds.append(sd)
 
             # Select sds according to selected chunks
+            s_chunk, f_chunk = chunk_idx
             sds = sds[s_chunk:f_chunk]
 
             # Feed in parameters into fanpy wavefunction
@@ -1007,10 +1003,8 @@ def convert_to_fanci(
             tensor_mem = self._nactive * 8/1e6
             avail_mem = (self.max_memory - current_memory()) * 0.9
 
-            chunk_size = int(avail_mem / tensor_mem)
-
-            if chunk_size <= 0:
-                chunk_size = 1
+            chunk_size = max(1, math.floor(avail_mem / tensor_mem))
+            chunk_size = min(chunk_size, self._nactive)
 
             chunks_list = []
             for s_chunk in range(0, self._nactive, chunk_size):
