@@ -230,8 +230,9 @@ class ProjectedSchrodingerFanCI(metaclass=ABCMeta):
         nactive = mask.sum()
         if nequation < nactive:
             print(
-                f"WARNING: System is underdetermined with dimensions {
-                  nequation}, {nactive}. Continuing anyways"
+                "WARNING: System is underdetermined with dimensions {:}, {:}. Continuing anyways".format(
+                    nequation, nactive
+                )
             )
             # raise Warning(f"System is underdetermined with dimensions {nequation}, {nactive}")
             # raise ValueError(f"System is underdetermined with dimensions {nequation}, {nactive}")

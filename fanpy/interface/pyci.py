@@ -3,8 +3,15 @@ from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.projected import ProjectedSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
 
-from typing import Any, List, Tuple, Union
+from fanpy.solver.least_squares_fanci import least_squares
+from fanpy.tools.performance import current_memory
+
+import math
 import numpy as np
+from scipy.optimize import OptimizeResult, root, minimize
+from typing import Any, List, Tuple, Union
+
+import pyci
 
 # Log Levels
 INFO = 4
@@ -41,23 +48,62 @@ class PYCI:
         # Obtain required data from Fanpy objective object
         info("Importing Fanpy ProjectedSchrodinger object...")
 
-        if isinstance(fanpy_objective, ProjectedSchrodinger):
-            self.type = "pyci"
-        else:
+        if not isinstance(fanpy_objective, ProjectedSchrodinger):
             raise TypeError("Invalid object: Objective object from Fanpy not found.")
 
         self.fanpy_objective = fanpy_objective
         self.fanpy_wfn = fanpy_objective.wfn
         self.fanpy_ham = fanpy_objective.ham
 
-        self.nproj = fanpy_objective.nproj
-        self.step_print = fanpy_objective.step_print
-        self.step_save = fanpy_objective.step_save
-        self.tmpfile = fanpy_objective.tmpfile
-        self.param_selection = fanpy_objective.param_selection
-        self.constraints = fanpy_objective.constraints
+        self._nproj = fanpy_objective.nproj
+        self._step_print = fanpy_objective.step_print
+        self._step_save = fanpy_objective.step_save
+        self._tmpfile = fanpy_objective.tmpfile
+        self._param_selection = fanpy_objective.indices_component_params
 
-        self.objective_type = "projected"  # TODO: Should it follow fanpy_objective type?
+        self._objective_type = "projected"  # TODO: Should it follow fanpy_objective type?
+        self.kwargs = kwargs  # TODO: Is it needed?
+
+        # Build PyCI Hamiltonian Object
+        self.pyci_ham = pyci.hamiltonian(energy_nuc, self.fanpy_ham.one_int, self.fanpy_ham.two_int)
+
+        # Obtain required data from Fanpy Wavefunction object
+        self._seniority = self.fanpy_wfn.seniority
+        self._nocc = self.fanpy_wfn.nelec // 2
+
+        # Define default parameters to buld FanCI object
+        self._mask = None
+        self._norm_det = None
+        self._norm_param = None
+        self._constraints = None
+        self._max_memory = 8192
+
+        # Build list of indices for objective parameters
+        self._mask = []
+        for component, indices in self.fanpy_objective.indices_component_params.items():
+            bool_indices = np.zeros(component.nparams, dtype=bool)
+            bool_indices[indices] = True
+            self._mask.append(bool_indices)
+
+        # Optimize energy
+        self._mask.append(True)
+        self._mask = np.hstack(self._mask)
+
+        # Compute number of parameters including energy as a parameter
+        self._nparam = np.sum(self._mask)
+
+        # Handle default wfn (P space == single pair excitations)
+        if self._seniority == 0:
+            self._fill = "seniority"
+            self._pspace_wfn = pyci.doci_wfn(self.pyci_ham.nbasis, self._nocc, self._nocc)
+        else:
+            self._fill = "excitation"
+            self._pspace_wfn = pyci.fullci_wfn(self.pyci_ham.nbasis, self.fanpy_wfn.nelec - self._nocc, self._nocc)
+
+        self.build_pyci_objective(legacy=legacy)
+
+    # Define ProjectedSchrodingerPyCI objective interface class
+    def build_pyci_objective(self, legacy=True):
 
         # Select PyCI objective class based on Fanpy or PyCI
         if legacy:
@@ -65,42 +111,6 @@ class PYCI:
         else:
             from pyci.fanci.fanci import FanCI as ProjectedSchrodingerFanCI
 
-        # Build PyCI Hamiltonian Object
-        self.pyci_ham = pyci.hamiltonian(energy_nuc, self.fanpy_ham.one_int, self.fanpy_ham.two_int)
-
-        # Obtain required data from Fanpy Wavefunction object
-        self.seniority = self.fanpy_wfn.seniority
-        self.nocc = self.fanpy_wfn.nelec // 2
-
-        # Define default parameters to buld FanCI object
-        self.mask = None
-        self.norm_det = None
-        self.norm_param = None
-        self.max_memory = 8192
-
-        # Build list of indices for objective parameters
-        self.mask = []
-        for component, indices in self.fanpy_objective.indices_component_params.items():
-            bool_indices = np.zeros(component.nparams, dtype=bool)
-            bool_indices[indices] = True
-            self.mask.append(bool_indices)
-
-        # Optimize energy
-        self.mask.append(True)
-        self.mask = np.hstack(self.mask)
-
-        # Compute number of parameters including energy as a parameter
-        self.nparam = np.sum(self.mask)
-
-        # Handle default wfn (P space == single pair excitations)
-        if self.seniority == 0:
-            self.fill = "seniority"
-            self.pspace_wfn = pyci.doci_wfn(self.pyci_ham.nbasis, self.nocc, self.nocc)
-        else:
-            self.fill = "excitation"
-            self.pspace_wfn = pyci.fullci_wfn(self.pyci_ham.nbasis, self.fanpy_wfn.nelec - self.nocc, self.nocc)
-
-        # Define ProjectedSchrodingerPyCI objective interface class
         class ProjectedSchrodingerPyCI(ProjectedSchrodingerFanCI):
             """
             Generated PyCI objective class from the Fanpy objective.
@@ -110,6 +120,7 @@ class PYCI:
                 self,
                 ham: pyci.hamiltonian,
                 fanpy_wfn: BaseWavefunction,
+                fanpy_objective,
                 nocc: int,
                 nproj: int,
                 wfn,
@@ -162,43 +173,44 @@ class PYCI:
                     raise TypeError(f"Invalid `ham` type `{type(ham)}`; must be `pyci.hamiltonian`")
 
                 # Save sub-class -specific attributes
-                self.ham = ham
+                # self.ham = ham
                 self._fanpy_wfn = fanpy_wfn
-                self.indices_component_params = fanpy_wfn.indices_component_params
+                self.indices_component_params = fanpy_objective.indices_component_params
 
                 self.nocc = nocc
-                self.nproj = nproj
-                self.wfn = wfn
+                # self.nproj = nproj
+                # self.wfn = wfn
                 self.fill = fill
                 self.seniority = seniority
                 self.step_print = step_print
                 self.step_save = step_save
                 self.tmpfile = tmpfile
                 self.param_selection = param_selection
-                self.mask = mask
-                self.nparam = np.sum(self.mask)
+                # self.mask = mask
+                # self.nparam = np.sum(self.mask)
                 self.objective_type = objective_type
-                self.norm_det = norm_det
+                # self.norm_det = norm_det
                 self.max_memory = max_memory
 
                 self.print_queue = {}
 
-                # Constraints
-                self.constraints = constraints
-                if self.constraints is None and norm_det is None:
-                    self.constraints = {"<\\Phi|\\Psi> - 1>": self.make_norm_constraint()}
+                # Define constraints
+                # TODO: Can norm_det be obtained or built from Fanpy? If not, it should be passed as an argument.
+                if constraints is None and norm_det is None:
+                    constraints = {"<\\Phi|\\Psi> - 1>": self.make_norm_constraint()}
+                self._constraints = constraints
 
                 # Initialize base class
                 ProjectedSchrodingerFanCI.__init__(
                     self,
-                    self.ham,
-                    self.wfn,
-                    self.nproj,
-                    self.nparam,
-                    fill=self.fill,
-                    mask=self.mask,
-                    constraints=self.constraints,
-                    norm_det=self.norm_det,
+                    ham,
+                    wfn,
+                    nproj,
+                    nparam=np.sum(mask),
+                    fill=fill,
+                    mask=mask,
+                    constraints=constraints,
+                    norm_det=norm_det,
                     **kwargs,
                 )
 
@@ -847,19 +859,20 @@ class PYCI:
         self.objective = ProjectedSchrodingerPyCI(
             ham=self.pyci_ham,
             fanpy_wfn=self.fanpy_wfn,
-            nocc=self.nocc,
-            nproj=self.nproj,
-            wfn=self.pspace_wfn,
-            fill=self.fill,
-            seniority=self.seniority,
-            step_print=self.step_print,
-            step_save=self.step_save,
-            tmpfile=self.tmpfile,
-            param_selection=self.param_selection,
-            mask=self.mask,
-            objective_type=self.objective_type,
-            constraints=self.constraints,
-            norm_det=self.norm_det,
-            max_memory=self.max_memory,
-            **kwargs,
+            fanpy_objective=self.fanpy_objective,
+            nocc=self._nocc,
+            nproj=self._nproj,
+            wfn=self._pspace_wfn,
+            fill=self._fill,
+            seniority=self._seniority,
+            step_print=self._step_print,
+            step_save=self._step_save,
+            tmpfile=self._tmpfile,
+            param_selection=self._param_selection,
+            mask=self._mask,
+            objective_type=self._objective_type,
+            constraints=self._constraints,
+            norm_det=self._norm_det,
+            max_memory=self._max_memory,
+            **self.kwargs,
         )

@@ -1,3 +1,3 @@
 """Module for interface Fanpy with external quantum chemistry packages."""
 
-from .legacy import LegacyFanCI
+from .legacy import ProjectedSchrodingerFanCI
