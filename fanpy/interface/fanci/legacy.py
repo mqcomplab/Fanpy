@@ -1,7 +1,8 @@
 """ Legacy version of FanCI Wavefunction class.
     Based of the original class from FanCI code.
 """
-#TODO: Remove mask support
+
+# TODO: Remove mask support
 
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 from abc import ABCMeta, abstractmethod
@@ -17,7 +18,7 @@ __all__ = [
 ]
 
 
-class LegacyFanCI(metaclass=ABCMeta):
+class ProjectedSchrodingerFanCI(metaclass=ABCMeta):
     r"""
     FanCI problem class.
 
@@ -163,7 +164,6 @@ class LegacyFanCI(metaclass=ABCMeta):
         mask: Sequence[int] = None,
         fill: str = "excitation",
     ) -> None:
-
         """
         Initialize the FanCI class.
 
@@ -178,11 +178,9 @@ class LegacyFanCI(metaclass=ABCMeta):
         nparam : int
             Number of parameters for this FanCI problem.
         norm_param : Sequence[Tuple[int, float]], optional
-            Indices of parameters whose values to constrain, and the value to which to constrain
-            them.
+            Indices of parameters whose values to constrain, and the value to which to constrain them.
         norm_det : Sequence[Tuple[int, float]], optional
-            Indices of determinant whose overlaps to constrain, and the value to which to constrain
-            them.
+            Indices of determinant whose overlaps to constrain, and the value to which to constrain them.
         constraints : Dict[str, Tuple[Callable, Callable]], optional
             Pairs of functions (f, dfdx) corresponding to additional constraints.
         mask : Sequence[int] or Sequence[bool], optional
@@ -231,7 +229,10 @@ class LegacyFanCI(metaclass=ABCMeta):
         nequation = nproj + len(constraints)
         nactive = mask.sum()
         if nequation < nactive:
-            print(f"WARNING: System is underdetermined with dimensions {nequation}, {nactive}. Continuing anyways")
+            print(
+                f"WARNING: System is underdetermined with dimensions {
+                  nequation}, {nactive}. Continuing anyways"
+            )
             # raise Warning(f"System is underdetermined with dimensions {nequation}, {nactive}")
             # raise ValueError(f"System is underdetermined with dimensions {nequation}, {nactive}")
 
@@ -372,24 +373,30 @@ class LegacyFanCI(metaclass=ABCMeta):
         constraints = self._constraints
         mask = self._mask
         ci_cls = self._wfn.__class__
+
         # Start at sample 1
         isamp = 1
         result = []
+
         # Iterate until nsamp samples are reached
         while True:
             # Optimize this FanCI wave function and get the result
             opt = self.optimize(x0, mode=mode, use_jac=use_jac, **kwargs)
             x0 = opt.x
             coeffs = self.compute_overlap(x0[:-1], "S")
+
             # Add the result to our list
             result.append((np.copy(self.sspace), coeffs, x0))
+
             # Check if we're done manually each time; this avoids an extra
             # CI matrix preparation with an equivalent "for" loop
             if isamp >= nsamp:
                 return result
+
             # Try to get the garbage collector to remove the old CI matrix
             del self._ci_op
             self._ci_op = None
+
             # Make new FanCI wave function in-place
             FanCI.__init__(
                 self,
@@ -422,6 +429,7 @@ class LegacyFanCI(metaclass=ABCMeta):
 
         """
         self._constraints[name] = f, dfdx
+
         # Update nequation
         self._nequation = self._nproj + len(self._constraints)
 
@@ -436,6 +444,7 @@ class LegacyFanCI(metaclass=ABCMeta):
 
         """
         del self._constraints[name]
+
         # Update nequation
         self._nequation = self._nproj + len(self._constraints)
 
@@ -451,6 +460,7 @@ class LegacyFanCI(metaclass=ABCMeta):
         """
         for param in params:
             self._mask[param] = False
+
         # Update nactive
         self._nactive = self._mask.sum()
 
@@ -466,6 +476,7 @@ class LegacyFanCI(metaclass=ABCMeta):
         """
         for param in params:
             self._mask[param] = True
+
         # Update nactive
         self._nactive = self._mask.sum()
 
@@ -744,7 +755,8 @@ class LegacyFanCI(metaclass=ABCMeta):
         """
         raise NotImplementedError("this method must be overwritten in a sub-class")
 
-#TODO: Move to FanCI class
+
+# TODO: Move to FanCI class
 def fill_wavefunction(wfn: pyci.wavefunction, nproj: int, fill: str) -> None:
     r"""
     Fill the PyCI wave function object for the FanCI problem.
@@ -813,6 +825,7 @@ def fill_wavefunction(wfn: pyci.wavefunction, nproj: int, fill: str) -> None:
         pyci.add_excitations(wfn, *connections, ref=det)
 
     return wfn
+
 
 class Alias:
     """
