@@ -62,13 +62,15 @@ class PYCI:
         self.nocc = self.fanpy_wfn.nelec // 2
 
         # Define default parameters to buld FanCI object
-        self.mask = None
+        # TODO: Check if it can be built by Fanpy objective settings
         self.norm_det = None
         self.norm_param = None
         self.constraints = None
         self.max_memory = 8192
 
         # Build list of indices for objective parameters
+        # TODO: Check if it can be built by Fanpy objective settings
+        # TODO: Check if mask can (or even must) be related to norm_param and norm_det
         self.mask = []
         for component, indices in self.fanpy_objective.indices_component_params.items():
             bool_indices = np.zeros(component.nparams, dtype=bool)
@@ -97,7 +99,7 @@ class PYCI:
 
         # Select PyCI objective class based on Fanpy or PyCI
         if legacy:
-            from fanpy.interface.fanci.legacy import ProjectedSchrodingerFanCI
+            from fanpy.interface.fanci import ProjectedSchrodingerFanCI
 
             self.objective = ProjectedSchrodingerFanCI(
                 fanpy_wfn=self.fanpy_wfn,
@@ -120,4 +122,25 @@ class PYCI:
             )
 
         else:
-            from pyci.fanci.fanci import FanCI as ProjectedSchrodingerFanCI
+            from fanpy.interface.fanci import ProjectedSchrodingerPyCI
+
+            self.objective = ProjectedSchrodingerPyCI(
+                fanpy_wfn=self.fanpy_wfn,
+                ham=self.pyci_ham,
+                wfn=self.pspace_wfn,
+                nocc=self.nocc,
+                seniority=self.seniority,
+                nproj=self.nproj,
+                fill=self.fill,
+                mask=self.mask,
+                constraints=self.constraints,
+                param_selection=self.param_selection,
+                norm_param=self.norm_param,
+                norm_det=self.norm_det,
+                objective_type=self.objective_type,
+                max_memory=self.max_memory,
+                step_print=self.step_print,
+                step_save=self.step_save,
+                tmpfile=self.tmpfile,
+                **self.kwargs,
+            )
