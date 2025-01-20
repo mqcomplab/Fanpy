@@ -2,10 +2,9 @@
 
 import numpy as np
 import pyci
-import pytest
 
 from fanpy.interface.fanci import ProjectedSchrodingerFanCI, ProjectedSchrodingerPyCI
-from .fanpt import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
+from fanpy.fanpt.containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
 
 class FANPT:

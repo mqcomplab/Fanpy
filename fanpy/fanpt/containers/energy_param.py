@@ -2,7 +2,7 @@ r"""Class that contains the elements required to perform a FANPT calculation wit
 
 import numpy as np
 
-from .base_fanpt_container import FANPTContainer
+from fanpy.fanpt.containers.base import FANPTContainer
 
 
 class FANPTContainerEParam(FANPTContainer):

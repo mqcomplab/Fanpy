@@ -7,8 +7,8 @@ import numpy as np
 
 import pyci
 
-from .base_fanpt_container import FANPTContainer
-from .fanpt_constant_terms import FANPTConstantTerms
+from fanpy.fanpt.containers.base import FANPTContainer
+from fanpy.fanpt.containers.constant_terms import FANPTConstantTerms
 
 
 class FANPTUpdater:
@@ -203,9 +203,7 @@ class FANPTUpdater:
         self.resum_correction = -(
             self.final_l
             * np.dot(
-                np.linalg.inv(
-                    self.final_l * self.A_matrix + np.identity(self.fanpt_container.nequation)
-                ),
+                np.linalg.inv(self.final_l * self.A_matrix + np.identity(self.fanpt_container.nequation)),
                 self.b_vector,
             )
         )
@@ -250,16 +248,14 @@ class FANPTUpdater:
             raise TypeError("final_l must be given as a float.")
         if not self.fanpt_container.l < final_l <= 1.0:
             raise ValueError(
-                "final_l must be greater than {} and lower or equal than 1.".format(
-                    self.fanpt_container.l
-                )
+                "final_l must be greater than {} and lower or equal than 1.".format(self.fanpt_container.l)
             )
         self.final_l = final_l
 
     def assign_solver(self, solver):
         r"""Assign solver."""
         if solver is None:
-            #self.solver = partial(np.linalg.lstsq, rcond=None)
+            # self.solver = partial(np.linalg.lstsq, rcond=None)
             self.solver = partial(np.linalg.lstsq, rcond=1e-6)
 
     def get_responses(self):
@@ -303,12 +299,7 @@ class FANPTUpdater:
             corrections = self.resum_correction
         else:
             l0 = self.fanpt_container.l
-            dl = np.array(
-                [
-                    (self.final_l - l0) ** order / factorial(order)
-                    for order in range(1, self.final_order + 1)
-                ]
-            )
+            dl = np.array([(self.final_l - l0) ** order / factorial(order) for order in range(1, self.final_order + 1)])
             if self.fanpt_container.active_energy:
                 wfn_responses = self.responses[:, :-1]
             else:
@@ -320,7 +311,7 @@ class FANPTUpdater:
         self.new_wfn_params = wfn_params
 
     def energy_ham_ovlp_updater(self):
-        r""""Update the energy, Hamiltonian sparse operator, and wavefunctoin overlaps.
+        r""" "Update the energy, Hamiltonian sparse operator, and wavefunctoin overlaps.
 
         Generates
         ---------
@@ -338,9 +329,7 @@ class FANPTUpdater:
         new_ham = FANPTContainer.linear_comb_ham(
             self.fanpt_container.ham1, self.fanpt_container.ham0, self.final_l, 1 - self.final_l
         )
-        new_ham_op = pyci.sparse_op(
-            new_ham, self.fanpt_container.fanci_wfn.wfn, self.fanpt_container.nproj
-        )
+        new_ham_op = pyci.sparse_op(new_ham, self.fanpt_container.fanci_wfn.wfn, self.fanpt_container.nproj)
         new_ovlp_s = self.fanpt_container.fanci_wfn.compute_overlap(self.new_wfn_params, "S")
         f = np.empty(self.fanpt_container.nproj, dtype=pyci.c_double)
         new_ham_op(new_ovlp_s, out=f)
@@ -367,11 +356,6 @@ class FANPTUpdater:
         """
         e0 = self.fanpt_container.energy
         l0 = self.fanpt_container.l
-        dl = np.array(
-            [
-                (self.final_l - l0) ** order / factorial(order)
-                for order in range(1, self.final_order + 1)
-            ]
-        )
+        dl = np.array([(self.final_l - l0) ** order / factorial(order) for order in range(1, self.final_order + 1)])
         e_responses = self.responses[:, -1]
         self.fanpt_e = e0 + np.sum(e_responses * dl)

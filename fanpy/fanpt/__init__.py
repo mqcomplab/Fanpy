@@ -8,4 +8,4 @@ __all__ = [
     "reduce_to_fock",
 ]
 
-from fanpy.fanpt import FANPT, reduce_to_fock
+from .fanpt import FANPT, reduce_to_fock

@@ -4,7 +4,7 @@ from math import factorial
 
 import numpy as np
 
-from .base_fanpt_container import FANPTContainer
+from fanpy.fanpt.containers.base import FANPTContainer
 
 
 class FANPTConstantTerms:
@@ -156,9 +156,7 @@ class FANPTConstantTerms:
                 for o in range(1, self.order):
                     comb = factorial(self.order) / (factorial(o) * factorial(self.order - o))
                     r_vector += (
-                        comb
-                        * self.previous_responses[o - 1][-1]
-                        * self.previous_responses[self.order - o - 1][:-1]
+                        comb * self.previous_responses[o - 1][-1] * self.previous_responses[self.order - o - 1][:-1]
                     )
                 constant_terms = -self.order * np.dot(
                     self.fanpt_container.d2_g_lambda_wfnparams, self.previous_responses[-1][:-1]

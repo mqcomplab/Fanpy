@@ -1,6 +1,5 @@
 r"""FanCI module."""
 
-
 __all__ = [
     "FANPTContainer",
     "FANPTContainerEFree",
@@ -10,8 +9,8 @@ __all__ = [
 ]
 
 
-from .base_fanpt_container import FANPTContainer
-from .fanpt_cont_e_free import FANPTContainerEFree
-from .fanpt_cont_e_param import FANPTContainerEParam
-from .fanpt_updater import FANPTUpdater
-from .fanpt_constant_terms import FANPTConstantTerms
+from .base import FANPTContainer
+from .energy_free import FANPTContainerEFree
+from .energy_param import FANPTContainerEParam
+from .updater import FANPTUpdater
+from .constant_terms import FANPTConstantTerms

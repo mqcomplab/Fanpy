@@ -2,7 +2,7 @@ r"""Class that contains the elements required to perform a FANPT calculation wit
 
 import numpy as np
 
-from .fanpt_cont_e_param import FANPTContainerEParam
+from fanpy.fanpt.containers.energy_param import FANPTContainerEParam
 
 
 class FANPTContainerEFree(FANPTContainerEParam):
@@ -177,9 +177,7 @@ class FANPTContainerEFree(FANPTContainerEParam):
         super().der_g_lambda()
         self.super_d_g_lambda = self.d_g_lambda.copy()
         if self.inorm:
-            self.d_g_lambda[: self.nproj] -= (
-                self.d_g_lambda[self.ref_sd] * self.ovlp_s[: self.nproj]
-            )
+            self.d_g_lambda[: self.nproj] -= self.d_g_lambda[self.ref_sd] * self.ovlp_s[: self.nproj]
         else:
             self.d_g_lambda[: self.nproj] -= (
                 self.d_g_lambda[self.ref_sd] * self.ovlp_s[: self.nproj] / self.ovlp_s[self.ref_sd]
@@ -203,27 +201,21 @@ class FANPTContainerEFree(FANPTContainerEParam):
         """
         super().der2_g_lambda_wfnparams()
         if self.inorm:
-            self.d2_g_lambda_wfnparams[: self.nproj] -= self.d2_g_lambda_wfnparams[
-                self.ref_sd
-            ] * self.ovlp_s[: self.nproj].reshape(self.nproj, 1)
-            self.d2_g_lambda_wfnparams[: self.nproj] -= (
-                self.super_d_g_lambda[self.ref_sd] * self.d_ovlp_s[: self.nproj]
-            )
+            self.d2_g_lambda_wfnparams[: self.nproj] -= self.d2_g_lambda_wfnparams[self.ref_sd] * self.ovlp_s[
+                : self.nproj
+            ].reshape(self.nproj, 1)
+            self.d2_g_lambda_wfnparams[: self.nproj] -= self.super_d_g_lambda[self.ref_sd] * self.d_ovlp_s[: self.nproj]
         else:
             self.d2_g_lambda_wfnparams[: self.nproj] -= (
                 (
                     self.d2_g_lambda_wfnparams[self.ref_sd]
-                    - self.super_d_g_lambda[self.ref_sd]
-                    * self.d_ovlp_s[self.ref_sd]
-                    / self.ovlp_s[self.ref_sd]
+                    - self.super_d_g_lambda[self.ref_sd] * self.d_ovlp_s[self.ref_sd] / self.ovlp_s[self.ref_sd]
                 )
                 * self.ovlp_s[: self.nproj].reshape(self.nproj, 1)
                 / self.ovlp_s[self.ref_sd]
             )
             self.d2_g_lambda_wfnparams[: self.nproj] -= (
-                self.super_d_g_lambda[self.ref_sd]
-                * self.d_ovlp_s[: self.nproj]
-                / self.ovlp_s[self.ref_sd]
+                self.super_d_g_lambda[self.ref_sd] * self.d_ovlp_s[: self.nproj] / self.ovlp_s[self.ref_sd]
             )
 
     def gen_coeff_matrix(self):
@@ -250,9 +242,7 @@ class FANPTContainerEFree(FANPTContainerEParam):
         for f_proj_col, d_ovlp_col in zip(f_proj.transpose(), self.d_ovlp_s.transpose()):
             self.ham_ci_op(d_ovlp_col, out=f_proj_col)
         if self.inorm:
-            self.c_matrix[: self.nproj] -= f_proj[self.ref_sd] * self.ovlp_s[: self.nproj].reshape(
-                self.nproj, 1
-            )
+            self.c_matrix[: self.nproj] -= f_proj[self.ref_sd] * self.ovlp_s[: self.nproj].reshape(self.nproj, 1)
         else:
             self.c_matrix[: self.nproj] -= (
                 (f_proj[self.ref_sd] - self.energy * self.d_ovlp_s[self.ref_sd])
