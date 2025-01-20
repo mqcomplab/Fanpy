@@ -1039,8 +1039,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
         else:
             raise ValueError("invalid `occs_array` argument")
 
-        # FIXME: converting occs_array to slater determinants to be converted back to indices is
-        # a waste
+        # FIXME: converting occs_array to slater determinants to be converted back to indices is a waste
         # convert slater determinants
         sds = []
         if isinstance(occs_array[0, 0], np.ndarray):

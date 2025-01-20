@@ -14,10 +14,37 @@ class PYCI:
         self,
         fanpy_objective,
         energy_nuc,
-        legacy=True,
+        norm_det=None,
+        norm_param=None,
+        constraints=None,
+        max_memory=8192,
+        legacy_fanci=True,
         verbose=4,
         **kwargs: Any,
     ):
+        """
+        Initiate an interface object to run FanCI calculations under PyCI framework.
+
+        Arguments
+        ---------
+        fanpy_objective : ProjectedSchrodinger)
+            Fanpy problem built as an objective.
+        energy_nuc : float
+            Nuclear repulsion energy.
+        norm_det : (optional)
+            Determinant normalization from FanCI PyCI objective.
+        norm_param : (optional)
+            Parameters normalization from FanCI PyCI objective.
+        constraints : (optional)
+            Constraints conditions from FanCI PyCI objective.
+        max_memory : (float (in Mb), optional)
+            Set maximum memory available to be used in specific memory demanding tasks.
+        legacy_fanci : (bool, optional)
+            Flag to run legacy FanCI version instead of PyCI actual code. Defaults to True.
+        verbose : (int, optional)
+            Selects print level. Defaults to 4.
+
+        """
 
         try:
             import pyci
@@ -45,6 +72,7 @@ class PYCI:
         self.fanpy_wfn = fanpy_objective.wfn
         self.fanpy_ham = fanpy_objective.ham
 
+        self.legacy_fanci = legacy_fanci
         self.nproj = fanpy_objective.nproj
         self.step_print = fanpy_objective.step_print
         self.step_save = fanpy_objective.step_save
@@ -52,7 +80,7 @@ class PYCI:
         self.param_selection = fanpy_objective.indices_component_params
 
         self.objective_type = "projected"  # TODO: Should it follow fanpy_objective type?
-        self.kwargs = kwargs  # TODO: Is it needed?
+        self.kwargs = kwargs
 
         # Build PyCI Hamiltonian Object
         self.pyci_ham = pyci.hamiltonian(energy_nuc, self.fanpy_ham.one_int, self.fanpy_ham.two_int)
@@ -62,11 +90,10 @@ class PYCI:
         self.nocc = self.fanpy_wfn.nelec // 2
 
         # Define default parameters to buld FanCI object
-        # TODO: Check if it can be built by Fanpy objective settings
-        self.norm_det = None
-        self.norm_param = None
-        self.constraints = None
-        self.max_memory = 8192
+        self.norm_det = norm_det
+        self.norm_param = norm_param
+        self.constraints = constraints
+        self.max_memory = max_memory
 
         # Build list of indices for objective parameters
         # TODO: Check if it can be built by Fanpy objective settings
@@ -92,7 +119,7 @@ class PYCI:
             self.fill = "excitation"
             self.pspace_wfn = pyci.fullci_wfn(self.pyci_ham.nbasis, self.fanpy_wfn.nelec - self.nocc, self.nocc)
 
-        self.build_pyci_objective(legacy=legacy)
+        self.build_pyci_objective(legacy=legacy_fanci)
 
     # Define ProjectedSchrodingerPyCI objective interface class
     def build_pyci_objective(self, legacy=True):

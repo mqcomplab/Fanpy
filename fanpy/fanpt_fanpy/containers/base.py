@@ -1,8 +1,10 @@
 r"""Base class that contains the elements required to perform a FANPT calculation."""
 
 from abc import ABCMeta, abstractmethod
+import numpy as np
 
-import pyci
+from fanpy.eqn.projected import ProjectedSchrodinger
+from fanpy.tools import slater
 
 
 class FANPTContainer(metaclass=ABCMeta):
@@ -112,6 +114,7 @@ class FANPTContainer(metaclass=ABCMeta):
         f_pot_ci_op=None,
         ovlp_s=None,
         d_ovlp_s=None,
+        active_energy=None,
     ):
         r"""Initialize the FANPT container.
 
@@ -130,10 +133,10 @@ class FANPTContainer(metaclass=ABCMeta):
         ref_sd : int
             Index of the Slater determinant used to impose intermediate normalization.
             <n[ref_sd]|Psi(l)> = 1.
-        ham_ci_op : {pyci.sparse_op, None}
-            PyCI sparse operator of the perturbed Hamiltonian.
-        f_pot_ci_op : {pyci.sparse_op, None}
-            PyCI sparse operator of the fluctuation potential.
+        ham_ci_op : {ProjectedSchrodinger, None}
+            Projected Schrodinger sparse operator of the perturbed Hamiltonian.
+        f_pot_ci_op : {ProjectedSchrodinger, None}
+            Projected Schrodinger sparse operator of the  fluctuation potential.
         ovlp_s : {np.ndarray, None}
             Overlaps in the "S" projection space.
         d_ovlp_s : {np.ndarray, None}
@@ -143,7 +146,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.params = params
         self.wfn_params = params[:-1]
         self.energy = params[-1]
-        self.active_energy = fanci_wfn.mask[-1]
+        self.active_energy = active_energy
         self.inorm = inorm
 
         # Assign ideal and real Hamiltonians.
@@ -163,23 +166,24 @@ class FANPTContainer(metaclass=ABCMeta):
         if ham_ci_op:
             self.ham_ci_op = ham_ci_op
         else:
-            self.ham_ci_op = pyci.sparse_op(self.ham, self.fanci_wfn.wfn, self.fanci_wfn.nproj, symmetric=False)
+            self.ham_ci_op = ProjectedSchrodinger(self.fanci_wfn, self.ham)
         if f_pot_ci_op:
             self.f_pot_ci_op = f_pot_ci_op
         else:
             self.f_pot = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, 1.0, -1.0)
-            self.f_pot_ci_op = pyci.sparse_op(self.f_pot, self.fanci_wfn.wfn, self.fanci_wfn.nproj, symmetric=False)
+            self.f_pot_ci_op = ProjectedSchrodinger(self.fanci_wfn, self.f_pot)
 
         if ovlp_s:
             self.ovlp_s = ovlp_s
         else:
-            self.ovlp_s = self.fanci_wfn.compute_overlap(self.wfn_params, "S")
+            self.ovlp_s = FANPTContainer.compute_overlap(self.ham_ci_op, "S")
         if d_ovlp_s:
             self.d_ovlp_s = d_ovlp_s
         else:
-            self.d_ovlp_s = self.fanci_wfn.compute_overlap_deriv(self.wfn_params, "S")
+            deriv_list = np.arange(0, len(self.params))  # TODO: Improve
+            self.d_ovlp_s = FANPTContainer.compute_overlap(self.ham_ci_op, "S", deriv=deriv_list)
 
-        # Update Hamilonian in the fanci_wfn.
+        # Update Hamiltonian in the fanci_wfn.
         self.fanci_wfn._ham = self.ham
 
         # Assign ref_sd.
@@ -200,14 +204,14 @@ class FANPTContainer(metaclass=ABCMeta):
 
     @staticmethod
     def linear_comb_ham(ham1, ham0, a1, a0):
-        r"""Return a linear combination of two PyCI Hamiltonians.
+        r"""Return a linear combination of two Fanpy Hamiltonians.
 
         Parameters
         ----------
-        ham1 : pyci.hamiltonian
-            PyCI Hamiltonian of the real system.
-        ham0 : pyci.hamiltonian
-            PyCI Hamiltonian of the ideal system.
+        ham1 : BaseHamiltonian
+            Hamiltonian of the real system.
+        ham0 : BaseHamiltonian
+            Hamiltonian of the ideal system.
         a1 : float
             Coefficient of the real Hamiltonian.
         a0 : float
@@ -215,12 +219,77 @@ class FANPTContainer(metaclass=ABCMeta):
 
         Returns
         -------
-        pyci.hamiltonian
+        BaseHamiltonian
         """
-        ecore = a1 * ham1.ecore + a0 * ham0.ecore
-        one_mo = a1 * ham1.one_mo + a0 * ham0.one_mo
-        two_mo = a1 * ham1.two_mo + a0 * ham0.two_mo
-        return pyci.hamiltonian(ecore, one_mo, two_mo)
+        one_int = a1 * ham1.one_int + a0 * ham0.one_int
+        two_int = a1 * ham1.two_int + a0 * ham0.two_int
+
+        # Keep the class of the real Hamiltonian
+        hamiltonian = ham1.__class__
+
+        return hamiltonian(one_int, two_int)
+
+    @staticmethod
+    def compute_overlap(objective, occs_array, deriv=None):
+        r"""
+        Compute the FanCI overlap vector.
+
+        Parameters
+        ----------
+        objective : BaseWavefunction
+            Schroedinger equation to FanCI wavefunction.
+        occs_array : (np.ndarray | 'P' | 'S')
+            Array of determinant occupations for which to compute overlap. A string "P" or "S" can
+            be passed instead that indicates whether ``occs_array`` corresponds to the "P" space
+            or "S" space, so that a more efficient, specialized computation can be done for these.
+        deriv: ?
+            TODO.
+
+        Returns
+        -------
+        ovlp : np.ndarray
+            Overlap vector.
+
+        """
+        if isinstance(occs_array, np.ndarray):
+            # FIXME: converting occs_array to slater determinants to be converted back to indices is a waste
+            # convert slater determinants
+            sds = []
+            if isinstance(occs_array[0, 0], np.ndarray):
+                for i, occs in enumerate(occs_array):
+                    # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
+                    # convert occupation vector to sd
+                    if occs.dtype == bool:
+                        occs = np.where(occs)[0]
+                    sd = slater.create(0, *occs[0])
+                    sd = slater.create(sd, *(occs[1] + objective.wfn.nspatial))
+                    sds.append(sd)
+            else:
+                for i, occs in enumerate(occs_array):
+                    if occs.dtype == bool:
+                        occs = np.where(occs)
+                    sd = slater.create(0, *occs)
+                    sds.append(sd)
+        elif occs_array == "P":
+            sds = np.array(objective.pspace)
+        elif occs_array == "S":
+            sds = np.array(objective.refwfn)
+        else:
+            raise ValueError("invalid `sds` argument")
+
+        # initialize #TODO: Improve and add better argument type tests
+        if deriv is None:
+            y = np.zeros(sds.shape)
+        else:
+            y = np.zeros((sds.shape[0], len(deriv)))
+
+        # Compute overlaps of occupation vectors
+        if hasattr(objective.wfn, "get_overlaps"):
+            y += objective.wfn.get_overlaps(sds, deriv=deriv)
+        else:
+            for i, sd in enumerate(sds):
+                y[i] = objective.wfn.get_overlap(sd, deriv=deriv)
+        return y
 
     @property
     def nactive(self):
@@ -242,7 +311,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.fanci_wfn.nequation : int
             Number of equations (includes the number of constraints).
         """
-        return self.fanci_wfn.nequation
+        return self.ham_ci_op.nproj + len(self.ham_ci_op.constraints)  # TODO: check if it's correct and optimze
 
     @property
     def nproj(self):
@@ -253,7 +322,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.fanci_wfn.nproj
             Number of determinants in the "P" space.
         """
-        return self.fanci_wfn.nproj
+        return self.ham_ci_op.nproj
 
     @abstractmethod
     def der_g_lambda(self):

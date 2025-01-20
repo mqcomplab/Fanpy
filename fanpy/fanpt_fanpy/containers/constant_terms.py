@@ -1,10 +1,9 @@
 r"""Class that generates and contains the constant terms of the FANPT system of equations."""
 
 from math import factorial
-
 import numpy as np
 
-from .base_fanpt_container import FANPTContainer
+from .base import FANPTContainer
 
 
 class FANPTConstantTerms:
@@ -129,9 +128,16 @@ class FANPTConstantTerms:
         else:
             if not isinstance(previous_responses, np.ndarray):
                 raise TypeError("previous_responses must be a numpy array.")
-            if not all([isinstance(response, np.ndarray) for response in previous_responses]):
-                raise TypeError("The elements of previous_responses must be numpy arrays.")
-            if previous_responses.shape != (self.order - 1, self.fanpt_container.nactive):
+            if not all(
+                [isinstance(response, np.ndarray) for response in previous_responses]
+            ):
+                raise TypeError(
+                    "The elements of previous_responses must be numpy arrays."
+                )
+            if previous_responses.shape != (
+                self.order - 1,
+                self.fanpt_container.nactive,
+            ):
                 raise ValueError(
                     "The shape of previous_responses must be ({}, {}).".format(
                         self.order - 1, self.fanpt_container.nactive
@@ -154,17 +160,21 @@ class FANPTConstantTerms:
             if self.fanpt_container.active_energy:
                 r_vector = np.zeros(self.fanpt_container.nactive - 1)
                 for o in range(1, self.order):
-                    comb = factorial(self.order) / (factorial(o) * factorial(self.order - o))
+                    comb = factorial(self.order) / (
+                        factorial(o) * factorial(self.order - o)
+                    )
                     r_vector += (
                         comb
                         * self.previous_responses[o - 1][-1]
                         * self.previous_responses[self.order - o - 1][:-1]
                     )
                 constant_terms = -self.order * np.dot(
-                    self.fanpt_container.d2_g_lambda_wfnparams, self.previous_responses[-1][:-1]
+                    self.fanpt_container.d2_g_lambda_wfnparams,
+                    self.previous_responses[-1][:-1],
                 ) - np.dot(self.fanpt_container.d2_g_e_wfnparams, r_vector)
             else:
                 constant_terms = -self.order * np.dot(
-                    self.fanpt_container.d2_g_lambda_wfnparams, self.previous_responses[-1]
+                    self.fanpt_container.d2_g_lambda_wfnparams,
+                    self.previous_responses[-1],
                 )
         self.constant_terms = constant_terms

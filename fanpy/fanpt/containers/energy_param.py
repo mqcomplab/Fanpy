@@ -2,7 +2,7 @@ r"""Class that contains the elements required to perform a FANPT calculation wit
 
 import numpy as np
 
-from .base import FANPTContainer
+from .base_fanpt_container import FANPTContainer
 
 
 class FANPTContainerEParam(FANPTContainer):
@@ -119,7 +119,6 @@ class FANPTContainerEParam(FANPTContainer):
         f_pot_ci_op=None,
         ovlp_s=None,
         d_ovlp_s=None,
-        active_energy=True,
     ):
         r"""Initialize the FANPT container.
 
@@ -146,9 +145,6 @@ class FANPTContainerEParam(FANPTContainer):
             Overlaps in the "S" projection space.
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
-        energy_active : bool, optional
-            Whether the energy is an active parameter.
-            Defaults to True when FANPTContainerEParam is used.
         """
         super().__init__(
             fanci_wfn,
@@ -162,7 +158,6 @@ class FANPTContainerEParam(FANPTContainer):
             f_pot_ci_op,
             ovlp_s,
             d_ovlp_s,
-            active_energy=active_energy,
         )
         self.der2_g_e_wfnparams()
 
@@ -179,10 +174,7 @@ class FANPTContainerEParam(FANPTContainer):
         """
         f = np.zeros(self.nequation)
         f_proj = f[: self.nproj]
-        # self.f_pot_ci_op(self.ovlp_s, out=f_proj)  # TODO: How to compute this in Fanpy?
-        from fanpy.solver.least_squares_fanci import least_squares
-
-        f_proj[:] = least_squares(self.f_pot_ci_op.objective, self.ovlp_s)
+        self.f_pot_ci_op(self.ovlp_s, out=f_proj)
         self.d_g_lambda = f
 
     def der2_g_lambda_wfnparams(self):

@@ -1,243 +1,314 @@
-""" Solver using FanPT"""
+""" FANPT wrapper"""
 
 import numpy as np
+import pyci
+import pytest
 
-from fanpy.wfn.base import BaseWavefunction
-from .containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
+from fanpy.interface.fanci import ProjectedSchrodingerFanCI, ProjectedSchrodingerPyCI
+from .fanpt import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
 
-# def solve_fanpt(
-#     fanci_wfn,
-#     ham0,
-#     ham1,
-#     guess_params,
-#     fill,
-#     energy_active=True,
-#     resum=False,
-#     ref_sd=0,
-#     final_order=1,
-#     lambda_i=0.0,
-#     lambda_f=1.0,
-#     steps=1,
-#     kwargs=None,
-#     solver_kwargs=None,
-# ):
-def solve_fanpt(
-    fanci_wfn,
-    ham0,
-    ham1,
-    params,
-    fill,
-    energy_active=True,
-    resum=False,
-    ref_sd=0,
-    final_order=1,
-    lambda_i=0.0,
-    lambda_f=1.0,
-    steps=1,
-    kwargs=None,
-    solver_kwargs=None,
-):
-    """[summary]
+class FANPT:
 
-    Args:
-        fanci_wfn : FanCI class
-            FanCI wavefunction.
-        params : np.ndarray
-            Initial guess for wave function parameters.
-        ham0 : pyci.hamiltonian
-            PyCI Hamiltonian of the ideal system.
-        ham1 : pyci.hamiltonian
-            PyCI Hamiltonian of the real system.
-        energy_active : bool, optional
-            Whether the energy is an active parameter. It determines which FANPT
-            method is used. If set to true, FANPTContainerEParam is used.
-            Defaults to True.
-        resum : bool, optional
-            Indicates if we will solve the FANPT equations by re-summing the series.
-            Defaults to False.
-        ref_sd : int, optional
-            Index of the Slater determinant used to impose intermediate normalization.
-            <n[ref_sd]|Psi(l)> = 1. Defaults to 0.
-        final_order : int, optional
-            Final order of the FANPT calculation. Defaults to 1.
-        lambda_i : float, optional
-            Initial lambda value for the solution of the FANPT equations. Defaults to 0.0.
-        lambda_f : float, optional
-            Lambda value up to which the FANPT calculation will be performed. Defaults to 1.0.
-        steps (int, optional): int, optional
-            Solve FANPT in n stepts between lambda_i and lambda_f. Defaults to 1.
-        kwargs (dict, optional):
-            Additional keyword arguments for FanPTContainer class. Defaults to {}.
+    @property
+    def fanpt_container_class(self):
+        """
+        FANPT container object.
 
-    Raises:
-        TypeError: [description]
+        """
+        return self._fanpt_container_class
 
-    Returns:
-        params: np.ndarray
-        Solution of the FANPT calculation.
-    """
-    if not isinstance(fanci_wfn, BaseWavefunction):
-        raise TypeError("fanci_wfn must be a Fanpy wavefunction")
-    if kwargs is None:
-        kwargs = {}
-    if solver_kwargs is None:
-        solver_kwargs = {}
+    @property
+    def fanci_objective(self):
+        """
+        Projected Schrodinger Objective object from FancI code.
 
-    # Check for normalization constraint in FANCI wfn
-    # Assumes intermediate normalization relative to ref_sd only
-    # TODO: Check how to implement it in Fanpy. Temporarily disabled.
-    # if f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}" in fanci_wfn.constraints:
-    #     inorm = True
-    #     norm_det = [(ref_sd, 1.0)]
-    # else:
-    #     inorm = False
-    #     norm_det = None
+        """
+        return self._fanci_objective
 
-    # TODO: Improve parameters selection
-    ## As the objective is defined outside fanpt function, it's required to check if the energy_active parameter is correct.
-    ## This first implementation follows the parameters definition and, then, pick the correct FanPT approach.
-    ## Another option is be able to change it later. It would require BaseSchrodinger to be able to handle with this parameters changes.
-    # Select FANPT method
-    # param_selection = [(wfn, np.ones(wfn.nparams, dtype=bool)), (ham, np.ones(ham.nparams, dtype=bool))]
-    # if energy_active:
-    #     fanptcontainer = FANPTContainerEParam
-    #     # for component, indices in param_selection:
-    #     if not fanci_wfn.mask[-1]:
-    #         fanci_wfn.unfreeze_parameter(-1)
-    # else:
-    #     fanptcontainer = FANPTContainerEFree
-    #     if fanci_wfn.mask[-1]:
-    #         fanci_wfn.freeze_parameter(-1)
-    if energy_active:
-        fanptcontainer = FANPTContainerEParam
-    else:
-        fanptcontainer = FANPTContainerEFree
+    @property
+    def ham0(self) -> pyci.hamiltonian:
+        """
+        PyCI Hamiltonian of the ideal system.
 
-    # TODO: Temporarily Disabled
-    # if resum:
-    #     if energy_active:
-    #         raise ValueError(
-    #             "The energy parameter must be inactive with the resumation option."
-    #         )
-    #     nequation = fanci_wfn.nequation
-    #     nactive = fanci_wfn.nactive
-    #     steps = 1
-    #     if not inorm and (nequation == nactive):
-    #         norm_det = [(ref_sd, 1.0)]
-    #     elif inorm and (nequation - 1) == nactive:
-    #         fanci_wfn.remove_constraint(f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}")
-    #         inorm = False
-    #     else:
-    #         raise ValueError(
-    #             "The necesary condition of a determined system of equations is not met."
-    #         )
+        """
+        return self._ham0
 
-    # Get initial guess for parameters at initial lambda value.
-    numerical_zero = 1e-12
-    params = np.where(params == 0, numerical_zero, params)
+    @property
+    def ham1(self) -> pyci.hamiltonian:
+        """
+        PyCI Hamiltonian of the real system.
 
-    # Solve FANPT equations
-    for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
-        fanpt_container = fanptcontainer(
-            fanci_wfn=fanci_wfn,
-            params=params,
-            ham0=ham0,
-            ham1=ham1,
-            l=l,
-            inorm=inorm,
-            ref_sd=ref_sd,
-            **kwargs,
+        """
+        return self._ham1
+
+    @property
+    def nequation(self):
+        """
+        Number of equations in the FANPT problem.
+
+        """
+        return self._nequation
+
+    @property
+    def nactive(self):
+        """
+        Number of active parameters in the FANPT problem.
+
+        """
+        return self._nactive
+
+    @property
+    def inorm(self):
+        """
+        Intermediate normalization flag.
+
+        """
+        return self._inorm
+
+    @property
+    def norm_det(self):
+        """
+        Normalization determinant.
+
+        """
+        return self._norm_det
+
+    def __init__(
+        self,
+        fanci_objective,
+        guess_params=None,
+        energy_active=True,
+        resum=False,
+        ref_sd=0,
+        final_order=1,
+        lambda_i=0.0,
+        lambda_f=1.0,
+        steps=1,
+        **kwargs,
+    ):
+        """
+        Initialize the FANPT problem class.
+
+        Parameters
+        ----------
+            fanci_objective : FanCI class
+                FanCI objective.
+            guess_params : np.ndarray, optional
+                Initial guess for wave function parameters.
+            energy_active : bool, optional
+                Whether the energy is an active parameter. It determines which FANPT
+                method is used. If set to true, FANPTContainerEParam is used.
+                Defaults to True.
+            resum : bool, optional
+                Indicates if we will solve the FANPT equations by re-summing the series.
+                Defaults to False.
+            ref_sd : int, optional
+                Index of the Slater determinant used to impose intermediate normalization.
+                <n[ref_sd]|Psi(l)> = 1. Defaults to 0.
+            final_order : int, optional
+                Final order of the FANPT calculation. Defaults to 1.
+            lambda_i : float, optional
+                Initial lambda value for the solution of the FANPT equations. Defaults to 0.0.
+            lambda_f : float, optional
+                Lambda value up to which the FANPT calculation will be performed. Defaults to 1.0.
+            steps (int, optional): int, optional
+                Solve FANPT in n stepts between lambda_i and lambda_f. Defaults to 1.
+            kwargs (dict, optional):
+                Additional keyword arguments for self.fanpt_container_class class. Defaults to {}.
+
+        """
+        if not isinstance(fanci_objective, (ProjectedSchrodingerFanCI, ProjectedSchrodingerPyCI)):
+            raise TypeError("fanci_objective must be a FanCI wavefunction")
+        if kwargs is None:
+            kwargs = {}
+
+        # Check for normalization constraint in FANCI wfn
+        # Assumes intermediate normalization relative to ref_sd only
+        if ref_sd is None:
+            ref_sd = fanci_objective.fanpy_objective.refwfn
+
+        if f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}" in fanci_objective.constraints:
+            inorm = True
+            norm_det = [(ref_sd, 1.0)]
+        else:
+            inorm = False
+            norm_det = None
+
+        # Select FANPT method
+        if energy_active:
+            self._fanpt_container_class = FANPTContainerEParam
+            if not fanci_objective.mask[-1]:
+                fanci_objective.unfreeze_parameter(-1)
+        else:
+            self._fanpt_container_class = FANPTContainerEFree
+            if fanci_objective.mask[-1]:
+                fanci_objective.freeze_parameter(-1)
+
+        if resum:
+            if energy_active:
+                raise ValueError("The energy parameter must be inactive with the resumation option.")
+            nequation = fanci_objective.nequation
+            nactive = fanci_objective.nactive
+            steps = 1
+            if not inorm and (nequation == nactive):
+                norm_det = [(ref_sd, 1.0)]
+            elif inorm and (nequation - 1) == nactive:
+                fanci_objective.remove_constraint(f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}")
+                inorm = False
+            else:
+                raise ValueError("The necesary condition of a determined system of equations is not met.")
+
+        # Obtain Hamiltonian objects from FanCI objective
+        self._ham1 = fanci_objective.ham
+        self._ham0 = pyci.hamiltonian(
+            fanci_objective.ham.ecore, fanci_objective.ham.one_mo, reduce_to_fock(fanci_objective.ham.two_mo)
         )
 
-        final_l = l + (lambda_f - lambda_i) / steps
-        print(f"Solving FanPT problem at lambda={final_l}")
+        # Assign parameters to instance
+        self._nequation = nequation
+        self._nactive = nactive
+        self._inorm = inorm
+        self._norm_det = norm_det
 
-        fanpt_updater = FANPTUpdater(
-            fanpt_container=fanpt_container,
-            final_order=final_order,
-            final_l=final_l,
-            solver=None,
-            resum=resum,
+        # Assign attributes to instance
+        self._fanci_objective = fanci_objective
+
+        if not guess_params:
+            self.guess_params = fanci_objective.active_params
+
+        self.fill = fanci_objective.fill
+        self.energy_active = energy_active
+        self.resum = resum
+
+        self.ref_sd = ref_sd
+        self.final_order = final_order
+        self.lambda_i = lambda_i
+        self.lambda_f = lambda_f
+        self.steps = steps
+        self.kwargs = kwargs
+
+    def optimize(
+        self,
+        guess_params=None,
+        energy_active=None,
+        resum=None,
+        ref_sd=None,
+        final_order=None,
+        lambda_i=None,
+        lambda_f=None,
+        steps=None,
+        **solver_kwargs,
+    ):
+        """
+        Solve the FANPT equations.
+
+        Returns
+        -------
+            params: np.ndarray
+            Solution of the FANPT calculation.
+        """
+
+        # Assign attributes
+        guess_params = guess_params or self.guess_params
+        energy_active = energy_active or self.energy_active
+        resum = resum or self.resum
+        ref_sd = ref_sd or self.ref_sd
+        final_order = final_order or self.final_order
+        lambda_i = lambda_i or self.lambda_i
+        lambda_f = lambda_f or self.lambda_f
+        steps = steps or self.steps
+
+        # Get initial guess for parameters at initial lambda value.
+        results = self.fanci_objective.optimize(guess_params, **solver_kwargs)
+
+        guess_params[self.fanci_objective.mask] = results.x
+        params = self.guess_params
+
+        # Solve FANPT equations
+        for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
+            fanpt_container = self.self.fanpt_container_class(
+                fanci_objective=self.fanci_objective,  # TODO: Check this
+                params=params,
+                ham0=self.ham0,
+                ham1=self.ham1,
+                l=l,
+                inorm=self.inorm,
+                ref_sd=self.ref_sd,
+                **self.kwargs,
+            )
+
+            final_l = l + (lambda_f - lambda_i) / steps
+            print(f"Solving FanPT problem at lambda={final_l}")
+
+            fanpt_updater = FANPTUpdater(
+                fanpt_container=fanpt_container,
+                final_order=final_order,
+                final_l=final_l,
+                solver=None,
+                resum=resum,
+            )
+            new_wfn_params = fanpt_updater.new_wfn_params
+            new_energy = fanpt_updater.new_energy
+
+            # These params serve as initial guess to solve the fanci equations for the given lambda.
+            fanpt_params = np.append(new_wfn_params, new_energy)
+            print("Frobenius Norm of parameters: {}".format(np.linalg.norm(fanpt_params - params)))
+            print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - params[-1])))
+
+            # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
+            ham = fanpt_container.linear_comb_ham(self.ham1, self.ham0, final_l, 1 - final_l)
+
+            # Initialize fanci wfn with the perturbed Hamiltonian.
+            self._fanci_objective = self.update_fanci_objective(ham, self.fanci_objective, self.norm_det, self.fill)
+
+            # Solve the fanci problem with fanpt_params as initial guess.
+            # Take the params given by fanci and use them as initial params in the
+            # fanpt calculation for the next lambda.
+            results = self.fanci_objective.optimize(fanpt_params, **solver_kwargs)
+
+            fanpt_params[self.fanci_objective.mask] = results.x
+            params = fanpt_params
+
+            if not energy_active:
+                self.fanci_objective.freeze_parameter([-1])
+
+        return results
+
+    def update_fanci_objective(self, new_ham, fanci_objective):
+
+        # Get the class of the fanci_objective
+        fanpy_objective_class = fanci_objective.fanpy_objective.__class__
+
+        # Create new Fanpy objective
+        new_fanpy_objective = fanpy_objective_class(
+            new_ham,
+            fanci_objective._fanpy_wfn,
+            param_selection=fanci_objective.param_selection,
+            optimize_orbitals=fanci_objective.optimize_orbitals,
+            step_print=fanci_objective.step_print,
+            step_save=fanci_objective.step_save,
+            tmpfile=fanci_objective.tmpfile,
+            pspace=fanci_objective.pspace,
+            refwfn=fanci_objective.refwfn,
+            eqn_weights=fanci_objective.eqn_weights,
+            energy_type=fanci_objective.energy_type,
+            energy=fanci_objective.energy,
+            constraints=fanci_objective.constraints,
         )
-        new_wfn_params = fanpt_updater.new_wfn_params
-        new_energy = fanpt_updater.new_energy
 
-        # These params serve as initial guess to solve the fanci equations for the given lambda.
-        fanpt_params = np.append(new_wfn_params, new_energy)
-        print("Frobenius Norm of parameters: {}".format(np.linalg.norm(fanpt_params - params)))
-        print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - params[-1])))
+        # Build FanCI objective as PyCI interface
+        from fanpy.interface.pyci import PYCI
 
-        # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
-        ham = fanpt_container.linear_comb_ham(ham1, ham0, final_l, 1 - final_l)
+        fanci_interface = PYCI(
+            new_fanpy_objective,
+            fanci_objective.energy_nuc,
+            norm_det=self.norm_det,
+            max_memory=fanci_objective.max_memory,
+            legacy=fanci_objective.legacy_fanci,
+        )
 
-        # Initialize fanci wfn with the perturbed Hamiltonian.
-        fanci_wfn = update_fanci_wfn(ham, fanci_wfn, norm_det, fill)
-
-        # Solve the fanci problem with fanpt_params as initial guess.
-        # Take the params given by fanci and use them as initial params in the
-        # fanpt calculation for the next lambda.
-        results = fanci_wfn.optimize(fanpt_params, **solver_kwargs)
-
-        fanpt_params[fanci_wfn.mask] = results.x
-        print("fanpt_params=", fanpt_params)
-        params = fanpt_params
-
-        if not energy_active:
-            fanci_wfn.freeze_parameter([-1])
-
-    # Output formatting
-    output = {
-        "x": params,
-        "energy": params[-1],
-        "residuals": results.fun,
-        "variables": {
-            "steps": steps,
-            "inorm": inorm,
-            "norm_det": norm_det,
-            "eactive": fanci_wfn.mask[-1],
-            "final_l": final_l,
-        },
-    }
-
-    return output
-
-
-def update_fanci_wfn(ham, fanciwfn, norm_det, fill):
-    fanci_class = fanciwfn.__class__
-
-    if isinstance(fanciwfn.wfn, pyci.fullci_wfn):
-        nocc = (fanciwfn.wfn.nocc_up, fanciwfn.wfn.nocc_dn)
-    else:
-        nocc = fanciwfn.wfn.nocc_up
-
-    # Activate energy parameter
-    fanciwfn.unfreeze_parameter([-1])
-
-    # FIXME: for FanCI class
-    # return fanci_class(
-    #    ham, fanciwfn.wfn, fanciwfn.nproj, fanciwfn.nparam, norm_det=norm_det, mask=fanciwfn.mask, fill=fill
-    # )
-
-    # for fanpy class
-    # ASSUMING GeneratedFanCI class
-    return fanci_class(
-        ham,
-        fanciwfn._fanpy_wfn,
-        fanciwfn._wfn.nocc_up + fanciwfn._wfn.nocc_dn,
-        nproj=fanciwfn.nproj,
-        wfn=fanciwfn.wfn,
-        fill=fill,
-        seniority=fanciwfn.seniority,
-        step_print=fanciwfn.step_print,
-        step_save=fanciwfn.step_save,
-        tmpfile=fanciwfn.tmpfile,
-        mask=fanciwfn._mask,
-        objective_type=fanciwfn.objective_type,
-        norm_det=norm_det,
-        param_selection=fanciwfn.indices_component_params,
-        constraints=fanciwfn._constraints,
-    )
+        return fanci_interface.objective
 
 
 def reduce_to_fock(two_int, lambda_val=0):
@@ -252,35 +323,13 @@ def reduce_to_fock(two_int, lambda_val=0):
     fock_two_int = two_int * lambda_val
     nspatial = two_int.shape[0]
     indices = np.arange(nspatial)
-    fock_two_int[
-        indices[:, None, None],
-        indices[None, :, None],
-        indices[None, None, :],
-        indices[None, :, None],
-    ] = two_int[
-        indices[:, None, None],
-        indices[None, :, None],
-        indices[None, None, :],
-        indices[None, :, None],
-    ]
-    fock_two_int[
-        indices[:, None, None],
-        indices[None, :, None],
-        indices[None, :, None],
-        indices[None, None, :],
-    ] = two_int[
-        indices[:, None, None],
-        indices[None, :, None],
-        indices[None, :, None],
-        indices[None, None, :],
-    ]
-    # fock_two_int[indices[None, :, None], indices[:, None, None], indices[None, None, :], indices[None, :, None]] =  two_int[indices[:, None, None], indices[None, :, None], indices[None, None, :], indices[None, :, None]]
-    # fock_two_int[indices[None, :, None], indices[:, None, None], indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], indices[None, :, None], indices[None, :, None], indices[None, None, :]]
 
-    # occ_indices = np.arange(nelec // 2)
-    # fock_two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]] =  two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]]
-    # fock_two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]]
-    # fock_two_int[occ_indices[None, :, None], indices[:, None, None], indices[None, None, :], occ_indices[None, :, None]] =  two_int[indices[:, None, None], occ_indices[None, :, None], indices[None, None, :], occ_indices[None, :, None]]
-    # fock_two_int[occ_indices[None, :, None], indices[:, None, None], occ_indices[None, :, None], indices[None, None, :]] =  two_int[indices[:, None, None], occ_indices[None, :, None], occ_indices[None, :, None], indices[None, None, :]]
+    fock_two_int[indices[:, None, None], indices[None, :, None], indices[None, None, :], indices[None, :, None]] = (
+        two_int[indices[:, None, None], indices[None, :, None], indices[None, None, :], indices[None, :, None]]
+    )
+
+    fock_two_int[indices[:, None, None], indices[None, :, None], indices[None, :, None], indices[None, None, :]] = (
+        two_int[indices[:, None, None], indices[None, :, None], indices[None, :, None], indices[None, None, :]]
+    )
 
     return fock_two_int

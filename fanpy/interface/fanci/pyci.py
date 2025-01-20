@@ -103,6 +103,14 @@ class ProjectedSchrodingerPyCI(FanCI):
         """
         return self._max_memory
 
+    @property
+    def nactive(self) -> int:
+        """
+        Number of active parameters for this FanCI problem.
+
+        """
+        return self._nactive
+
     def __init__(
         self,
         fanpy_wfn: BaseWavefunction,
