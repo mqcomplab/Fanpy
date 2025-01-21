@@ -27,7 +27,7 @@ class FANPTContainerEParam(FANPTContainer):
 
     Attributes
     ----------
-    fanci_wfn : FanCI instance
+    fanci_objective : FanCI instance
         FanCI wavefunction.
     params : np.ndarray
         Wavefunction parameters and energy at for the given lambda value.
@@ -91,7 +91,7 @@ class FANPTContainerEParam(FANPTContainer):
 
     Methods
     -------
-    __init__(self, fanci_wfn, params, ham0, ham1, l=0, ref_sd=0)
+    __init__(self, fanci_objective, params, ham0, ham1, l=0, ref_sd=0)
         Initialize the FANPT container.
     linear_comb_ham(ham1, ham0, a1, a0)
         Return a linear combination of two PyCI Hamiltonians.
@@ -108,7 +108,7 @@ class FANPTContainerEParam(FANPTContainer):
 
     def __init__(
         self,
-        fanci_wfn,
+        fanci_objective,
         params,
         ham0,
         ham1,
@@ -124,7 +124,7 @@ class FANPTContainerEParam(FANPTContainer):
 
         Parameters
         ----------
-        fanci_wfn : FanCI instance
+        fanci_objective : FanCI instance
             FanCI wavefunction.
         params : np.ndarray
             Wavefunction parameters and energy at for the given lambda value.
@@ -147,7 +147,7 @@ class FANPTContainerEParam(FANPTContainer):
             Derivatives of the overlaps in the "S" projection space.
         """
         super().__init__(
-            fanci_wfn,
+            fanci_objective,
             params,
             ham0,
             ham1,
@@ -235,4 +235,4 @@ class FANPTContainerEParam(FANPTContainer):
             Coefficient matrix of the FANPT system of equations.
             numpy array with shape (self.nequations, len(self.nactive)).
         """
-        self.c_matrix = self.fanci_wfn.compute_jacobian(self.params)
+        self.c_matrix = self.fanci_objective.compute_jacobian(self.params)

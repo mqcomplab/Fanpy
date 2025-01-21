@@ -6,6 +6,7 @@
 from fanpy.tools import slater
 from fanpy.solver.least_squares_fanci import least_squares
 from fanpy.wfn.base import BaseWavefunction
+from fanpy.eqn.base import BaseSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
 from fanpy.interface.fanci.alias import Alias
 from fanpy.tools.performance import current_memory
@@ -839,6 +840,14 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
     """
 
     @property
+    def fanpy_objective(self) -> BaseSchrodinger:
+        """
+        BaseSchrodinger object from Fanpy code.
+
+        """
+        return self._fanpy_objective
+
+    @property
     def fanpy_wfn(self) -> BaseWavefunction:
         """
         BaseWavefunction object from Fanpy code.
@@ -912,7 +921,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
 
     def __init__(
         self,
-        fanpy_wfn: BaseWavefunction,
+        fanpy_objective: BaseSchrodinger,
         ham: pyci.hamiltonian,
         wfn,
         nocc: int,
@@ -935,8 +944,8 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
 
         Parameters
         ----------
-        fanpy_wfn : BaseWavefunction
-            Wavefunction from fanpy.
+        fanpy_objective : BaseSchrodinger
+            FanCI problem defined by Fanpy.
         ham : pyci.hamiltonian
             PyCI Hamiltonian.
         wfn : pyci.doci_wfn or pyci.fullci_wfn
@@ -978,7 +987,8 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
             raise TypeError(f"Invalid `ham` type `{type(ham)}`; must be `pyci.hamiltonian`")
 
         # Save sub-class -specific attributes
-        self._fanpy_wfn = fanpy_wfn
+        self._fanpy_objective = fanpy_objective
+        self._fanpy_wfn = fanpy_objective.wfn
         self._nocc = nocc
         self._fill = fill
         self._seniority = seniority

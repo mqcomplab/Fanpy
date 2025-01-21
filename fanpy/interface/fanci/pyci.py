@@ -6,10 +6,11 @@
 from fanpy.tools import slater
 from fanpy.solver.least_squares_fanci import least_squares
 from fanpy.wfn.base import BaseWavefunction
+from fanpy.eqn.base import BaseSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
 from fanpy.tools.performance import current_memory
 
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, Union, Sequence
 
 import os
 import math
@@ -30,6 +31,14 @@ class ProjectedSchrodingerPyCI(FanCI):
     """
     Generated PyCI objective class from the Fanpy objective.
     """
+
+    @property
+    def fanpy_objective(self) -> BaseSchrodinger:
+        """
+        BaseSchrodinger object from Fanpy code.
+
+        """
+        return self._fanpy_objective
 
     @property
     def fanpy_wfn(self) -> BaseWavefunction:
@@ -111,9 +120,41 @@ class ProjectedSchrodingerPyCI(FanCI):
         """
         return self._nactive
 
+    def freeze_parameter(self, *params: Sequence[int]) -> None:
+        """
+        Set a FanCI parameter to be frozen during optimization.
+
+        Parameters
+        ----------
+        params : Sequence[int]
+            Indices of parameters to freeze.
+
+        """
+        for param in params:
+            self._mask[param] = False
+
+        # Update nactive
+        self._nactive = self._mask.sum()
+
+    def unfreeze_parameter(self, *params: Sequence[int]) -> None:
+        """
+        Set a FanCI parameter to be active during optimization.
+
+        Parameters
+        ----------
+        params : Sequence[int]
+            Indices of parameters to unfreeze.
+
+        """
+        for param in params:
+            self._mask[param] = True
+
+        # Update nactive
+        self._nactive = self._mask.sum()
+
     def __init__(
         self,
-        fanpy_wfn: BaseWavefunction,
+        fanpy_objective: BaseSchrodinger,
         ham: pyci.hamiltonian,
         wfn,
         nocc: int,
@@ -135,10 +176,10 @@ class ProjectedSchrodingerPyCI(FanCI):
         """
         Initialize the FanCI problem.
 
-        Parameters
-        ----------
-        fanpy_wfn : BaseWavefunction
-            Wavefunction from fanpy.
+        Arguments
+        ---------
+        fanpy_objective : BaseSchrodinger
+            FanCI problem defined by Fanpy.
         ham : pyci.hamiltonian
             PyCI Hamiltonian.
         wfn : pyci.doci_wfn or pyci.fullci_wfn
@@ -182,7 +223,8 @@ class ProjectedSchrodingerPyCI(FanCI):
             raise TypeError(f"Invalid `ham` type `{type(ham)}`; must be `pyci.hamiltonian`")
 
         # Save sub-class -specific attributes
-        self._fanpy_wfn = fanpy_wfn
+        self._fanpy_objective = fanpy_objective
+        self._fanpy_wfn = fanpy_objective.wfn
         self._nocc = nocc
         self._fill = fill
         self._mask = mask
@@ -196,8 +238,6 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         self.print_queue = {}
 
-        self._nactive = np.sum(mask)
-
         # Define constraints
         if constraints is None and norm_det is None:
             constraints = {"<\\Phi|\\Psi> - 1>": self.make_norm_constraint()}
@@ -208,7 +248,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             ham,
             wfn,
             nproj,
-            nparam=self._nactive,
+            nparam=self.nactive,
             norm_param=norm_param,
             norm_det=norm_det,
             constraints=constraints,

@@ -129,7 +129,7 @@ class PYCI:
             from fanpy.interface.fanci import ProjectedSchrodingerFanCI
 
             self.objective = ProjectedSchrodingerFanCI(
-                fanpy_wfn=self.fanpy_wfn,
+                fanpy_objective=self.fanpy_objective,
                 ham=self.pyci_ham,
                 wfn=self.pspace_wfn,
                 nocc=self.nocc,
@@ -152,7 +152,7 @@ class PYCI:
             from fanpy.interface.fanci import ProjectedSchrodingerPyCI
 
             self.objective = ProjectedSchrodingerPyCI(
-                fanpy_wfn=self.fanpy_wfn,
+                fanpy_objective=self.fanpy_objective,
                 ham=self.pyci_ham,
                 wfn=self.pspace_wfn,
                 nocc=self.nocc,

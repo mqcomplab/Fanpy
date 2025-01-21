@@ -73,6 +73,14 @@ class FANPT:
         """
         return self._norm_det
 
+    @property
+    def guess_params(self):
+        """
+        Default guess parameters.
+
+        """
+        return self._guess_params
+
     def __init__(
         self,
         fanci_objective,
@@ -165,16 +173,17 @@ class FANPT:
         )
 
         # Assign parameters to instance
-        self._nequation = nequation
-        self._nactive = nactive
+        self._nequation = fanci_objective.nequation
+        self._nactive = fanci_objective.nactive
         self._inorm = inorm
         self._norm_det = norm_det
 
         # Assign attributes to instance
         self._fanci_objective = fanci_objective
 
-        if not guess_params:
-            self.guess_params = fanci_objective.active_params
+        self._guess_params = guess_params
+        if self.guess_params is None:
+            self._guess_params = fanci_objective.active_params
 
         self.fill = fanci_objective.fill
         self.energy_active = energy_active
@@ -209,7 +218,9 @@ class FANPT:
         """
 
         # Assign attributes
-        guess_params = guess_params or self.guess_params
+        if guess_params is None:
+            guess_params = self.guess_params
+
         energy_active = energy_active or self.energy_active
         resum = resum or self.resum
         ref_sd = ref_sd or self.ref_sd
@@ -220,15 +231,13 @@ class FANPT:
 
         # Get initial guess for parameters at initial lambda value.
         results = self.fanci_objective.optimize(guess_params, **solver_kwargs)
-
         guess_params[self.fanci_objective.mask] = results.x
-        params = self.guess_params
 
         # Solve FANPT equations
         for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
-            fanpt_container = self.self.fanpt_container_class(
+            fanpt_container = self.fanpt_container_class(
                 fanci_objective=self.fanci_objective,  # TODO: Check this
-                params=params,
+                params=guess_params,
                 ham0=self.ham0,
                 ham1=self.ham1,
                 l=l,
@@ -252,14 +261,14 @@ class FANPT:
 
             # These params serve as initial guess to solve the fanci equations for the given lambda.
             fanpt_params = np.append(new_wfn_params, new_energy)
-            print("Frobenius Norm of parameters: {}".format(np.linalg.norm(fanpt_params - params)))
-            print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - params[-1])))
+            print("Frobenius Norm of parameters: {}".format(np.linalg.norm(fanpt_params - guess_params)))
+            print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - guess_params[-1])))
 
             # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
             ham = fanpt_container.linear_comb_ham(self.ham1, self.ham0, final_l, 1 - final_l)
 
             # Initialize fanci wfn with the perturbed Hamiltonian.
-            self._fanci_objective = self.update_fanci_objective(ham, self.fanci_objective, self.norm_det, self.fill)
+            self._fanci_objective = self.update_fanci_objective(ham, self.fanci_objective)
 
             # Solve the fanci problem with fanpt_params as initial guess.
             # Take the params given by fanci and use them as initial params in the
@@ -267,7 +276,7 @@ class FANPT:
             results = self.fanci_objective.optimize(fanpt_params, **solver_kwargs)
 
             fanpt_params[self.fanci_objective.mask] = results.x
-            params = fanpt_params
+            guess_params = fanpt_params
 
             if not energy_active:
                 self.fanci_objective.freeze_parameter([-1])

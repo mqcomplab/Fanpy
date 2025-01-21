@@ -28,7 +28,7 @@ class FANPTContainerEFree(FANPTContainerEParam):
 
     Attributes
     ----------
-    fanci_wfn : FanCI instance
+    fanci_objective : FanCI instance
         FanCI wavefunction.
     params : np.ndarray
         Wavefunction parameters and energy at for the given lambda value.
@@ -92,7 +92,7 @@ class FANPTContainerEFree(FANPTContainerEParam):
 
     Methods
     -------
-    __init__(self, fanci_wfn, params, ham0, ham1, l=0, ref_sd=0)
+    __init__(self, fanci_objective, params, ham0, ham1, l=0, ref_sd=0)
         Initialize the FANPT container.
     linear_comb_ham(ham1, ham0, a1, a0)
         Return a linear combination of two PyCI Hamiltonians.
@@ -106,7 +106,7 @@ class FANPTContainerEFree(FANPTContainerEParam):
 
     def __init__(
         self,
-        fanci_wfn,
+        fanci_objective,
         params,
         ham0,
         ham1,
@@ -122,7 +122,7 @@ class FANPTContainerEFree(FANPTContainerEParam):
 
         Parameters
         ----------
-        fanci_wfn : FanCI instance
+        fanci_objective : FanCI instance
             FanCI wavefunction.
         params : np.ndarray
             Wavefunction parameters and energy at for the given lambda value.
@@ -144,11 +144,11 @@ class FANPTContainerEFree(FANPTContainerEParam):
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
         """
-        if fanci_wfn.mask[-1]:
+        if fanci_objective.mask[-1]:
             raise TypeError("The energy cannot be an active parameter.")
         else:
             super().__init__(
-                fanci_wfn,
+                fanci_objective,
                 params,
                 ham0,
                 ham1,

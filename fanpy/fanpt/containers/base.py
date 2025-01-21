@@ -27,7 +27,7 @@ class FANPTContainer(metaclass=ABCMeta):
 
     Attributes
     ----------
-    fanci_wfn : FanCI instance
+    fanci_objective : FanCI instance
         FanCI wavefunction.
     params : np.ndarray
         Wavefunction parameters and energy at for the given lambda value.
@@ -87,7 +87,7 @@ class FANPTContainer(metaclass=ABCMeta):
 
     Methods
     -------
-    __init__(self, fanci_wfn, params, ham0, ham1, l=0, ref_sd=0)
+    __init__(self, fanci_objective, params, ham0, ham1, l=0, ref_sd=0)
         Initialize the FANPT container.
     linear_comb_ham(ham1, ham0, a1, a0)
         Return a linear combination of two PyCI Hamiltonians.
@@ -101,7 +101,7 @@ class FANPTContainer(metaclass=ABCMeta):
 
     def __init__(
         self,
-        fanci_wfn,
+        fanci_objective,
         params,
         ham0,
         ham1,
@@ -117,7 +117,7 @@ class FANPTContainer(metaclass=ABCMeta):
 
         Parameters
         ----------
-        fanci_wfn : FanCI instance
+        fanci_objective : FanCI instance
             FanCI wavefunction.
         params : np.ndarray
             Wavefunction parameters and energy at for the given lambda value.
@@ -143,7 +143,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.params = params
         self.wfn_params = params[:-1]
         self.energy = params[-1]
-        self.active_energy = fanci_wfn.mask[-1]
+        self.active_energy = fanci_objective.mask[-1]
         self.inorm = inorm
 
         # Assign ideal and real Hamiltonians.
@@ -154,7 +154,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.l = l
 
         # Assign FanCI wfn
-        self.fanci_wfn = fanci_wfn
+        self.fanci_objective = fanci_objective
 
         # Build the perturbed Hamiltonian.
         self.ham = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, self.l, 1 - self.l)
@@ -163,28 +163,32 @@ class FANPTContainer(metaclass=ABCMeta):
         if ham_ci_op:
             self.ham_ci_op = ham_ci_op
         else:
-            self.ham_ci_op = pyci.sparse_op(self.ham, self.fanci_wfn.wfn, self.fanci_wfn.nproj, symmetric=False)
+            self.ham_ci_op = pyci.sparse_op(
+                self.ham, self.fanci_objective.wfn, self.fanci_objective.nproj, symmetric=False
+            )
         if f_pot_ci_op:
             self.f_pot_ci_op = f_pot_ci_op
         else:
             self.f_pot = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, 1.0, -1.0)
-            self.f_pot_ci_op = pyci.sparse_op(self.f_pot, self.fanci_wfn.wfn, self.fanci_wfn.nproj, symmetric=False)
+            self.f_pot_ci_op = pyci.sparse_op(
+                self.f_pot, self.fanci_objective.wfn, self.fanci_objective.nproj, symmetric=False
+            )
 
         if ovlp_s:
             self.ovlp_s = ovlp_s
         else:
-            self.ovlp_s = self.fanci_wfn.compute_overlap(self.wfn_params, "S")
+            self.ovlp_s = self.fanci_objective.compute_overlap(self.wfn_params, "S")
         if d_ovlp_s:
             self.d_ovlp_s = d_ovlp_s
         else:
-            self.d_ovlp_s = self.fanci_wfn.compute_overlap_deriv(self.wfn_params, "S")
+            self.d_ovlp_s = self.fanci_objective.compute_overlap_deriv(self.wfn_params, "S")
 
-        # Update Hamilonian in the fanci_wfn.
-        self.fanci_wfn._ham = self.ham
+        # Update Hamilonian in the fanci_objective.
+        self.fanci_objective._ham = self.ham
 
         # Assign ref_sd.
         if self.inorm:
-            if f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}" in self.fanci_wfn.constraints:
+            if f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}" in self.fanci_objective.constraints:
                 self.ref_sd = ref_sd
             else:
                 raise KeyError(
@@ -228,10 +232,10 @@ class FANPTContainer(metaclass=ABCMeta):
 
         Returns
         -------
-        self.fanci_wfn.nactive : int
+        self.fanci_objective.nactive : int
             Number of active parameters.
         """
-        return self.fanci_wfn.nactive
+        return self.fanci_objective.nactive
 
     @property
     def nequation(self):
@@ -239,10 +243,10 @@ class FANPTContainer(metaclass=ABCMeta):
 
         Returns
         -------
-        self.fanci_wfn.nequation : int
+        self.fanci_objective.nequation : int
             Number of equations (includes the number of constraints).
         """
-        return self.fanci_wfn.nequation
+        return self.fanci_objective.nequation
 
     @property
     def nproj(self):
@@ -250,10 +254,10 @@ class FANPTContainer(metaclass=ABCMeta):
 
         Returns
         -------
-        self.fanci_wfn.nproj
+        self.fanci_objective.nproj
             Number of determinants in the "P" space.
         """
-        return self.fanci_wfn.nproj
+        return self.fanci_objective.nproj
 
     @abstractmethod
     def der_g_lambda(self):

@@ -305,7 +305,7 @@ class FANPTUpdater:
             else:
                 wfn_responses = self.responses
             corrections = np.sum(wfn_responses * dl.reshape(self.final_order, 1), axis=0)
-        active_wfn_indices = np.where(self.fanpt_container.fanci_wfn.mask[:-1])[0]
+        active_wfn_indices = np.where(self.fanpt_container.fanci_objective.mask[:-1])[0]
         for c, active_index in zip(corrections, active_wfn_indices):
             wfn_params[active_index] += c
         self.new_wfn_params = wfn_params
@@ -329,8 +329,10 @@ class FANPTUpdater:
         new_ham = FANPTContainer.linear_comb_ham(
             self.fanpt_container.ham1, self.fanpt_container.ham0, self.final_l, 1 - self.final_l
         )
-        new_ham_op = pyci.sparse_op(new_ham, self.fanpt_container.fanci_wfn.wfn, self.fanpt_container.nproj)
-        new_ovlp_s = self.fanpt_container.fanci_wfn.compute_overlap(self.new_wfn_params, "S")
+        new_ham_op = pyci.sparse_op(
+            new_ham, self.fanpt_container.fanci_objective.wfn, self.fanpt_container.nproj, symmetric=False
+        )
+        new_ovlp_s = self.fanpt_container.fanci_objective.compute_overlap(self.new_wfn_params, "S")
         f = np.empty(self.fanpt_container.nproj, dtype=pyci.c_double)
         new_ham_op(new_ovlp_s, out=f)
         if self.fanpt_container.inorm:
