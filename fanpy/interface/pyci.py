@@ -7,6 +7,10 @@ from typing import Any
 INFO = 4
 NOTE = 3
 
+__all__ = [
+    "PYCI",
+]
+
 
 class PYCI:
 

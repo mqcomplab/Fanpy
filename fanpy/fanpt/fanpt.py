@@ -3,7 +3,9 @@
 import numpy as np
 import pyci
 
+import fanpy.interface.pyci
 from fanpy.fanpt.utils import update_fanci_objective, reduce_to_fock
+from fanpy.eqn.projected import ProjectedSchrodinger
 from fanpy.interface.fanci import ProjectedSchrodingerFanCI, ProjectedSchrodingerPyCI
 from fanpy.fanpt.containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
@@ -82,9 +84,19 @@ class FANPT:
         """
         return self._guess_params
 
+    @property
+    def energy_nuc(self):
+        """
+        Nuclear repulsion energy in Hartree.
+
+        """
+        return self._energy_nuc
+
     def __init__(
         self,
-        fanci_objective,
+        fanpy_objective,
+        energy_nuc,
+        legacy_fanci=True,
         guess_params=None,
         energy_active=True,
         resum=False,
@@ -101,8 +113,12 @@ class FANPT:
 
         Parameters
         ----------
-            fanci_objective : FanCI class
-                FanCI objective.
+            fanpy_objective : ProjectedSchrodinger
+                Projected Schrodinger Equation Fanpy objective.
+            energy_nuc : float
+                Nuclear repulsion energy in Hartree.
+            legacy_fanci : bool, optional
+                Select Legacy FanCI code as interface to PyCI. It will be removed in future. Defaults to True.
             guess_params : np.ndarray, optional
                 Initial guess for wave function parameters.
             energy_active : bool, optional
@@ -129,10 +145,14 @@ class FANPT:
                 Additional keyword arguments for self.fanpt_container_class class. Defaults to {}.
 
         """
-        if not isinstance(fanci_objective, (ProjectedSchrodingerFanCI, ProjectedSchrodingerPyCI)):
-            raise TypeError("fanci_objective must be a FanCI wavefunction")
+        if not isinstance(fanpy_objective, ProjectedSchrodinger):
+            raise TypeError("fanpy_objective must be a Fanpy objective.")
         if kwargs is None:
             kwargs = {}
+
+        # Convert ProjectedSchrodinger to PyCI objective interface
+        fanci_interface = fanpy.interface.pyci.PYCI(fanpy_objective, energy_nuc, legacy_fanci=legacy_fanci)
+        fanci_objective = fanci_interface.objective
 
         # Check for normalization constraint in FANCI wfn
         # Assumes intermediate normalization relative to ref_sd only
@@ -181,6 +201,7 @@ class FANPT:
         self._nactive = fanci_objective.nactive
         self._inorm = inorm
         self._norm_det = norm_det
+        self._energy_nuc = energy_nuc
 
         # Assign attributes to instance
         self._fanci_objective = fanci_objective
