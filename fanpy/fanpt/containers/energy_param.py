@@ -93,8 +93,6 @@ class FANPTContainerEParam(FANPTContainer):
     -------
     __init__(self, fanci_objective, params, ham0, ham1, l=0, ref_sd=0)
         Initialize the FANPT container.
-    linear_comb_ham(ham1, ham0, a1, a0)
-        Return a linear combination of two PyCI Hamiltonians.
     der_g_lambda(self)
         Derivative of the FANPT equations with respect to the lambda parameter.
     der2_g_lambda_wfnparams(self)

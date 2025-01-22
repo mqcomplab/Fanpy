@@ -7,6 +7,7 @@ import numpy as np
 
 import pyci
 
+from fanpy.fanpt.utils import linear_comb_ham
 from fanpy.fanpt.containers.base import FANPTContainer
 from fanpy.fanpt.containers.constant_terms import FANPTConstantTerms
 
@@ -326,9 +327,7 @@ class FANPTUpdater:
         -----
         This E satisfies the 2n + 1 rule.
         """
-        new_ham = FANPTContainer.linear_comb_ham(
-            self.fanpt_container.ham1, self.fanpt_container.ham0, self.final_l, 1 - self.final_l
-        )
+        new_ham = linear_comb_ham(self.fanpt_container.ham1, self.fanpt_container.ham0, self.final_l, 1 - self.final_l)
         new_ham_op = pyci.sparse_op(
             new_ham, self.fanpt_container.fanci_objective.wfn, self.fanpt_container.nproj, symmetric=False
         )
