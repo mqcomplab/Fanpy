@@ -120,6 +120,14 @@ class ProjectedSchrodingerPyCI(FanCI):
         """
         return self._nactive
 
+    @property
+    def mask(self) -> np.ndarray:
+        """
+        Frozen parameter mask.
+
+        """
+        return self._mask_view
+
     def freeze_parameter(self, *params: Sequence[int]) -> None:
         """
         Set a FanCI parameter to be frozen during optimization.
@@ -228,6 +236,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         self._nocc = nocc
         self._fill = fill
         self._mask = mask
+        self._mask_view = mask[...]
         self._nactive = mask.sum()
         self._seniority = seniority
         self._step_print = step_print
@@ -238,6 +247,9 @@ class ProjectedSchrodingerPyCI(FanCI):
         self._max_memory = max_memory
 
         self.print_queue = {}
+
+        # Set read-only flag on public array attributes
+        self._mask_view.setflags(write=False)
 
         # Define constraints
         if constraints is None and norm_det is None:
