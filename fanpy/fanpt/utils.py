@@ -61,7 +61,7 @@ def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
         energy_nuc,
         norm_det=norm_det,
         max_memory=fanci_objective.max_memory,
-        legacy=legacy_fanci,
+        legacy_fanci=legacy_fanci,
     )
 
     return fanci_interface.objective
