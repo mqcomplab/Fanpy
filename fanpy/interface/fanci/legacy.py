@@ -534,7 +534,7 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
         f_proj -= ovlp_proj
 
         # Compute constraint functions
-        for i, constraint in enumerate(self.constraints.values()):
+        for i, constraint in enumerate(self._constraints.values()):
             f_cons[i] = constraint[0](x)
 
         # Return objective
@@ -606,7 +606,7 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
             jac_col -= d_ovlp_proj
 
         # Compute Jacobian of constraint functions
-        for i, constraint in enumerate(self.constraints.values()):
+        for i, constraint in enumerate(self._constraints.values()):
             jac_cons[i] = constraint[1](x)
 
         # Return Jacobian
