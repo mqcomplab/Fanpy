@@ -1,7 +1,7 @@
 r"""Base class that contains the elements required to perform a FANPT calculation."""
 
 from abc import ABCMeta, abstractmethod
-from fanpy.fanpt.fanpt import update_fanci_objective, linear_comb_ham
+from fanpy.fanpt.utils import update_fanci_objective, linear_comb_ham
 
 import pyci
 
