@@ -3,6 +3,7 @@
 import numpy as np
 import pyci
 
+from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.interface.fanci import ProjectedSchrodingerFanCI, ProjectedSchrodingerPyCI
 from fanpy.fanpt.containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
@@ -236,12 +237,13 @@ class FANPT:
         # Solve FANPT equations
         for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
             fanpt_container = self.fanpt_container_class(
-                fanci_objective=self.fanci_objective,  # TODO: Check this
+                fanci_objective=self.fanci_objective,
                 params=guess_params,
                 ham0=self.ham0,
                 ham1=self.ham1,
                 l=l,
                 inorm=self.inorm,
+                norm_det=self.norm_det,
                 ref_sd=self.ref_sd,
                 **self.kwargs,
             )
@@ -265,10 +267,7 @@ class FANPT:
             print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - guess_params[-1])))
 
             # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
-            ham = fanpt_container.linear_comb_ham(self.ham1, self.ham0, final_l, 1 - final_l)
-
-            # Initialize fanci wfn with the perturbed Hamiltonian.
-            self._fanci_objective = self.update_fanci_objective(ham, self.fanci_objective)
+            self._fanci_objective = update_fanci_objective(fanpt_updater.ham, self.fanci_objective, self.norm_det)
 
             # Solve the fanci problem with fanpt_params as initial guess.
             # Take the params given by fanci and use them as initial params in the
@@ -283,40 +282,69 @@ class FANPT:
 
         return results
 
-    def update_fanci_objective(self, new_ham, fanci_objective):
 
-        # Get the class of the fanci_objective
-        fanpy_objective_class = fanci_objective.fanpy_objective.__class__
+def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
 
-        # Create new Fanpy objective
-        new_fanpy_objective = fanpy_objective_class(
-            new_ham,
-            fanci_objective._fanpy_wfn,
-            param_selection=fanci_objective.param_selection,
-            optimize_orbitals=fanci_objective.optimize_orbitals,
-            step_print=fanci_objective.step_print,
-            step_save=fanci_objective.step_save,
-            tmpfile=fanci_objective.tmpfile,
-            pspace=fanci_objective.pspace,
-            refwfn=fanci_objective.refwfn,
-            eqn_weights=fanci_objective.eqn_weights,
-            energy_type=fanci_objective.energy_type,
-            energy=fanci_objective.energy,
-            constraints=fanci_objective.constraints,
-        )
+    # Get the class of the fanci_objective
+    fanpy_objective_class = fanci_objective.fanpy_objective.__class__
 
-        # Build FanCI objective as PyCI interface
-        from fanpy.interface.pyci import PYCI
+    if isinstance(new_ham, pyci.hamiltonian):
+        new_ham = RestrictedMolecularHamiltonian(new_ham.one_mo, new_ham.two_mo)
 
-        fanci_interface = PYCI(
-            new_fanpy_objective,
-            fanci_objective.energy_nuc,
-            norm_det=self.norm_det,
-            max_memory=fanci_objective.max_memory,
-            legacy=fanci_objective.legacy_fanci,
-        )
+    # Create new Fanpy objective
+    new_fanpy_objective = fanpy_objective_class(
+        fanci_objective.fanpy_wfn,
+        new_ham,
+        param_selection=fanci_objective.param_selection,
+        optimize_orbitals=fanci_objective.fanpy_objective.optimize_orbitals,
+        step_print=fanci_objective.step_print,
+        step_save=fanci_objective.step_save,
+        tmpfile=fanci_objective.tmpfile,
+        pspace=fanci_objective.pspace,
+        refwfn=fanci_objective.fanpy_objective.refwfn,
+        eqn_weights=fanci_objective.fanpy_objective.eqn_weights,
+        energy_type=fanci_objective.fanpy_objective.energy_type,
+        energy=fanci_objective.fanpy_objective.energy,
+        constraints=fanci_objective.constraints,
+    )
 
-        return fanci_interface.objective
+    # Build FanCI objective as PyCI interface
+    from fanpy.interface.pyci import PYCI
+
+    fanci_interface = PYCI(
+        new_fanpy_objective,
+        fanci_objective.energy_nuc,
+        norm_det=norm_det,
+        max_memory=fanci_objective.max_memory,
+        legacy=fanci_objective.legacy_fanci,
+    )
+
+    return fanci_interface.objective
+
+
+def linear_comb_ham(ham1, ham0, a1, a0):
+    r"""Return a linear combination of two PyCI Hamiltonians as a Fanpy Hamiltonian.
+
+    Parameters
+    ----------
+    ham1 : pyci.hamiltonian
+        PyCI Hamiltonian of the real system.
+    ham0 : pyci.hamiltonian
+        PyCI Hamiltonian of the ideal system.
+    a1 : float
+        Coefficient of the real Hamiltonian.
+    a0 : float
+        Coefficient of the ideal Hamiltonian.
+
+    Returns
+    -------
+    pyci.hamiltonian
+    """
+    ecore = a1 * ham1.ecore + a0 * ham0.ecore
+    one_mo = a1 * ham1.one_mo + a0 * ham0.one_mo
+    two_mo = a1 * ham1.two_mo + a0 * ham0.two_mo
+
+    return pyci.hamiltonian(ecore, one_mo, two_mo)
 
 
 def reduce_to_fock(two_int, lambda_val=0):

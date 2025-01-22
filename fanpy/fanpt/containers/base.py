@@ -1,7 +1,7 @@
 r"""Base class that contains the elements required to perform a FANPT calculation."""
 
 from abc import ABCMeta, abstractmethod
-
+from fanpy.fanpt.fanpt import update_fanci_objective, linear_comb_ham
 import pyci
 
 
@@ -108,6 +108,7 @@ class FANPTContainer(metaclass=ABCMeta):
         l=0,
         ref_sd=0,
         inorm=False,
+        norm_det=None,
         ham_ci_op=None,
         f_pot_ci_op=None,
         ovlp_s=None,
@@ -130,6 +131,8 @@ class FANPTContainer(metaclass=ABCMeta):
         ref_sd : int
             Index of the Slater determinant used to impose intermediate normalization.
             <n[ref_sd]|Psi(l)> = 1.
+        norm_det : (?)
+            TODO: Add description.
         ham_ci_op : {pyci.sparse_op, None}
             PyCI sparse operator of the perturbed Hamiltonian.
         f_pot_ci_op : {pyci.sparse_op, None}
@@ -145,6 +148,7 @@ class FANPTContainer(metaclass=ABCMeta):
         self.energy = params[-1]
         self.active_energy = fanci_objective.mask[-1]
         self.inorm = inorm
+        self.norm_det = norm_det
 
         # Assign ideal and real Hamiltonians.
         self.ham1 = ham1
@@ -157,19 +161,22 @@ class FANPTContainer(metaclass=ABCMeta):
         self.fanci_objective = fanci_objective
 
         # Build the perturbed Hamiltonian.
-        self.ham = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, self.l, 1 - self.l)
+        self.ham = linear_comb_ham(self.ham1, self.ham0, self.l, 1 - self.l)
 
         # Construct the perturbed Hamiltonian and fluctuation potential sparse operators.
         if ham_ci_op:
             self.ham_ci_op = ham_ci_op
         else:
             self.ham_ci_op = pyci.sparse_op(
-                self.ham, self.fanci_objective.wfn, self.fanci_objective.nproj, symmetric=False
+                self.ham,
+                self.fanci_objective.wfn,
+                self.fanci_objective.nproj,
+                symmetric=False,
             )
         if f_pot_ci_op:
             self.f_pot_ci_op = f_pot_ci_op
         else:
-            self.f_pot = FANPTContainer.linear_comb_ham(self.ham1, self.ham0, 1.0, -1.0)
+            self.f_pot = linear_comb_ham(self.ham1, self.ham0, 1.0, -1.0)
             self.f_pot_ci_op = pyci.sparse_op(
                 self.f_pot, self.fanci_objective.wfn, self.fanci_objective.nproj, symmetric=False
             )
@@ -184,7 +191,7 @@ class FANPTContainer(metaclass=ABCMeta):
             self.d_ovlp_s = self.fanci_objective.compute_overlap_deriv(self.wfn_params, "S")
 
         # Update Hamilonian in the fanci_objective.
-        self.fanci_objective._ham = self.ham
+        self.fanci_objective = update_fanci_objective(self.ham, self.fanci_objective, self.norm_det)
 
         # Assign ref_sd.
         if self.inorm:
@@ -201,30 +208,6 @@ class FANPTContainer(metaclass=ABCMeta):
         self.der_g_lambda()
         self.der2_g_lambda_wfnparams()
         self.gen_coeff_matrix()
-
-    @staticmethod
-    def linear_comb_ham(ham1, ham0, a1, a0):
-        r"""Return a linear combination of two PyCI Hamiltonians.
-
-        Parameters
-        ----------
-        ham1 : pyci.hamiltonian
-            PyCI Hamiltonian of the real system.
-        ham0 : pyci.hamiltonian
-            PyCI Hamiltonian of the ideal system.
-        a1 : float
-            Coefficient of the real Hamiltonian.
-        a0 : float
-            Coefficient of the ideal Hamiltonian.
-
-        Returns
-        -------
-        pyci.hamiltonian
-        """
-        ecore = a1 * ham1.ecore + a0 * ham0.ecore
-        one_mo = a1 * ham1.one_mo + a0 * ham0.one_mo
-        two_mo = a1 * ham1.two_mo + a0 * ham0.two_mo
-        return pyci.hamiltonian(ecore, one_mo, two_mo)
 
     @property
     def nactive(self):
