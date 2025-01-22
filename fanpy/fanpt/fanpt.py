@@ -93,6 +93,7 @@ class FANPT:
         lambda_i=0.0,
         lambda_f=1.0,
         steps=1,
+        step_print=False,
         **kwargs,
     ):
         """
@@ -122,6 +123,8 @@ class FANPT:
                 Lambda value up to which the FANPT calculation will be performed. Defaults to 1.0.
             steps (int, optional): int, optional
                 Solve FANPT in n stepts between lambda_i and lambda_f. Defaults to 1.
+            step_print : bool
+                Option to print relevant information when the objective is evaluated.
             kwargs (dict, optional):
                 Additional keyword arguments for self.fanpt_container_class class. Defaults to {}.
 
@@ -195,6 +198,7 @@ class FANPT:
         self.lambda_i = lambda_i
         self.lambda_f = lambda_f
         self.steps = steps
+        self.step_print = step_print
         self.kwargs = kwargs
 
     def optimize(

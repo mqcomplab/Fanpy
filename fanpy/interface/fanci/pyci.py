@@ -228,6 +228,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         self._nocc = nocc
         self._fill = fill
         self._mask = mask
+        self._nactive = mask.sum()
         self._seniority = seniority
         self._step_print = step_print
         self._step_save = step_save
@@ -278,9 +279,9 @@ class ProjectedSchrodingerPyCI(FanCI):
         if isinstance(occs_array, np.ndarray):
             pass
         elif occs_array == "P":
-            occs_array = self._pspace
+            occs_array = self.pspace
         elif occs_array == "S":
-            occs_array = self._sspace
+            occs_array = self.sspace
         else:
             raise ValueError("invalid `occs_array` argument")
 
@@ -295,7 +296,7 @@ class ProjectedSchrodingerPyCI(FanCI):
                 if occs.dtype == bool:
                     occs = np.where(occs)[0]
                 sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
+                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
                 sds.append(sd)
         else:
             for i, occs in enumerate(occs_array):
@@ -314,11 +315,11 @@ class ProjectedSchrodingerPyCI(FanCI):
         y = np.zeros(occs_array.shape[0], dtype=pyci.c_double)
 
         # Compute overlaps of occupation vectors
-        if hasattr(self._fanpy_wfn, "get_overlaps"):
-            y += self._fanpy_wfn.get_overlaps(sds)
+        if hasattr(self.fanpy_wfn, "get_overlaps"):
+            y += self.fanpy_wfn.get_overlaps(sds)
         else:
             for i, sd in enumerate(sds):
-                y[i] = self._fanpy_wfn.get_overlap(sd)
+                y[i] = self.fanpy_wfn.get_overlap(sd)
         return y
 
     def compute_overlap_deriv(self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[0, -1]) -> np.ndarray:
@@ -345,9 +346,9 @@ class ProjectedSchrodingerPyCI(FanCI):
         if isinstance(occs_array, np.ndarray):
             pass
         elif occs_array == "P":
-            occs_array = self._pspace
+            occs_array = self.pspace
         elif occs_array == "S":
-            occs_array = self._sspace
+            occs_array = self.sspace
         else:
             raise ValueError("invalid `occs_array` argument")
 
@@ -362,7 +363,7 @@ class ProjectedSchrodingerPyCI(FanCI):
                 if occs.dtype == bool:
                     occs = np.where(occs)[0]
                 sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self._fanpy_wfn.nspatial))
+                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
                 sds.append(sd)
         else:
             for i, occs in enumerate(occs_array):
@@ -383,7 +384,7 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         # Shape of y is (no. determinants, no. active parameters excluding energy)
         y = np.zeros(
-            (occs_array.shape[0], self._nactive - self._mask[-1]),
+            (occs_array.shape[0], self.nactive - self.mask[-1]),
             dtype=pyci.c_double,
         )
 
@@ -391,23 +392,23 @@ class ProjectedSchrodingerPyCI(FanCI):
         y = y[s_chunk:f_chunk]
 
         # Compute derivatives of overlaps
-        deriv_indices = self.param_selection[self._fanpy_wfn]
-        deriv_indices = np.arange(self.nparam - 1)[self._mask[:-1]]
+        deriv_indices = self.param_selection[self.fanpy_wfn]
+        deriv_indices = np.arange(self.nparam - 1)[self.mask[:-1]]
 
-        if isinstance(self._fanpy_wfn, ProductWavefunction):
-            wfns = self._fanpy_wfn.wfns
+        if isinstance(self.fanpy_wfn, ProductWavefunction):
+            wfns = self.fanpy_wfn.wfns
             for wfn in wfns:
                 if wfn not in self.param_selection:
                     continue
                 inds_component = self.param_selection[wfn]
                 if inds_component.size > 0:
                     inds_objective = self.indices_objective_params[wfn]
-                    y[:, inds_objective] = self._fanpy_wfn.get_overlaps(sds, (wfn, inds_component))
-        elif hasattr(self._fanpy_wfn, "get_overlaps"):
-            y += self._fanpy_wfn.get_overlaps(sds, deriv=deriv_indices)
+                    y[:, inds_objective] = self.fanpy_wfn.get_overlaps(sds, (wfn, inds_component))
+        elif hasattr(self.fanpy_wfn, "get_overlaps"):
+            y += self.fanpy_wfn.get_overlaps(sds, deriv=deriv_indices)
         else:
             for i, sd in enumerate(sds):
-                y[i] = self._fanpy_wfn.get_overlap(sd, deriv=deriv_indices)
+                y[i] = self.fanpy_wfn.get_overlap(sd, deriv=deriv_indices)
 
         return y
 
@@ -431,8 +432,8 @@ class ProjectedSchrodingerPyCI(FanCI):
         if self.objective_type == "projected":
             output = super().compute_objective(x)
             self.print_queue["Electronic Energy"] = x[-1]
-            self.print_queue["Cost"] = np.sum(output[: self._nproj] ** 2)
-            self.print_queue["Cost from constraints"] = np.sum(output[self._nproj :] ** 2)
+            self.print_queue["Cost"] = np.sum(output[: self.nproj] ** 2)
+            self.print_queue["Cost from constraints"] = np.sum(output[self.nproj :] ** 2)
             if self.step_print:
                 print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
                 print("(Mid Optimization) Cost: {}".format(self.print_queue["Cost"]))
@@ -443,7 +444,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         else:
             # NOTE: ignores energy and constraints
             # Allocate objective vector
-            output = np.zeros(self._nproj, dtype=pyci.c_double)
+            output = np.zeros(self.nproj, dtype=pyci.c_double)
 
             # Compute overlaps of determinants in sspace:
             #
@@ -456,9 +457,9 @@ class ProjectedSchrodingerPyCI(FanCI):
             #   f_n = (\sum_n <\Psi|n> <n|H|\Psi>) / \sum_n <\Psi|n> <n|\Psi>
             #
             # Note: we update ovlp in-place here
-            self._ci_op(ovlp, out=output)
-            output = np.sum(output * ovlp[: self._nproj])
-            output /= np.sum(ovlp[: self._nproj] ** 2)
+            self.ci_op(ovlp, out=output)
+            output = np.sum(output * ovlp[: self.nproj])
+            output /= np.sum(ovlp[: self.nproj] ** 2)
             self.print_queue["Electronic Energy"] = output
             if self.step_print:
                 print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
@@ -493,8 +494,8 @@ class ProjectedSchrodingerPyCI(FanCI):
         else:
             # NOTE: ignores energy and constraints
             # Allocate Jacobian matrix (in transpose memory order)
-            output = np.zeros((self._nproj, self._nactive), order="F", dtype=pyci.c_double)
-            integrals = np.zeros(self._nproj, dtype=pyci.c_double)
+            output = np.zeros((self.nproj, self.nactive), order="F", dtype=pyci.c_double)
+            integrals = np.zeros(self.nproj, dtype=pyci.c_double)
 
             # Compute Jacobian:
             #
@@ -515,9 +516,9 @@ class ProjectedSchrodingerPyCI(FanCI):
             #   d(c_m)/d(p_k)
             #
             overlaps = self.compute_overlap(x[:-1], "S")
-            norm = np.sum(overlaps[: self._nproj] ** 2)
-            self._ci_op(overlaps, out=integrals)
-            energy_integral = np.sum(overlaps[: self._nproj] * integrals)
+            norm = np.sum(overlaps[: self.nproj] ** 2)
+            self.ci_op(overlaps, out=integrals)
+            energy_integral = np.sum(overlaps[: self.nproj] * integrals)
 
             d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
 
@@ -531,11 +532,11 @@ class ProjectedSchrodingerPyCI(FanCI):
                 #   E d(<n|\Psi>)/d(p_k) = E \delta_{nk} d(c_n)/d(p_k)
                 #
                 # Note: we update d_ovlp in-place here
-                self._ci_op(d_ovlp_col, out=output_col)
-                output_col *= overlaps[: self._nproj]
-                output_col += d_ovlp_col[: self._nproj] * integrals
+                self.ci_op(d_ovlp_col, out=output_col)
+                output_col *= overlaps[: self.nproj]
+                output_col += d_ovlp_col[: self.nproj] * integrals
                 output_col *= norm
-                output_col -= 2 * energy_integral * overlaps[: self._nproj] * d_ovlp_col[: self._nproj]
+                output_col -= 2 * energy_integral * overlaps[: self.nproj] * d_ovlp_col[: self.nproj]
                 output_col /= norm**2
             output = np.sum(output, axis=0)
             self.print_queue["Norm of the gradient of the energy"] = np.linalg.norm(output)
@@ -631,7 +632,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             Constraint gradient d(<\psi_{i}|\Psi>)/d(p_{k}).
 
             """
-            y = np.zeros(self._nactive, dtype=pyci.c_double)
+            y = np.zeros(self.nactive, dtype=pyci.c_double)
             ovlp = self.compute_overlap(x[:-1], "S")
 
             chunks = self.calculate_overlap_deriv_chunks()
@@ -641,7 +642,7 @@ class ProjectedSchrodingerPyCI(FanCI):
                 d_ovlp_chunk = self.compute_overlap_deriv(x[:-1], "S", [s_chunk, f_chunk])
 
                 # Compute the partial contribution to y
-                y[: self._nactive - self._mask[-1]] += np.einsum(
+                y[: self.nactive - self.mask[-1]] += np.einsum(
                     "i,ij->j", 2 * ovlp[s_chunk:f_chunk], d_ovlp_chunk, optimize="greedy"
                 )
 
@@ -677,10 +678,10 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         """
         # Check if system is underdetermined
-        if self.nequation < self._nactive:
+        if self.nequation < self.nactive:
             print(
                 "WARNING: System is underdetermined with dimensions {:}, {:}. Continuing anyways".format(
-                    self.nequation, self._nactive
+                    self.nequation, self.nactive
                 )
             )
 
@@ -691,7 +692,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             raise ValueError("length of `x0` does not match `param`")
 
         # Prepare objective, Jacobian, x0
-        if self._nactive < self.nparam:
+        if self.nactive < self.nparam:
             # Generate objective, Jacobian, x0 with frozen parameters
             x_ref = np.copy(x0)
             f = self.mask_function(self.compute_objective, x_ref)
@@ -714,14 +715,14 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("xtol", 1.0e-8)
             opt_kwargs.setdefault("ftol", 1.0e-8)
             opt_kwargs.setdefault("gtol", 1.0e-8)
-            opt_kwargs.setdefault("max_nfev", 1000 * self._nactive)
+            opt_kwargs.setdefault("max_nfev", 1000 * self.nactive)
             opt_kwargs.setdefault("verbose", 2)
             # self.step_print = False
             # opt_kwargs.setdefault("callback", self.print)
             if self.objective_type != "projected":
                 raise ValueError("objective_type must be projected")
         elif mode == "root":
-            if self.nequation != self._nactive:
+            if self.nequation != self.nactive:
                 raise ValueError("'root' does not work with over-determined system")
             optimizer = root
             opt_kwargs.setdefault("method", "hybr")
@@ -801,15 +802,15 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         """
         # Get wave function information
-        ham = self._ham
-        nproj = self._nproj
-        nparam = self._nparam
-        nbasis = self._wfn.nbasis
-        nocc_up = self._wfn.nocc_up
-        nocc_dn = self._wfn.nocc_dn
-        constraints = self._constraints
-        mask = self._mask
-        ci_cls = self._wfn.__class__
+        ham = self.ham
+        nproj = self.nproj
+        nparam = self.nparam
+        nbasis = self.wfn.nbasis
+        nocc_up = self.wfn.nocc_up
+        nocc_dn = self.wfn.nocc_dn
+        constraints = self.constraints
+        mask = self.mask
+        ci_cls = self.wfn.__class__
         # Start at sample 1
         isamp = 1
         result = []
@@ -841,11 +842,11 @@ class ProjectedSchrodingerPyCI(FanCI):
             if isamp >= nsamp:
                 return result
             # Try to get the garbage collector to remove the old CI matrix
-            del self._ci_op
-            self._ci_op = None
+            del self.ci_op
+            self.ci_op = None
             # Make new FanCI wave function in-place
             self.__init__(
-                self._fanpy_wfn,
+                self.fanpy_wfn,
                 ham,
                 # Generate new determinants from "S" space via alias method
                 wfn=ci_cls(
@@ -882,15 +883,15 @@ class ProjectedSchrodingerPyCI(FanCI):
 
     def calculate_overlap_deriv_chunks(self):
 
-        tensor_mem = self._nactive * 8 / 1e6
+        tensor_mem = self.nactive * 8 / 1e6
         avail_mem = (self.max_memory - current_memory()) * 0.9
 
         chunk_size = max(1, math.floor(avail_mem / tensor_mem))
-        chunk_size = min(chunk_size, self._nactive)
+        chunk_size = min(chunk_size, self.nactive)
 
         chunks_list = []
-        for s_chunk in range(0, self._nactive, chunk_size):
-            f_chunk = min(self._nactive, s_chunk + chunk_size)
+        for s_chunk in range(0, self.nactive, chunk_size):
+            f_chunk = min(self.nactive, s_chunk + chunk_size)
             chunks_list.append([s_chunk, f_chunk])
 
         return chunks_list
