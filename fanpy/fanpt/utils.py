@@ -1,19 +1,40 @@
 """ FANPT wrapper"""
 
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
-
+from fanpy.interface.fanci import ProjectedSchrodingerPyCI
 import numpy as np
 import pyci
 
 
 def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
+    """Update the FanCI objective with a new Hamiltonian.
 
-    # Get the class of the fanci_objective
+    Parameters
+    ----------
+    new_ham : pyci.hamiltonian or RestrictedMolecularHamiltonian
+        New Hamiltonian to be used.
+    fanci_objective : ProjectedSchrodingerPyCI
+        Existing FanCI objective to be updated.
+    norm_det : float, optional
+        Normalization determinant.
+
+    Returns
+    -------
+    ProjectedSchrodingerPyCI
+        Updated FanCI objective.
+    """
+    # Get the class of the Fanpy objective
     fanpy_objective_class = fanci_objective.fanpy_objective.__class__
 
+    # Determine if the legacy FanCI interface is used
+    legacy_fanci = isinstance(fanci_objective, ProjectedSchrodingerPyCI)
+
+    # Convert new_ham to RestrictedMolecularHamiltonian if necessary
     if isinstance(new_ham, pyci.hamiltonian):
         energy_nuc = new_ham.ecore
         new_ham = RestrictedMolecularHamiltonian(new_ham.one_mo, new_ham.two_mo)
+    else:
+        energy_nuc = 0
 
     # Create new Fanpy objective
     new_fanpy_objective = fanpy_objective_class(
@@ -40,7 +61,7 @@ def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
         energy_nuc,
         norm_det=norm_det,
         max_memory=fanci_objective.max_memory,
-        legacy=fanci_objective.legacy_fanci,
+        legacy=legacy_fanci,
     )
 
     return fanci_interface.objective
