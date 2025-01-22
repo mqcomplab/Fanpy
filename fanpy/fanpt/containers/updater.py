@@ -339,6 +339,7 @@ class FANPTUpdater:
         else:
             energy = f[self.fanpt_container.ref_sd] / new_ovlp_s[self.fanpt_container.ref_sd]
         self.new_energy = energy
+        self.new_ham = new_ham
         self.new_ham_op = new_ham_op
         self.new_ovlp_s = new_ovlp_s
 

@@ -12,6 +12,7 @@ def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
     fanpy_objective_class = fanci_objective.fanpy_objective.__class__
 
     if isinstance(new_ham, pyci.hamiltonian):
+        energy_nuc = new_ham.ecore
         new_ham = RestrictedMolecularHamiltonian(new_ham.one_mo, new_ham.two_mo)
 
     # Create new Fanpy objective
@@ -23,12 +24,12 @@ def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
         step_print=fanci_objective.step_print,
         step_save=fanci_objective.step_save,
         tmpfile=fanci_objective.tmpfile,
-        pspace=fanci_objective.pspace,
+        pspace=fanci_objective.fanpy_objective.pspace,
         refwfn=fanci_objective.fanpy_objective.refwfn,
         eqn_weights=fanci_objective.fanpy_objective.eqn_weights,
         energy_type=fanci_objective.fanpy_objective.energy_type,
-        energy=fanci_objective.fanpy_objective.energy,
-        constraints=fanci_objective.constraints,
+        energy=fanci_objective.fanpy_objective.energy.params,
+        constraints=fanci_objective.fanpy_objective.constraints,
     )
 
     # Build FanCI objective as PyCI interface
@@ -36,7 +37,7 @@ def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
 
     fanci_interface = PYCI(
         new_fanpy_objective,
-        fanci_objective.energy_nuc,
+        energy_nuc,
         norm_det=norm_det,
         max_memory=fanci_objective.max_memory,
         legacy=fanci_objective.legacy_fanci,

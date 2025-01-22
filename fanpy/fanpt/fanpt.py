@@ -267,7 +267,7 @@ class FANPT:
             print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - guess_params[-1])))
 
             # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
-            self._fanci_objective = update_fanci_objective(fanpt_updater.ham, self.fanci_objective, self.norm_det)
+            self._fanci_objective = update_fanci_objective(fanpt_updater.new_ham, self.fanci_objective, self.norm_det)
 
             # Solve the fanci problem with fanpt_params as initial guess.
             # Take the params given by fanci and use them as initial params in the
