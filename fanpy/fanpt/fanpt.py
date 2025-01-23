@@ -277,6 +277,14 @@ class FANPT:
         lambda_f = lambda_f or self.lambda_f
         steps = steps or self.steps
 
+        # Initialize FanCI objective with Hamiltonian of ideal system
+        print(f"Solving FanPT problem using the ideal Hamiltonian")
+        self._fanci_objective = update_fanci_objective(self.ham0, self.fanci_objective, self.norm_det)
+
+        # Get initial guess for parameters at initial lambda value.
+        results = self.fanci_objective.optimize(guess_params, **solver_kwargs)
+        guess_params[self.fanci_objective.mask] = results.x
+
         # Solve FANPT equations
         for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
             fanpt_container = self.fanpt_container_class(
