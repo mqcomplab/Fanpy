@@ -17,6 +17,7 @@ import math
 
 import pyci
 from pyci.fanci import FanCI
+
 import cma
 import numpy as np
 from scipy.optimize import OptimizeResult, least_squares, root, minimize
@@ -729,8 +730,8 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("gtol", 1.0e-8)
             opt_kwargs.setdefault("max_nfev", 1000 * self.nactive)
             opt_kwargs.setdefault("verbose", 2)
-            # self.step_print = False
-            # opt_kwargs.setdefault("callback", self.print)
+            self.step_print = False
+            opt_kwargs.setdefault("callback", self.print)
             if self.objective_type != "projected":
                 raise ValueError("objective_type must be projected")
         elif mode == "root":

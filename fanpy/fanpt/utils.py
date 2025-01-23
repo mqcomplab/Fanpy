@@ -9,8 +9,8 @@ import pyci
 def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
     """Update the FanCI objective with a new Hamiltonian.
 
-    Parameters
-    ----------
+    Arguments
+    ---------
     new_ham : pyci.hamiltonian or RestrictedMolecularHamiltonian
         New Hamiltonian to be used.
     fanci_objective : ProjectedSchrodingerPyCI
@@ -70,8 +70,8 @@ def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
 def linear_comb_ham(ham1, ham0, a1, a0):
     r"""Return a linear combination of two PyCI Hamiltonians as a Fanpy Hamiltonian.
 
-    Parameters
-    ----------
+    Arguments
+    ---------
     ham1 : pyci.hamiltonian
         PyCI Hamiltonian of the real system.
     ham0 : pyci.hamiltonian
@@ -95,7 +95,7 @@ def linear_comb_ham(ham1, ham0, a1, a0):
 def reduce_to_fock(two_int, lambda_val=0):
     """Reduce given two electron integrals to that of the correspoding Fock operator.
 
-    Parameters
+    Artguments
     ----------
     two_int : np.ndarray(K, K, K, K)
         Two electron integrals of restricted orbitals.

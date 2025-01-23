@@ -120,7 +120,7 @@ class FANPTContainer(metaclass=ABCMeta):
         Parameters
         ----------
         fanci_objective : FanCI instance
-            FanCI wavefunction.
+            FanCI wavefunction built using legacy FanCI code or PyCI code.
         params : np.ndarray
             Wavefunction parameters and energy at for the given lambda value.
         ham0 : pyci.hamiltonian
@@ -132,8 +132,8 @@ class FANPTContainer(metaclass=ABCMeta):
         ref_sd : int
             Index of the Slater determinant used to impose intermediate normalization.
             <n[ref_sd]|Psi(l)> = 1.
-        norm_det : (?)
-            TODO: Add description.
+        norm_det : {np.ndarray, None}
+            Normalization of the determinants.
         ham_ci_op : {pyci.sparse_op, None}
             PyCI sparse operator of the perturbed Hamiltonian.
         f_pot_ci_op : {pyci.sparse_op, None}

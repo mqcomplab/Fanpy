@@ -67,7 +67,7 @@ class PYCI:
         self.verbose = verbose
 
         # Obtain required data from Fanpy objective object
-        info("Importing Fanpy ProjectedSchrodinger object...")
+        note("Importing Fanpy ProjectedSchrodinger object...")
 
         if not isinstance(fanpy_objective, ProjectedSchrodinger):
             raise TypeError("Invalid object: Objective object from Fanpy not found.")

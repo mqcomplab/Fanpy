@@ -6,7 +6,6 @@ import pyci
 import fanpy.interface.pyci
 from fanpy.fanpt.utils import update_fanci_objective, reduce_to_fock
 from fanpy.eqn.projected import ProjectedSchrodinger
-from fanpy.interface.fanci import ProjectedSchrodingerFanCI, ProjectedSchrodingerPyCI
 from fanpy.fanpt.containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
 
@@ -111,8 +110,8 @@ class FANPT:
         """
         Initialize the FANPT problem class.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
             fanpy_objective : ProjectedSchrodinger
                 Projected Schrodinger Equation Fanpy objective.
             energy_nuc : float
@@ -237,6 +236,29 @@ class FANPT:
         """
         Solve the FANPT equations.
 
+        Arguments
+        ---------
+            guess_params : np.ndarray, optional
+                Initial guess for wave function parameters.
+            energy_active : bool, optional
+                It determines which FANPT method is used.
+                Defaults to True, which uses FANPTContainerEParam method.
+            resum : bool, optional
+                Indicates if we will solve the FANPT equations by re-summing the series.
+                Defaults to False.
+            ref_sd : int, optional
+                Index of the Slater determinant used to impose intermediate normalization.
+            final_order : int, optional
+                Final order of the FANPT calculation. Defaults to 1.
+            lambda_i : float, optional
+                Initial lambda value for the solution of the FANPT equations. Defaults to 0.0.
+            lambda_f : float, optional
+                Lambda value up to which the FANPT calculation will be performed. Defaults to 1.0.
+            steps (int, optional): int, optional
+                Solve FANPT in n stepts between lambda_i and lambda_f. Defaults to 1.
+            solver_kwargs (dict, optional)
+                Additional keyword arguments for the solver.
+
         Returns
         -------
             params: np.ndarray
@@ -254,10 +276,6 @@ class FANPT:
         lambda_i = lambda_i or self.lambda_i
         lambda_f = lambda_f or self.lambda_f
         steps = steps or self.steps
-
-        # Get initial guess for parameters at initial lambda value.
-        results = self.fanci_objective.optimize(guess_params, **solver_kwargs)
-        guess_params[self.fanci_objective.mask] = results.x
 
         # Solve FANPT equations
         for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
@@ -295,8 +313,7 @@ class FANPT:
             self._fanci_objective = update_fanci_objective(fanpt_updater.new_ham, self.fanci_objective, self.norm_det)
 
             # Solve the fanci problem with fanpt_params as initial guess.
-            # Take the params given by fanci and use them as initial params in the
-            # fanpt calculation for the next lambda.
+            # Take the params given by fanci and use them as initial params in the FANPT calculation for the next lambda.
             results = self.fanci_objective.optimize(fanpt_params, **solver_kwargs)
 
             fanpt_params[self.fanci_objective.mask] = results.x
