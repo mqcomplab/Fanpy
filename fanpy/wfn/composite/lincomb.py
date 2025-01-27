@@ -1,4 +1,5 @@
 """Linear combination of different wavefunctions."""
+
 import os
 
 from fanpy.wfn.base import BaseWavefunction
@@ -201,8 +202,7 @@ class LinearCombinationWavefunction(BaseWavefunction):
                 )
             if any(wfn.memory != self.memory for wfn in wfns):
                 raise ValueError(
-                    "Given wavefunction does not have the same memory as the "
-                    "instantiated NonorthWavefunction."
+                    "Given wavefunction does not have the same memory as the " "instantiated NonorthWavefunction."
                 )
             if len(wfns) == 1:
                 raise ValueError("Only one wavefunction is given.")
@@ -278,8 +278,7 @@ class LinearCombinationWavefunction(BaseWavefunction):
                 )
             if deriv[0] == self and (np.any(deriv[1] < 0) or np.any(deriv[1] >= self.nparams)):
                 raise ValueError(
-                    "Provided indices must be greater than or equal to zero and less than the "
-                    "number of parameters."
+                    "Provided indices must be greater than or equal to zero and less than the " "number of parameters."
                 )
 
         wfn, indices = deriv

@@ -275,6 +275,40 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
         self._sspace.setflags(write=False)
         self._mask_view.setflags(write=False)
 
+    def make_norm_constraint(self):
+        def f(x: np.ndarray) -> float:
+            r""" "
+            Constraint function <\psi_{i}|\Psi> - v_{i}.
+
+            """
+            norm = np.sum(self.compute_overlap(x[:-1], "S") ** 2)
+            if self.step_print:
+                print(f"(Mid Optimization) Norm of wavefunction: {norm}")
+            return norm - 1
+
+        def dfdx(x: np.ndarray) -> np.ndarray:
+            r""" "
+            Constraint gradient d(<\psi_{i}|\Psi>)/d(p_{k}).
+
+            """
+            y = np.zeros(self._nactive, dtype=pyci.c_double)
+            ovlp = self.compute_overlap(x[:-1], "S")
+
+            chunks = self.calculate_overlap_deriv_chunks()
+            for s_chunk, f_chunk in chunks:
+
+                # Compute overlap derivative for the current chunk
+                d_ovlp_chunk = self.compute_overlap_deriv(x[:-1], "S", [s_chunk, f_chunk])
+
+                # Compute the partial contribution to y
+                y[: self._nactive - self._mask[-1]] += np.einsum(
+                    'i,ij->j', 2 * ovlp[s_chunk:f_chunk], d_ovlp_chunk, optimize='greedy'
+                )
+
+            return y
+
+        return f, dfdx
+
     def optimize(self, x0: np.ndarray, mode: str = "lstsq", use_jac: bool = False, **kwargs: Any) -> OptimizeResult:
         """
         Optimize the wave function parameters.

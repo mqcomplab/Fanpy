@@ -1,4 +1,5 @@
 """Parent class of CI wavefunctions."""
+
 import itertools
 
 from fanpy.tools import slater
@@ -288,14 +289,9 @@ class CIWavefunction(BaseWavefunction):
                     )
                 if isinstance(self.spin, float) and slater.get_spin(sd, self.nspatial) != self.spin:
                     raise ValueError(
-                        "Slater determinant, {0}, does not have the correct spin, {1}".format(
-                            bin(sd), self.spin
-                        )
+                        "Slater determinant, {0}, does not have the correct spin, {1}".format(bin(sd), self.spin)
                     )
-                if (
-                    isinstance(self.seniority, int)
-                    and slater.get_seniority(sd, self.nspatial) != self.seniority
-                ):
+                if isinstance(self.seniority, int) and slater.get_seniority(sd, self.nspatial) != self.seniority:
                     raise ValueError(
                         "Slater determinant, {0}, does not have the correct seniority, {1}".format(
                             bin(sd), self.seniority

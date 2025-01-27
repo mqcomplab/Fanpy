@@ -9,9 +9,6 @@ print_geminal_ops_indices(wfn, nprint, threshold) : {BaseGeminal, int, float}
 
 """
 
-from fanpy.tools import slater
-import numpy as np
-
 
 def print_geminal_ops(wfn, max_print=None, threshold=1e-8):
     """
@@ -27,6 +24,9 @@ def print_geminal_ops(wfn, max_print=None, threshold=1e-8):
     threshold : float, optional
         Only print determinants with |param| greater than this value.
     """
+    from fanpy.tools import slater
+    import numpy as np
+
     n_spatial_orbitals = wfn.nspatial
     n_spin_orbitals = wfn.nspin
     orbital_pairs = list(wfn.dict_orbpair_ind.keys())
@@ -106,6 +106,8 @@ def print_geminal_ops_indices(wfn, max_print=None, threshold=1e-8):
         Only print determinants with |param| greater than this value.
 
     """
+    from fanpy.tools import slater
+
     n_spatial_orbitals = wfn.nspatial
     orbital_pairs = list(wfn.dict_orbpair_ind.keys())
     geminal_params = wfn.params

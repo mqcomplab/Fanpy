@@ -1,28 +1,21 @@
 """Parent class of CI wavefunctions."""
-import itertools
-
 from fanpy.tools import slater
-from fanpy.tools.sd_list import sd_list
 from fanpy.wfn.ci.fci import FCI
-from fanpy.wfn.ci.base import CIWavefunction 
 
 import numpy as np
 
 class NonlinearWavefunction(FCI):
 
-
-
-
     def assign_params(self, params=None, add_noise=False):
 
         if params is None:
-            params = np.zeros(self.nspin) 
+            params = np.zeros(self.nspin)
             ground_state = slater.ground(self.nelec, self.nspin)
             occs = slater.occ_indices(ground_state)
             params[occs] = 4
         else:
             if params.shape != (self.nspin, ):
-                raise ValueError('The number of the parameters must be equal to the number of spin orbitals.')  
+                raise ValueError('The number of the parameters must be equal to the number of spin orbitals.')
         #super().assign_params(params=params, add_noise=add_noise)
 
 
@@ -64,13 +57,13 @@ class NonlinearWavefunction(FCI):
         TypeError
             If Slater determinant is not an integer.
 
-        """ 
+        """
         occ_indx = slater.occ_indices(sd)
         sd_params = np.array(self.params[occ_indx])
-        if sd_params.size == 
+        if sd_params.size ==
         tanh_sd_params = np.tanh(sd_params)
         output = np.prod(tanh_sd_params)
-        
+
 
 
 

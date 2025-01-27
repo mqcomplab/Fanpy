@@ -1,4 +1,5 @@
 """CI Pairs Wavefunction."""
+
 from fanpy.tools import slater
 from fanpy.tools.sd_list import sd_list
 from fanpy.wfn.ci.doci import DOCI
@@ -128,9 +129,7 @@ class CIPairs(DOCI):
         ci_params = self.params / self.params[ref_sd_ind]
 
         # create AP1roG
-        ap1rog = AP1roG(
-            self.nelec, self.nspin, ngem=None, orbpairs=None, ref_sd=ref_sd, params=None
-        )
+        ap1rog = AP1roG(self.nelec, self.nspin, ngem=None, orbpairs=None, ref_sd=ref_sd, params=None)
         # fill empty geminal coefficient
         gem_coeffs = np.zeros(ap1rog.params.shape)
         for occ_ind in slater.occ_indices(spatial_ref_sd):

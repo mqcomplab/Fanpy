@@ -1,4 +1,5 @@
 """Base Hamiltonian for unrestricted orbitals."""
+
 from fanpy.ham.base import BaseHamiltonian
 
 import numpy as np
@@ -117,13 +118,8 @@ class BaseUnrestrictedHamiltonian(BaseHamiltonian):
                     "arrays (with dtype float/complex)."
                 )
             if not all(i.ndim == 2 and i.shape[0] == i.shape[1] for i in one_int):
-                raise ValueError(
-                    "Each block of one-electron integrals be a (two-dimensional) square " "matrix."
-                )
-            if not all(
-                i.ndim == 4 and i.shape[0] == i.shape[1] == i.shape[2] == i.shape[3]
-                for i in two_int
-            ):
+                raise ValueError("Each block of one-electron integrals be a (two-dimensional) square " "matrix.")
+            if not all(i.ndim == 4 and i.shape[0] == i.shape[1] == i.shape[2] == i.shape[3] for i in two_int):
                 raise ValueError(
                     "Each block of two-electron integrals must have four-dimensional "
                     "tensor with equal number rows in each axis."
@@ -133,9 +129,7 @@ class BaseUnrestrictedHamiltonian(BaseHamiltonian):
             if not two_int[0].shape == two_int[1].shape == two_int[2].shape:
                 raise ValueError("Each block of two-electron integrals must have the same shape.")
             if one_int[0].shape[0] != two_int[0].shape[0]:
-                raise ValueError(
-                    "One- and two-electron integrals must have the same number of " "orbitals."
-                )
+                raise ValueError("One- and two-electron integrals must have the same number of " "orbitals.")
 
         self.one_int = tuple(one_int)
         self.two_int = tuple(two_int)
@@ -175,15 +169,11 @@ class BaseUnrestrictedHamiltonian(BaseHamiltonian):
             if jacobi_indices[0] == jacobi_indices[1]:
                 raise ValueError("Indices must be different.")
             if not (0 <= jacobi_indices[0] < self.nspin and 0 <= jacobi_indices[1] < self.nspin):
-                raise ValueError(
-                    "Indices must be greater than or equal to 0 and less than the number "
-                    "of rows."
-                )
+                raise ValueError("Indices must be greater than or equal to 0 and less than the number " "of rows.")
             if jacobi_indices[0] // num_orbs != jacobi_indices[1] // num_orbs:
                 raise ValueError("Indices must select from orbitals of same spin.")
             if not (
-                isinstance(theta, float)
-                or (isinstance(theta, np.ndarray) and theta.dtype == float and theta.size == 1)
+                isinstance(theta, float) or (isinstance(theta, np.ndarray) and theta.dtype == float and theta.size == 1)
             ):
                 raise TypeError("Angle `theta` must be a float or numpy array of one float.")
 
@@ -310,13 +300,8 @@ class BaseUnrestrictedHamiltonian(BaseHamiltonian):
                     "Transformation matrix must be given as a numpy array or as list/tuple "
                     "of two two-dimensional numpy arrays."
                 )
-            if not (
-                matrix[0].shape[0] == self.one_int[0].shape[0]
-                and matrix[1].shape[0] == self.one_int[1].shape[0]
-            ):
-                raise ValueError(
-                    "Shape of the transformation matrix must match with the shape of the integrals."
-                )
+            if not (matrix[0].shape[0] == self.one_int[0].shape[0] and matrix[1].shape[0] == self.one_int[1].shape[0]):
+                raise ValueError("Shape of the transformation matrix must match with the shape of the integrals.")
         # NOTE: don't need to check that matrix matches up with two_int b/c one_int and two_int have
         #       the same number of rows/columns
 

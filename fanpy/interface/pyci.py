@@ -22,7 +22,7 @@ class PYCI:
         norm_param=None,
         constraints=None,
         max_memory=8192,
-        legacy_fanci=True,
+        legacy_fanci=False,
         verbose=4,
         **kwargs: Any,
     ):

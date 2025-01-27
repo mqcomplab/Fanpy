@@ -8,8 +8,6 @@ print_determinants_indices(wavefunction, max_print, threshold) : {CIWavefunction
     Print Slater determinants from a wavefunction as lists of occupied MO indices.
 """
 
-from fanpy.tools import slater
-
 
 def print_determinants(wfn, max_print=None, threshold=1e-8):
     """Print Slater determinants from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
@@ -24,6 +22,8 @@ def print_determinants(wfn, max_print=None, threshold=1e-8):
         Only print determinants with |param| greater than this value.
 
     """
+    from fanpy.tools import slater
+
     n_spatial_orbitals = wfn.nspatial
     slater_determinants = wfn.sds
     ci_params = wfn.params
@@ -73,6 +73,8 @@ def print_determinants_indices(wfn, max_print=None, threshold=1e-8):
         Only print determinants with |param| greater than this value.
 
     """
+    from fanpy.tools import slater
+
     n_spatial_orbitals = wfn.nspatial
     slater_determinants = wfn.sds
     ci_params = wfn.params

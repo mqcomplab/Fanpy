@@ -1,4 +1,5 @@
 """Antisymmeterized Product of Interacting Geminals (APIG) wavefunction."""
+
 from fanpy.tools.slater import sign_perm
 from fanpy.wfn.geminal.base import BaseGeminal
 

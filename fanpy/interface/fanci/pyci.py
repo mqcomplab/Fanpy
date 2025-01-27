@@ -731,7 +731,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("max_nfev", 1000 * self.nactive)
             opt_kwargs.setdefault("verbose", 2)
             self._step_print = False
-            opt_kwargs.setdefault("callback", self.print)
+            # opt_kwargs.setdefault("callback", self.print)
             if self.objective_type != "projected":
                 raise ValueError("objective_type must be projected")
         elif mode == "root":

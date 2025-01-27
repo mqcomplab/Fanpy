@@ -1,4 +1,5 @@
 """Schrodinger equation as a least-squares problem."""
+
 from fanpy.eqn.projected import ProjectedSchrodinger
 
 import numpy as np
@@ -179,7 +180,7 @@ class LeastSquaresEquations(ProjectedSchrodinger):
         # patch back
         LeastSquaresEquations.num_eqns = orig_num_eqns
 
-        return np.sum(system_eqns ** 2)
+        return np.sum(system_eqns**2)
 
     def gradient(self, params):
         r"""Gradient of the projected Schrodinger equation as sum of squared resduals.

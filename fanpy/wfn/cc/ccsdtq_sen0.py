@@ -1,4 +1,5 @@
 """Coupled Cluster SDT with seniority 0 Quadruples."""
+
 from itertools import combinations
 from fanpy.tools import slater
 from fanpy.wfn.cc.ccsd_sen0 import CCSDsen0
@@ -102,6 +103,7 @@ class CCSDTQsen0(CCSDsen0):
         to the given indices to be created.
 
     """
+
     def assign_ranks(self, ranks=None):
         """Assign the ranks of the excitation operators.
 
@@ -118,9 +120,9 @@ class CCSDTQsen0(CCSDsen0):
 
         """
         if ranks is not None:
-            raise ValueError('Only the default, rank = [1, 2, 3, 4], is allowed')
+            raise ValueError("Only the default, rank = [1, 2, 3, 4], is allowed")
         if self.nelec <= 3:
-            raise ValueError('Only wavefunctions with more than 3 electrons can be considered')
+            raise ValueError("Only wavefunctions with more than 3 electrons can be considered")
         self.ranks = [1, 2, 3, 4]
 
     def assign_exops(self, indices=None):
@@ -148,8 +150,10 @@ class CCSDTQsen0(CCSDsen0):
 
         """
         if indices is not None:
-            raise TypeError('Only the excitation operators constructed by default from '
-                            'the given reference Slater determinant are allowed')
+            raise TypeError(
+                "Only the excitation operators constructed by default from "
+                "the given reference Slater determinant are allowed"
+            )
         else:
             exops = {}
             counter = 0
@@ -168,15 +172,21 @@ class CCSDTQsen0(CCSDsen0):
                         counter += 1
 
             # Seniority 0 quadruples
-            for occ_alpha1 in ex_from[:len(ex_from) // 2]:
-                for occ_alpha2 in ex_from[ex_from.index(occ_alpha1) + 1:len(ex_from) // 2]:
-                    for virt_alpha1 in ex_to[:len(ex_to) // 2]:
+            for occ_alpha1 in ex_from[: len(ex_from) // 2]:
+                for occ_alpha2 in ex_from[ex_from.index(occ_alpha1) + 1 : len(ex_from) // 2]:
+                    for virt_alpha1 in ex_to[: len(ex_to) // 2]:
                         # FIXME: don't use index?
-                        for virt_alpha2 in ex_to[ex_to.index(virt_alpha1) + 1:len(ex_to) // 2]:
-                            exop = [occ_alpha1, occ_alpha1 + self.nspatial,
-                                    occ_alpha2, occ_alpha2 + self.nspatial,
-                                    virt_alpha1, virt_alpha1 + self.nspatial,
-                                    virt_alpha2, virt_alpha2 + self.nspatial]
+                        for virt_alpha2 in ex_to[ex_to.index(virt_alpha1) + 1 : len(ex_to) // 2]:
+                            exop = [
+                                occ_alpha1,
+                                occ_alpha1 + self.nspatial,
+                                occ_alpha2,
+                                occ_alpha2 + self.nspatial,
+                                virt_alpha1,
+                                virt_alpha1 + self.nspatial,
+                                virt_alpha2,
+                                virt_alpha2 + self.nspatial,
+                            ]
                             exops[tuple(exop)] = counter
                             counter += 1
             self.exops = exops

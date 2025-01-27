@@ -1,4 +1,5 @@
 """Hamiltonian that will be used to make the Schrodinger equation."""
+
 import abc
 import itertools as it
 
@@ -81,9 +82,7 @@ class BaseHamiltonian:
         raise NotImplementedError
 
     # FIXME: need to speed up
-    def integrate_sd_wfn(
-        self, sd, wfn, wfn_deriv=None, ham_deriv=None, orders=(1, 2), components=False
-    ):
+    def integrate_sd_wfn(self, sd, wfn, wfn_deriv=None, ham_deriv=None, orders=(1, 2), components=False):
         r"""Integrate the Hamiltonian with against a wavefunction and Slater determinant.
 
         .. math::
@@ -143,11 +142,7 @@ class BaseHamiltonian:
                     "parameters, but not both."
                 )
             if ham_deriv is not None:
-                if not (
-                    isinstance(ham_deriv, np.ndarray)
-                    and ham_deriv.ndim == 1
-                    and ham_deriv.dtype == int
-                ):
+                if not (isinstance(ham_deriv, np.ndarray) and ham_deriv.ndim == 1 and ham_deriv.dtype == int):
                     raise TypeError(
                         "Derivative indices for the Hamiltonian parameters must be given as a "
                         "one-dimensional numpy array of integers."
@@ -169,9 +164,7 @@ class BaseHamiltonian:
                 for creators in it.combinations(vir_indices, order):
                     sd_m = slater.excite(sd, *annihilators, *creators)
                     coeff = wfn.get_overlap(sd_m, deriv=wfn_deriv)
-                    integral += coeff * self.integrate_sd_sd(
-                        sd, sd_m, deriv=ham_deriv, components=components
-                    )
+                    integral += coeff * self.integrate_sd_sd(sd, sd_m, deriv=ham_deriv, components=components)
 
         return integral
 

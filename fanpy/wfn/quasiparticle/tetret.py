@@ -1,4 +1,5 @@
 """Antisymmeterized Product of Tetrets Wavefunctions."""
+
 from fanpy.tools.graphs import generate_unordered_partition
 from fanpy.wfn.quasiparticle.base import BaseQuasiparticle
 
@@ -130,9 +131,7 @@ class AntisymmeterizedProductTetrets(BaseQuasiparticle):
             nquasiparticle = self.nelec // 4
         super().assign_nquasiparticle(nquasiparticle)
         if __debug__ and self.nquasiparticle * 4 != self.nelec:
-            raise ValueError(
-                "Number of quasiparticles must be exactly N/4 where N is the number of electrons"
-            )
+            raise ValueError("Number of quasiparticles must be exactly N/4 where N is the number of electrons")
 
     # TODO: do we need to make sure that all orbitals indices are included by the subsets?
     # NOTE: what happens if the given subsets cannot be usd to build the given Slater determinant?
