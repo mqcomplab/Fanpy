@@ -223,17 +223,17 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
 
         # Generate mask (True for active parameter, False for frozen parameter)
         if mask is None:
-            mask = np.ones(nparam, dtype=np.bool)
+            mask = np.ones(nparam, dtype=np.bool_)
         else:
             mask = np.array(mask)
-            if mask.dtype == np.bool:
+            if mask.dtype == np.bool_:
                 # Check length of boolean mask
                 if mask.size != nparam:
                     raise ValueError(f"Mask size is {mask.size}; must have size `nparam={nparam}`")
             else:
                 # Convert integer mask to boolean
                 ints = mask
-                mask = np.ones(nparam, dtype=np.bool)
+                mask = np.ones(nparam, dtype=np.bool_)
                 mask[ints] = 0
 
         # Number of nonlinear equations and active parameters
@@ -302,7 +302,7 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
 
                 # Compute the partial contribution to y
                 y[: self._nactive - self._mask[-1]] += np.einsum(
-                    'i,ij->j', 2 * ovlp[s_chunk:f_chunk], d_ovlp_chunk, optimize='greedy'
+                    "i,ij->j", 2 * ovlp[s_chunk:f_chunk], d_ovlp_chunk, optimize="greedy"
                 )
 
             return y
