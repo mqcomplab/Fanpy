@@ -107,6 +107,7 @@ def print_geminal_ops_indices(wfn, max_print=None, threshold=1e-8):
 
     """
     from fanpy.tools import slater
+    import numpy as np
 
     n_spatial_orbitals = wfn.nspatial
     orbital_pairs = list(wfn.dict_orbpair_ind.keys())
