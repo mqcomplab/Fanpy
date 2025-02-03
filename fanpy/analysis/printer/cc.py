@@ -2,16 +2,17 @@ r"""Collection of functions to print Slater determinants and related features.
 
 Functions
 ---------
-print_excitation_operators(wavefunction, max_print, threshold) : {BaseCC, int, float}
-    Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
+print_excitation_operators_as_determinants(wavefunction, max_print, threshold) : {BaseCC, int, float}
+    Print Coupled-Cluster Amplitudes from a wavefunction as lists of analogue Slater determinants, using occupied (1) and unoccupied (0) MOs.
 print_excitation_operators_indices(wavefunction, max_print, threshold) : {BaseCC, int, float}
     Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied MO indices.
 """
 
 
-def print_excitation_operators(wfn, max_print=None, threshold=1e-8):
+def print_excitation_operators_as_determinants(wfn, max_print=None, threshold=1e-8):
     """
-    Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied (1) and unoccupied (0) MOs.
+    Print Coupled-Cluster Amplitudes from a wavefunction as lists of  of analogue Slater determinants.
+    Occupied and unoccupied MOs are denote by 1 and 0, respectively.
     Creation and annihilation operators are represented by (+) and (-).
 
     Parameters
@@ -26,7 +27,7 @@ def print_excitation_operators(wfn, max_print=None, threshold=1e-8):
     n_spatial = wfn.nspatial
     n_spin = wfn.nspin
     excitation_ops = wfn.exops.keys()
-    ci_params = wfn.params
+    cc_params = wfn.params
 
     # Create a list of binary values (0 or 1) representing the reference wavefunction, reversed
     ref_wavefunction_str = list(format(wfn.refwfn, f"0{n_spin}b")[::-1])
@@ -35,7 +36,7 @@ def print_excitation_operators(wfn, max_print=None, threshold=1e-8):
     excitation_ops_str = []
 
     # Modify the reference wavefunction string for each excitation operator
-    for ex_op, param in zip(excitation_ops, ci_params):
+    for ex_op, param in zip(excitation_ops, cc_params):
         temp_wavefunction = ref_wavefunction_str.copy()  # Copy reference wavefunction
         for index in ex_op:
             # Change to '-' if occupied, '+' if unoccupied
@@ -63,7 +64,7 @@ def print_excitation_operators(wfn, max_print=None, threshold=1e-8):
         excitation_ops_str = excitation_ops_str[:max_print]
 
     # Print header
-    print("\n> Coupled-Cluster Amplitudes represented by MO indices\n")
+    print("\n> Coupled-Cluster Amplitudes represented by MO indices of excited Slater Determinants\n")
     print(f"{'Alpha':<{n_spatial}}  |  {'Beta':<{n_spatial}}  |  CC Parameter")
     print("-" * (n_spatial * 2 + 23))
 
@@ -93,7 +94,7 @@ def print_excitation_operators_indices(wfn, max_print=None, threshold=1e-8):
 
     n_spatial = wfn.nspatial
     excitation_ops = wfn.exops.keys()
-    ci_params = wfn.params
+    cc_params = wfn.params
 
     # Occupied reference indices (for both alpha and beta spins)
     occupied_ref_indices = np.concatenate(
@@ -105,7 +106,7 @@ def print_excitation_operators_indices(wfn, max_print=None, threshold=1e-8):
 
     # Create list of strings for alpha and beta spin indices (annihilation and creation operators)
     excitation_ops_str = []
-    for ex_op, param in zip(excitation_ops, ci_params):
+    for ex_op, param in zip(excitation_ops, cc_params):
         alpha_occupied = [str(x) for x in ex_op if x < n_spatial and x in occupied_ref_indices]
         beta_occupied = [str(x - n_spatial) for x in ex_op if x >= n_spatial and x in occupied_ref_indices]
         alpha_virtual = [str(x) for x in ex_op if x < n_spatial and x not in occupied_ref_indices]
