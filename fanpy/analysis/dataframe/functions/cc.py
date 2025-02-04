@@ -8,6 +8,8 @@ add_wfn_to_dataframe(df, wfn, label=None): {DataFrame, BaseCC, str}
     Add column to dataframe containing Slater determinants and CC parameters.
 concatenate_dataframes(*dfs): {DataFrames}
     Concatenate multiple CI dataframes in a single dataframe.
+convert_operators_to_determinants(df, wfn): {DataFrame, BaseCC}
+    Convert DataFrame index from operator indices to the respective excited Slater determinants.
 """
 
 
@@ -22,9 +24,9 @@ def create_dataframe_from(wfn, label=None):
         Column label for CC parameters in the DataFrame. If None, defaults to the wavefunction class name.
 
     Returns
-        -------
-        pd.DataFrame
-            DataFrame containing the Slater determinants and associated CC parameters.
+    -------
+    pd.DataFrame
+        DataFrame containing the Slater determinants and associated CC parameters.
     """
     import pandas as pd
 

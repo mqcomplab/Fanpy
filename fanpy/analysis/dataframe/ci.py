@@ -1,88 +1,102 @@
-r"""Collection of functions to process Slater determinants data and related features.
-
-Functions
----------
-create_dataframe_from(wavefunction, label=None) : {CIWavefunction, str}
-    Create a DataFrame containing Slater determinants and CI parameters from a given wavefunction.
-add_wfn_to_dataframe(df, wfn, label=None): {DataFrame, CIWavefunction, str}
-    Add column to dataframe containing Slater determinants and CI parameters.
-concatenate_dataframes(*dfs): {DataFrames}
-    Concatenate multiple CI dataframes in a single dataframe.
-"""
+from fanpy.analysis.dataframe.base import DataFrameFanpy
+from fanpy.wfn.ci.base import CIWavefunction
+from pandas import Series
 
 
-def create_dataframe_from(wfn, label=None):
-    """Create a dataframe containing Slater determinants and CI parameters based on a reference wavefunction.
+class DataFrameCI(DataFrameFanpy):
+    def __init__(self, wfn, wfn_label=None):
 
-    Parameters
-    ----------
-    wfn : CIWavefunction
-        Wavefunction object containing Slater determinants and CI coefficients.
-    label : str, optional
-        Column label for CI parameters in the DataFrame. If None, defaults to the wavefunction class name.
+        # Check if the given wavefunction object is valid
+        if not isinstance(wfn, CIWavefunction):
+            raise TypeError("Given wavefunction is not an instance of BaseWavefunction (or its child).")
 
-    Returns
-        -------
-        pd.DataFrame
-            DataFrame containing the Slater determinants and associated CI parameters.
-    """
-    import pandas as pd
+        # Extract Slater determinants and CI parameters from wavefunction
+        wfn_index = wfn.sds
+        wfn_params = wfn.params
 
-    # Extract Slater determinants and CI parameters from wavefunction
-    sds = wfn.sds
-    params = wfn.params
+        # Store Slater determinants and wavefunction data as attributes
+        self.wfn_nspatial = wfn.nspatial
+        self._index_view = "sds"
 
-    # Set default label if not provided
-    label = label or wfn.__class__.__name__
+        # Set default label if not provided
+        wfn_label = wfn_label or wfn.__class__.__name__
 
-    # Construct DataFrame
-    df = pd.DataFrame({label: params}, index=sds)
+        super().__init__(wfn_label, wfn_params, wfn_index)
 
-    return df
+    @property
+    def index_view(self):
+        """Return a flag cointaing the format of the DataFrame index."""
 
+        return self._index_view
 
-def add_wfn_to_dataframe(df, wfn, label=None):
-    """Add column to dataframe containing Slater determinants and CI parameters.
+    def add_wfn_to_dataframe(self, wfn, wfn_label=None):
+        """Add column to dataframe containing Slater determinants and CI parameters.
 
-    Parameters
-    ----------
-    df: DataFrame
-        DataFrame containg previously extracted CIWavefunction data.
-    wfn : CIWavefunction
-        Wavefunction object containing Slater determinants and CI coefficients.
-    label : str, optional
-        Column label for CI parameters in the DataFrame. If None, defaults to the wavefunction class name.
-    """
-    import pandas as pd
+        Parameters
+        ----------
+        wfn : CIWavefunction
+            Wavefunction object containing Slater determinants and CI coefficients.
+        wfn_label : str, optional
+            Column label for CI parameters in the DataFrame. If None, defaults to the wavefunction class name.
+        """
 
-    # Extract Slater determinants and CI parameters from wavefunction
-    sds = wfn.sds
-    params = wfn.params
+        # Extract Slater determinants and CI parameters from wavefunction
+        wfn_index = wfn.sds
+        wfn_params = wfn.params
 
-    # Set default label if not provided
-    label = label or wfn.__class__.__name__
+        # Set default label if not provided
+        wfn_label = wfn_label or wfn.__class__.__name__
 
-    # Check if the label already exists in the DataFrame and warn the user
-    if label in df.columns:
-        print(f"Column '{label}' already exists in the DataFrame. It will be overwritten.")
+        # Check if the label already exists in the DataFrame and warn the user
+        if wfn_label in self.columns:
+            print(f"Column '{wfn_label}' already exists in the DataFrame. It will be overwritten.")
 
-    # Create a Series mapping Slater determinants to their parameters
-    param_series = pd.Series(params, index=sds)
+        # Create a Series mapping Slater determinants to their parameters
+        param_series = Series(wfn_params, index=wfn_index)
 
-    # Map parameters to existing Slater determinants in the DataFrame
-    df[label] = param_series.reindex(df.index)
+        # Expand the index first
+        self.update_dataframe(self.reindex(self.index.union(param_series.index)))
 
+        # Add the new column while ensuring alignment
+        self.dataframe[wfn_label] = param_series.reindex(self.index)
 
-def concatenate_dataframes(*dfs):
-    """Concatenate multiple CI dataframes in a single dataframe.
+    def set_formatted_sds_as_index(self):
+        """Convert DataFrame index to the human-readable format of occupied (1) and unoccupied (0) MOs."""
 
-    Parameters
-    ----------
-    dfs: DataFrame
-        Multiple DataFrames containg previously extracted CIWavefunction data.
-    """
-    import pandas as pd
+        from fanpy.tools import slater
 
-    df = pd.concat(dfs, axis=1)
+        if self.index_view == "sds":
+            sds_index = self.index
 
-    return df
+            formatted_sds = [
+                " ".join(
+                    [
+                        format(slater.split_spin(sd, self.wfn_nspatial)[0], f"0{self.wfn_nspatial}b")[::-1],
+                        format(slater.split_spin(sd, self.wfn_nspatial)[1], f"0{self.wfn_nspatial}b")[::-1],
+                    ]
+                )
+                for sd in sds_index
+            ]
+
+            # Update index notation of the DataFrame
+            self.dataframe.index = formatted_sds
+
+            # Update index_view flag
+            self._index_view = "formatted"
+
+    def set_sds_as_index(self):
+        """Convert DataFrame index to the default format of binary numbers which represents SDs in Fanpy convention."""
+
+        if self.index_view == "formatted":
+            formatted_sds = self.index
+
+            sds = [
+                int(sd_beta[::-1] + sd_alpha[::-1], 2)
+                for sd_alpha, sd_beta in (formatted_sd.split() for formatted_sd in formatted_sds)
+            ]
+
+            # Update index notation of the DataFrame
+            self.dataframe.index = sds
+
+            # Update index_view flag
+            self._index_view = "sds"
