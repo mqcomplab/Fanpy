@@ -16,7 +16,7 @@ class DataFrameCI(DataFrameFanpy):
 
         # Store Slater determinants and wavefunction data as attributes
         self.wfn_nspatial = wfn.nspatial
-        self._index_view = "sds"
+        self._index_view = "determinants"
 
         # Set default label if not provided
         wfn_label = wfn_label or wfn.__class__.__name__
@@ -65,7 +65,7 @@ class DataFrameCI(DataFrameFanpy):
 
         from fanpy.tools import slater
 
-        if self.index_view == "sds":
+        if self.index_view == "determinants":
             sds_index = self.index
 
             formatted_sds = [
@@ -82,12 +82,12 @@ class DataFrameCI(DataFrameFanpy):
             self.dataframe.index = formatted_sds
 
             # Update index_view flag
-            self._index_view = "formatted"
+            self._index_view = "formatted determinants"
 
     def set_sds_as_index(self):
         """Convert DataFrame index to the default format of binary numbers which represents SDs in Fanpy convention."""
 
-        if self.index_view == "formatted":
+        if self.index_view == "formatted determinants":
             formatted_sds = self.index
 
             sds = [
@@ -99,4 +99,4 @@ class DataFrameCI(DataFrameFanpy):
             self.dataframe.index = sds
 
             # Update index_view flag
-            self._index_view = "sds"
+            self._index_view = "determinants"
