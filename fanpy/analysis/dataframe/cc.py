@@ -81,7 +81,7 @@ class DataFrameCC(DataFrameFanpy):
             sds = []
 
             for operator in operators:
-                excitation_wfn = self.wfn_reference[:]
+                excitation_wfn = list(format(self.wfn_reference, f"0{2*self.wfn_nspatial}b")[::-1])
                 excitation_op = list(map(int, operator.split()))
 
                 for index in excitation_op:
@@ -145,7 +145,7 @@ class DataFrameCC(DataFrameFanpy):
     def set_operators_as_index(self):
         """Convert DataFrame index to coupled cluster operator indices."""
 
-        from fanpy.tools import occ_indices
+        from fanpy.tools import slater
 
         if self.index_view == "formatted determinants":
             self.set_sds_as_index()
@@ -153,7 +153,7 @@ class DataFrameCC(DataFrameFanpy):
         if self.index_view == "determinants":
             sds_index = self.index
 
-            operators = [occ_indices(self.wfn_reference ^ sd) for sd in sds_index]
+            operators = [" ".join(map(str, slater.occ_indices(self.wfn_reference ^ sd))) for sd in sds_index]
 
             # Update index notation of the DataFrame
             self.dataframe.index = operators
