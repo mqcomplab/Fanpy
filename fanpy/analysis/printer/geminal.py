@@ -25,7 +25,6 @@ def print_geminal_ops(wfn, max_print=None, threshold=1e-8):
         Only print determinants with |param| greater than this value.
     """
     from fanpy.tools import slater
-    import numpy as np
 
     n_spatial_orbitals = wfn.nspatial
     n_spin_orbitals = wfn.nspin
@@ -40,6 +39,10 @@ def print_geminal_ops(wfn, max_print=None, threshold=1e-8):
             slater.occ_indices(slater.split_spin(wfn.ref_sd, n_spatial_orbitals)[1]) + n_spatial_orbitals,  # Beta spin
         )
     )
+    occupied_indices = list(slater.occ_indices(slater.split_spin(wfn.ref_sd, n_spatial_orbitals)[0])) + list(
+        slater.occ_indices(slater.split_spin(wfn.ref_sd, n_spatial_orbitals)[1]) + n_spatial_orbitals
+    )
+
     paired_occupied_indices = [
         [occupied_indices[i], occupied_indices[i + len(occupied_indices) // 2]]
         for i in range(len(occupied_indices) // 2)
@@ -107,18 +110,14 @@ def print_geminal_ops_indices(wfn, max_print=None, threshold=1e-8):
 
     """
     from fanpy.tools import slater
-    import numpy as np
 
     n_spatial_orbitals = wfn.nspatial
     orbital_pairs = list(wfn.dict_orbpair_ind.keys())
     geminal_params = wfn.params
 
     # Occupied reference indices for both alpha and beta spins
-    occupied_indices = np.concatenate(
-        (
-            slater.occ_indices(slater.split_spin(wfn.ref_sd, n_spatial_orbitals)[0]),  # Alpha
-            slater.occ_indices(slater.split_spin(wfn.ref_sd, n_spatial_orbitals)[1]) + n_spatial_orbitals,  # Beta
-        )
+    occupied_indices = list(slater.occ_indices(slater.split_spin(wfn.ref_sd, n_spatial_orbitals)[0])) + list(
+        slater.occ_indices(slater.split_spin(wfn.ref_sd, n_spatial_orbitals)[1]) + n_spatial_orbitals
     )
     paired_occupied_indices = [
         [occupied_indices[i], occupied_indices[i + len(occupied_indices) // 2]]
