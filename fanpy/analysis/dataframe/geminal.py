@@ -1,6 +1,5 @@
 from fanpy.analysis.dataframe.base import DataFrameFanpy
 from fanpy.wfn.geminal.base import BaseGeminal
-from fanpy.wfn.geminal.apg import APG
 from pandas import Series, MultiIndex
 
 
