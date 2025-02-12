@@ -4,36 +4,69 @@ from pandas import Series
 
 
 class DataFrameCC(DataFrameFanpy):
-    def __init__(self, wfn, wfn_label=None):
+    def __init__(self, wfn=None, wfn_label=None):
 
-        # Check if the given wavefunction object is valid
-        if not isinstance(wfn, BaseCC):
-            raise TypeError("Given wavefunction is not an instance of BaseWavefunction (or its child).")
+        if wfn is None:
+            # Set default attributes
+            self.wfn_nspatial = None
+            self.wfn_reference = None
+            self._index_view = "operators"
 
-        # Extract excitation operators and CC parameters from wavefunction
-        wfn_excitation_ops = wfn.exops.keys()
-        wfn_params = wfn.params
+            super().__init__()
 
-        # Convert operators from tuple to strings
-        wfn_index = []
-        for excitation_op in wfn_excitation_ops:
-            wfn_index.append(" ".join(map(str, excitation_op)))
+        else:
+            # Check if the given wavefunction object is valid
+            if not isinstance(wfn, BaseCC):
+                raise TypeError("Given wavefunction is not an instance of BaseWavefunction (or its child).")
 
-        # Store excitation operators and wavefunction data as attributes
-        self.wfn_nspatial = wfn.nspatial
-        self.wfn_reference = wfn.refwfn
-        self._index_view = "operators"
+            # Extract excitation operators and CC parameters from wavefunction
+            wfn_excitation_ops = wfn.exops.keys()
+            wfn_params = wfn.params
 
-        # Set default label if not provided
-        wfn_label = wfn_label or wfn.__class__.__name__
+            # Convert operators from tuple to strings
+            wfn_index = []
+            for excitation_op in wfn_excitation_ops:
+                wfn_index.append(" ".join(map(str, excitation_op)))
 
-        super().__init__(wfn_label, wfn_params, wfn_index)
+            # Store excitation operators and wavefunction data as attributes
+            self.wfn_nspatial = wfn.nspatial
+            self.wfn_reference = wfn.refwfn
+            self._index_view = "operators"
+
+            # Set default label if not provided
+            wfn_label = wfn_label or wfn.__class__.__name__
+
+            super().__init__(wfn_label, wfn_params, wfn_index)
 
     @property
     def index_view(self):
         """Return a flag cointaing the format of the DataFrame index."""
 
         return self._index_view
+
+    def to_csv(self, filename):
+        """Import dataframe as a CSV file, including metadata as JSON file."""
+
+        # Prepare metadata
+        self.metadata = {
+            "wfn_nspatial": self.wfn_nspatial,
+            "wfn_reference": self.wfn_reference,
+            "index_view": self.index_view,
+        }
+
+        # Call to_csv function from parent class
+        DataFrameFanpy.to_csv(self, filename)
+
+    def read_csv(self, filename, **kwargs):
+        """Import dataframe from a CSV file and a metadata JSON files."""
+
+        # Call read_csv function from parent class
+        DataFrameFanpy.read_csv(self, filename, **kwargs)
+
+        # Import wavefunction information from metadata
+        self.wfn_nspatial = self.metadata["wfn_nspatial"]
+        self.wfn_reference = self.metadata["wfn_reference"]
+        self._index_view = self.metadata["index_view"]
 
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
         """Add column to dataframe containing excitation operators and CC parameters.

@@ -4,57 +4,92 @@ from pandas import Series, MultiIndex
 
 
 class DataFrameGeminal(DataFrameFanpy):
-    def __init__(self, wfn, wfn_label=None):
+    def __init__(self, wfn=None, wfn_label=None):
 
-        # Check if the given wavefunction object is valid
-        if not isinstance(wfn, BaseGeminal):
-            raise TypeError("Given wavefunction is not an instance of BaseWavefunction (or its child).")
+        if wfn is None:
+            # Set default attributes
+            self.wfn_nspatial = None
+            self.wfn_nspin = None
+            self._index_view = "geminals"
 
-        import numpy as np
-
-        # Extract excitation operators and Geminal parameters from wavefunction
-        wfn_orbital_pairs = list(wfn.dict_orbpair_ind.keys())
-        wfn_params = np.ravel(wfn.params)
-        wfn_ngem = wfn.ngem
-
-        # Store excitation operators and wavefunction data as attributes
-        self.wfn_nspatial = wfn.nspatial
-        self.wfn_nspin = wfn.nspin
-        self._index_view = "geminals"
-
-        if hasattr(wfn, "ref_sd"):
-            self.wfn_ref_sd = wfn.ref_sd
-        else:
-            self.wfn_ref_sd = None
-
-        # Convert operators from tuple to strings
-        wfn_pairs_str = []
-        for wfn_orbital_pair in wfn_orbital_pairs:
-            wfn_pairs_str.append(" ".join(map(str, wfn_orbital_pair)))
-
-        # Create representation of the Geminal wavefunction
-        if hasattr(wfn, "dict_reforbpair_ind"):
-            wfn_geminals = list(wfn.dict_reforbpair_ind.keys())
-
-            wfn_geminals_str = []
-            for wfn_geminal in wfn_geminals:
-                wfn_geminals_str.append(" ".join(map(str, wfn_geminal)))
+            super().__init__()
 
         else:
-            wfn_geminals_str = [i for i in range(wfn_ngem)]
+            # Check if the given wavefunction object is valid
+            if not isinstance(wfn, BaseGeminal):
+                raise TypeError("Given wavefunction is not an instance of BaseWavefunction (or its child).")
 
-        wfn_index = MultiIndex.from_product([wfn_geminals_str, wfn_pairs_str], names=["geminal", "pair"])
+            import numpy as np
 
-        # Set default label if not provided
-        wfn_label = wfn_label or wfn.__class__.__name__
+            # Extract excitation operators and Geminal parameters from wavefunction
+            wfn_orbital_pairs = list(wfn.dict_orbpair_ind.keys())
+            wfn_params = np.ravel(wfn.params)
+            wfn_ngem = wfn.ngem
 
-        super().__init__(wfn_label, wfn_params, wfn_index)
+            # Store excitation operators and wavefunction data as attributes
+            self.wfn_nspatial = wfn.nspatial
+            self.wfn_nspin = wfn.nspin
+            self._index_view = "geminals"
+
+            if hasattr(wfn, "ref_sd"):
+                self.wfn_ref_sd = wfn.ref_sd
+            else:
+                self.wfn_ref_sd = None
+
+            # Convert operators from tuple to strings
+            wfn_pairs_str = []
+            for wfn_orbital_pair in wfn_orbital_pairs:
+                wfn_pairs_str.append(" ".join(map(str, wfn_orbital_pair)))
+
+            # Create representation of the Geminal wavefunction
+            if hasattr(wfn, "dict_reforbpair_ind"):
+                wfn_geminals = list(wfn.dict_reforbpair_ind.keys())
+
+                wfn_geminals_str = []
+                for wfn_geminal in wfn_geminals:
+                    wfn_geminals_str.append(" ".join(map(str, wfn_geminal)))
+
+            else:
+                wfn_geminals_str = [i for i in range(wfn_ngem)]
+
+            wfn_index = MultiIndex.from_product([wfn_geminals_str, wfn_pairs_str], names=["geminal", "pair"])
+
+            # Set default label if not provided
+            wfn_label = wfn_label or wfn.__class__.__name__
+
+            super().__init__(wfn_label, wfn_params, wfn_index)
 
     @property
     def index_view(self):
         """Return a flag cointaing the format of the DataFrame index."""
 
         return self._index_view
+
+    def to_csv(self, filename):
+        """Import dataframe as a CSV file, including metadata as JSON file."""
+
+        # Prepare metadata
+        self.metadata = {
+            "wfn_nspatial": self.wfn_nspatial,
+            "wfn_nspin": self.wfn_nspin,
+            "wfn_ref_sd": self.wfn_ref_sd,
+            "index_view": self.index_view,
+        }
+
+        # Call to_csv function from parent class
+        DataFrameFanpy.to_csv(self, filename)
+
+    def read_csv(self, filename, **kwargs):
+        """Import dataframe from a CSV file and a metadata JSON files."""
+
+        # Call read_csv function from parent class
+        DataFrameFanpy.read_csv(self, filename, **kwargs)
+
+        # Import wavefunction information from metadata
+        self.wfn_nspatial = self.metadata["wfn_nspatial"]
+        self.wfn_nspin = self.metadata["wfn_nspin"]
+        self.wfn_ref_sd = self.metadata["wfn_ref_sd"]
+        self._index_view = self.metadata["index_view"]
 
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
         """Add column to dataframe containing excitation operators and Geminal parameters.

@@ -1,5 +1,7 @@
 import abc
-from pandas import DataFrame
+import os
+import pandas as pd
+import json
 
 
 class DataFrameFanpy:
@@ -8,9 +10,11 @@ class DataFrameFanpy:
         Initialize DataFrameFanpy with a labeled DataFrame based on wavefunction parameters.
         """
         if wfn_label is None or wfn_params is None or wfn_index is None:
-            self.dataframe = DataFrame()
+            self.dataframe = pd.DataFrame()
         else:
-            self.dataframe = DataFrame({wfn_label: wfn_params}, index=wfn_index)
+            self.dataframe = pd.DataFrame({wfn_label: wfn_params}, index=wfn_index)
+
+        self.metadata = None
 
     def __getattr__(self, attr):
         """Delegate attribute access to the underlying DataFrame."""
@@ -22,7 +26,7 @@ class DataFrameFanpy:
 
             def wrapper(*args, **kwargs):
                 result = attr_value(*args, **kwargs)
-                return DataFrameFanpy.from_existing(result) if isinstance(result, DataFrame) else result
+                return DataFrameFanpy.from_existing(result) if isinstance(result, pd.DataFrame) else result
 
             return wrapper
         return attr_value
@@ -30,7 +34,7 @@ class DataFrameFanpy:
     def __getitem__(self, key):
         """Allow indexing like a normal DataFrame."""
         result = self.dataframe[key]
-        return DataFrameFanpy.from_existing(result) if isinstance(result, DataFrame) else result
+        return DataFrameFanpy.from_existing(result) if isinstance(result, pd.DataFrame) else result
 
     def __setitem__(self, key, value):
         """Allow item assignment like a normal DataFrame."""
@@ -51,7 +55,45 @@ class DataFrameFanpy:
 
     def update_dataframe(self, new_df):
         """Safely update the internal DataFrame."""
-        self.dataframe = new_df if isinstance(new_df, DataFrame) else new_df.dataframe
+        self.dataframe = new_df if isinstance(new_df, pd.DataFrame) else new_df.dataframe
+
+    def to_csv(self, filename):
+        """Import dataframe as a CSV file, including metadata as JSON file."""
+
+        # Filename formatting
+        name, ext = os.path.splitext(filename)
+        if ext.lower() != ".csv":
+            csv_filename = os.path.join(name + ".csv")
+            metadata_filename = os.path.join(name + ".json")
+        else:
+            csv_filename = filename
+            metadata_filename = os.path.join(name + ".json")
+
+        # Save DataFrame
+        self.dataframe.to_csv(csv_filename, index=True)
+
+        # Save metadata
+        with open(metadata_filename, "w") as f:
+            json.dump(self.metadata, f)
+
+    def read_csv(self, filename, **kwargs):
+        """Import dataframe from a CSV file and a metadata JSON files."""
+
+        # Filename formatting
+        name, ext = os.path.splitext(filename)
+        if ext.lower() != ".csv":
+            csv_filename = os.path.join(name + ".csv")
+            metadata_filename = os.path.join(name + ".json")
+        else:
+            csv_filename = filename
+            metadata_filename = os.path.join(name + ".json")
+
+        # Import DataFrame from CSV file
+        self.dataframe = pd.read_csv(csv_filename, index_col=0, **kwargs)
+
+        # Import metadata from JSON file
+        with open(metadata_filename) as f:
+            self.metadata = json.load(f)
 
     @abc.abstractmethod
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
