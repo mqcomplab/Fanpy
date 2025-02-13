@@ -1,4 +1,5 @@
 """Restricted Boltzmann Machine wavefunction."""
+
 from fanpy.tools import slater
 from fanpy.wfn.base import BaseWavefunction
 
@@ -6,9 +7,7 @@ import numpy as np
 
 
 class RestrictedBoltzmannMachine(BaseWavefunction):
-    def __init__(
-        self, nelec, nspin, nbath, params=None, memory=None, num_layers=1, orders=(1, 2)
-    ):
+    def __init__(self, nelec, nspin, nbath, params=None, memory=None, num_layers=1, orders=(1, 2)):
         super().__init__(nelec, nspin, memory=memory)
         self.nbath = nbath
         self.orders = np.array(orders)
@@ -23,7 +22,6 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         # self.probable_sds = {}
         # self.olp_threshold = 42
 
-    
     @property
     def params(self):
         return np.hstack([i.flat for i in self._params])
@@ -43,10 +41,9 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         """
         # NOTE: first layer is K x B
-        return (
-            np.sum(self.nbath * self.nspin ** self.orders) +
-            (self.num_layers - 1) * (self.nbath ** 2)
-        ) #+ (self.nspin + 1) # including sign_params which are the size of npsin, and +1 for bias
+        return np.sum(self.nbath * self.nspin**self.orders) + (self.num_layers - 1) * (
+            self.nbath**2
+        )  # + (self.nspin + 1) # including sign_params which are the size of npsin, and +1 for bias
 
         # NOTE: first layer is K x K and K x B
         # return (
@@ -70,10 +67,9 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         """
         # NOTE: first layer is K x B
-        return (
-            [(self.nbath, *(self.nspin, ) * order) for order in self.orders] +
-            (self.num_layers - 1) * [(self.nbath, self.nbath)]
-        )
+        return [(self.nbath, *(self.nspin,) * order) for order in self.orders] + (self.num_layers - 1) * [
+            (self.nbath, self.nbath)
+        ]
         # NOTE: first layer is K x K and K x B
         # return (
         #     [(self.nspin, *(self.nspin, ) * order) for order in self.orders] +
@@ -81,13 +77,11 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         #     (self.num_layers - 1) * [(self.nbath, self.nbath)]
         # )
 
-
-    @property 
+    @property
     def template_sign_params(self):
-      
+
         return self._template_sign_params
 
-    
     @property
     def template_params(self):
         """Return the template of the parameters of the given wavefunction.
@@ -104,12 +98,11 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         """
         return self._template_params
 
-
     def assign_template_sign_params(self):
-        #sign_params = np.ones(self.nspin + 1) * -0.001 #* 10  # +1 for bias
+        # sign_params = np.ones(self.nspin + 1) * -0.001 #* 10  # +1 for bias
         sign_params = np.random.uniform(-1, -1, size=(self.nspin + 1))  # +1 for bias
-        self._template_sign_params = sign_params 
-   
+        self._template_sign_params = sign_params
+
     def assign_template_params(self):
         r"""Assign the initial guess for the HF ground state wavefunction.
 
@@ -153,14 +146,12 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         # self.output_scale = scale
         self.output_scale = 0.5
         self._template_params = params
- 
 
     def assign_sign_params(self, sign_params=None):
         if sign_params is None:
             if self._template_sign_params is None:
                 self.assign_template_sign_params()
         self.sign_params = self._template_sign_params
-
 
     def assign_params(self, params=None, add_noise=False):
         """Assign the parameters of the wavefunction.
@@ -194,22 +185,24 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         if isinstance(params, np.ndarray):
             structured_params = []
             for param_shape in self.params_shape:
-                structured_params.append(params[:np.prod(param_shape)].reshape(*param_shape)) #It's appending arrays in the list structured_params
-                params = params[np.prod(param_shape):]
+                structured_params.append(
+                    params[: np.prod(param_shape)].reshape(*param_shape)
+                )  # It's appending arrays in the list structured_params
+                params = params[np.prod(param_shape) :]
             params = structured_params
 
         # store parameters
         self._params = params
- 
+
         # append sign parameters
         if self._template_sign_params is None:
             self.assign_template_sign_params()
             self.assign_sign_params()
         self._params.append(self.sign_params)
 
-        #print("self._params: ", self._params[2].shape)
-        #print("\nself._params", self._params[0].shape, self._params[1].shape, self._params[2].shape, self._params[3].shape)
-        
+        # print("self._params: ", self._params[2].shape)
+        # print("\nself._params", self._params[0].shape, self._params[1].shape, self._params[2].shape, self._params[3].shape)
+
         # super().assign_params(params=params, add_noise=add_noise)
 
         self.clear_cache()
@@ -225,7 +218,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         # return 1 - np.tanh(x) ** 2
         return np.exp(x)
         # return 2 * np.sinh(x)
-    
+
     @staticmethod
     def sign_correction(x):
         return np.tanh(x)
@@ -264,7 +257,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         Overlaps and their derivatives are not cached.
 
         """
-        #breakpoint()
+        # breakpoint()
         # if no derivatization
         if deriv is None:
             return self._olp(sd)
@@ -277,15 +270,14 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         #     self.probable_sds[sd] = output
 
         return output
- 
+
     def _olp_sign_helper(self, sd):
         occ_indices = np.array(slater.occ_indices(sd))
         occ_mask = np.zeros(self.nspin)
         occ_mask[occ_indices] = 1
         sign_output = self.sign_correction(np.sum(self.sign_params[:-1] * occ_mask) + self.sign_params[-1])
-        
+
         return sign_output
-        
 
     def _olp_helper(self, sd, cache=False):
         """Return output of the network (before the product layer)."""
@@ -300,11 +292,11 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         output = np.zeros(self.params_shape[0][0])
         # first layer
-        for order, layer_params in zip(self.orders, self._params[:-1]): #excluding the sign_params
+        for order, layer_params in zip(self.orders, self._params[:-1]):  # excluding the sign_params
             # NOTE: if you want to use a different operator, you would change the corresponding
             # input here
             # get input vector/tensor
-            input_layer = np.zeros((self.nspin, ) * order)
+            input_layer = np.zeros((self.nspin,) * order)
             mask = occ_mask
             for _ in range(order - 1):
                 mask = occ_mask & np.expand_dims(mask, -1)
@@ -323,9 +315,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
             # output += layer_params
 
             # OR more generally (if inputs are not 0 or 1)
-            next_layer = np.sum(
-                layer_params * input_layer, axis=tuple(np.arange(1, layer_params.ndim))
-            )
+            next_layer = np.sum(layer_params * input_layer, axis=tuple(np.arange(1, layer_params.ndim)))
             output += next_layer
 
         if cache:
@@ -334,7 +324,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         output = self.activation(output)
 
-        for layer_params in self._params[len(self.orders):-1]: #-1 to exclude sign_params
+        for layer_params in self._params[len(self.orders) : -1]:  # -1 to exclude sign_params
             if cache:
                 self.forward_cache_act.append(output)
             output = layer_params.dot(output)
@@ -376,7 +366,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         # get product of the network output that have not been derivatived
         indices = np.arange(self.nbath)
-        indices = np.array([np.roll(indices, - i - 1, axis=0)[:-1] for i in indices])
+        indices = np.array([np.roll(indices, -i - 1, axis=0)[:-1] for i in indices])
         other_vals = np.prod(vals[indices] * self.output_scale, axis=1)
 
         output = []
@@ -389,18 +379,20 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         if len(sds) == 0:
             return np.array([])
         occ_indices = np.array([slater.occ_indices(sd) for sd in sds])
-        
-        #print("\nself._params.shape: ", self.params_shape)
-        #print("\nself.nparams: ", self.nparams)
 
-        #array of sign_params for sds
-        #sign_params_sds = np.ones((len(sds), self.nspin + 1)) * -0.001 #* 10 #creating sign_params on fly using np.ones
+        # print("\nself._params.shape: ", self.params_shape)
+        # print("\nself.nparams: ", self.nparams)
+
+        # array of sign_params for sds
+        # sign_params_sds = np.ones((len(sds), self.nspin + 1)) * -0.001 #* 10 #creating sign_params on fly using np.ones
         sign_params_sds = np.array([self._params[-1] for sd in sds])
         occ_mask_sds = np.zeros((len(sds), self.nspin))
         for i, inds in enumerate(occ_indices):
             occ_mask_sds[i, inds] = 1
-       
-        sign_output = self.sign_correction((sign_params_sds[:, :-1] * occ_mask_sds).sum(axis=1) + sign_params_sds[:,-1])
+
+        sign_output = self.sign_correction(
+            (sign_params_sds[:, :-1] * occ_mask_sds).sum(axis=1) + sign_params_sds[:, -1]
+        )
 
         vals = np.zeros((len(sds), self.nbath))
         vals = vals.T
@@ -414,11 +406,11 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         # FIXME: but less efficient
         for i, inds in enumerate(occ_indices):
             occ_mask[i, inds] = True
-        for order, layer_params in zip(self.orders, self._params[:-1]): #-1 for excluding the sign_params
+        for order, layer_params in zip(self.orders, self._params[:-1]):  # -1 for excluding the sign_params
             # NOTE: if you want to use a different operator, you would change the corresponding
             # input here
             # get input vector/tensor
-            input_layer = np.zeros((len(sds),) + (self.nspin, ) * order)
+            input_layer = np.zeros((len(sds),) + (self.nspin,) * order)
             mask = occ_mask
             for i in range(order - 1):
                 occ_mask = np.expand_dims(occ_mask, 1)
@@ -443,28 +435,28 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         vals = self.activation(vals)
 
-        for layer_params in self._params[len(self.orders):-1]: #-1 excluding sign_params
+        for layer_params in self._params[len(self.orders) : -1]:  # -1 excluding sign_params
             self.forward_cache_act.append(vals)
             vals = layer_params.dot(vals)
             self.forward_cache_lin.append(vals)
             vals = self.activation(vals)
 
         if deriv is None:
-            output = np.prod(vals * self.output_scale, axis=0) * sign_output #adding sign_correction
+            output = np.prod(vals * self.output_scale, axis=0) * sign_output  # adding sign_correction
             return output
 
-        #NOTE: Following code is for the case when deriv != None
+        # NOTE: Following code is for the case when deriv != None
         grads = []
         # last index is for the slater determinants
         dy_da_prev = np.identity(self.nbath)[:, :, None]
 
-        #print("self._params[1::-1]:", self._params[1::-1])
-        #starting self._params from 1 to exclude sign_params at index 0
-        #for i, layer_params in enumerate(self._params[1::-1]):  
-        for i, layer_params in enumerate(self._params[self.num_layers::-1]):  
+        # print("self._params[1::-1]:", self._params[1::-1])
+        # starting self._params from 1 to exclude sign_params at index 0
+        # for i, layer_params in enumerate(self._params[1::-1]):
+        for i, layer_params in enumerate(self._params[self.num_layers :: -1]):
             i = len(self._params[:-1]) - 1 - i
             dy_da_curr = dy_da_prev
-            #print("index i:", i)
+            # print("index i:", i)
             a_prev = self.forward_cache_act[i]
             z_curr = self.forward_cache_lin[i]
             w_curr = self._params[i]
@@ -487,62 +479,50 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         # get product of the network output that have not been derivatived
         indices = np.arange(self.nbath)
-        indices = np.array([np.roll(indices, - i - 1, axis=0)[:-1] for i in indices])
+        indices = np.array([np.roll(indices, -i - 1, axis=0)[:-1] for i in indices])
         other_vals = np.prod(vals[indices] * self.output_scale, axis=1)
 
         output = []
         for grads_layer in grads[:-1]:
             output.append(
-                np.moveaxis(
-                    np.sum(other_vals[:, None, None] * grads_layer, axis=0), 2, 0
-                ).reshape(len(sds), -1)
+                np.moveaxis(np.sum(other_vals[:, None, None] * grads_layer, axis=0), 2, 0).reshape(len(sds), -1)
             )
-        output.append(
-            np.moveaxis(np.sum(other_vals[:, None, None, :] * grads[-1], axis=0), 2, 0).reshape(len(sds), -1)
-        )
+        output.append(np.moveaxis(np.sum(other_vals[:, None, None, :] * grads[-1], axis=0), 2, 0).reshape(len(sds), -1))
 
-        #print("\n\noutput:", output[0].shape, output[1].shape, "\n", output)
+        # print("\n\noutput:", output[0].shape, output[1].shape, "\n", output)
 
-        #Adding sign_correction to derivative
-        #NOTE: F_new = F_old * sign
+        # Adding sign_correction to derivative
+        # NOTE: F_new = F_old * sign
         #     dF_new = [dF_old * sign, F_old * dsign]
         #            = [df_sign, f_disgn]
 
-        #df_sign = np.hstack(output)[:, deriv[:-(self.nspin+1)]] * sign_output[:, np.newaxis]
-        #sign_output_deriv = self.sign_correction_deriv(
+        # df_sign = np.hstack(output)[:, deriv[:-(self.nspin+1)]] * sign_output[:, np.newaxis]
+        # sign_output_deriv = self.sign_correction_deriv(
         #                        (sign_params_sds[:, :-1] * occ_mask_sds).sum(axis=1) + sign_params_sds[:,-1])
 
-        #f_dsign = np.prod(vals * self.output_scale, axis=0) * sign_output_deriv 
-        #f_dsign = f_dsign[:, np.newaxis] * occ_mask_sds #Multiplying by occupation vector 
-        #f_dsign = np.column_stack((f_dsign, np.zeros(len(sds)))) #Stacking column of zeros for derivative w.r.t sign_bias
+        # f_dsign = np.prod(vals * self.output_scale, axis=0) * sign_output_deriv
+        # f_dsign = f_dsign[:, np.newaxis] * occ_mask_sds #Multiplying by occupation vector
+        # f_dsign = np.column_stack((f_dsign, np.zeros(len(sds)))) #Stacking column of zeros for derivative w.r.t sign_bias
 
         # Final output matrix for derivatives wrt wfn_params, sign_params and sign_bias
-        #new_output = np.c_[df_sign, f_dsign]
-           
-        #print("\nlen(sds): ", len(sds))
-        #print("\noutput w/o sign for deriv=None: ", np.prod(vals * self.output_scale, axis=0) , "\n" )#adding sign_correction
-        #print("\nSign_output: ",len(sign_output), "\n", sign_output, "\n")
-        #print("\nSign_output_deriv: ",len(sign_output_deriv), "\n", sign_output_deriv, "\n")
-        #print("\nnew_output: ", new_output, "\n")
-                    
-        #return  new_output
+        # new_output = np.c_[df_sign, f_dsign]
+
+        # print("\nlen(sds): ", len(sds))
+        # print("\noutput w/o sign for deriv=None: ", np.prod(vals * self.output_scale, axis=0) , "\n" )#adding sign_correction
+        # print("\nSign_output: ",len(sign_output), "\n", sign_output, "\n")
+        # print("\nSign_output_deriv: ",len(sign_output_deriv), "\n", sign_output_deriv, "\n")
+        # print("\nnew_output: ", new_output, "\n")
+
+        # return  new_output
         return np.hstack(output)[:, deriv]
 
     def normalize(self, pspace=None):
         if pspace is not None:
-            norm = sum(self.get_overlap(sd)**2 for sd in pspace)
-            print(
-                norm,
-                sorted([abs(self.get_overlap(sd)) for sd in pspace], reverse=True)[:5],
-                'norm'
-            )
+            norm = sum(self.get_overlap(sd) ** 2 for sd in pspace)
+            print(norm, sorted([abs(self.get_overlap(sd)) for sd in pspace], reverse=True)[:5], "norm")
         else:
-            norm = sum(self.get_overlap(sd)**2 for sd in self.pspace_norm)
-            print(
-                norm,
-                sorted([abs(self.get_overlap(sd)) for sd in self.pspace_norm], reverse=True)[:5],
-                'norm'
-            )
+            norm = sum(self.get_overlap(sd) ** 2 for sd in self.pspace_norm)
+            print(norm, sorted([abs(self.get_overlap(sd)) for sd in self.pspace_norm], reverse=True)[:5], "norm")
         # norm = np.sum([olp ** 2 for olp in self.probable_sds.values()])
         # norm = max(self.probable_sds.values()) ** 2
         self.output_scale *= norm ** (-0.5 / self.params_shape[-1][0])

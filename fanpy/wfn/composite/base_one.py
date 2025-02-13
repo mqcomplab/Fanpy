@@ -1,4 +1,5 @@
 """Base class for composite wavefunctions that modifies one wavefunction."""
+
 import os
 
 from fanpy.wfn.base import BaseWavefunction

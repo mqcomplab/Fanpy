@@ -1,8 +1,6 @@
 """APG1ro wavefunction with single and double excitations."""
-from itertools import combinations
-from collections import Counter
+
 from fanpy.tools import slater
-from fanpy.tools import graphs
 from fanpy.wfn.cc.pccd_ap1rog_NEW import PCCD
 
 
@@ -102,6 +100,7 @@ class AP1roGSDGeneralized(PCCD):
         to the given indices to be created.
 
     """
+
     def assign_ranks(self, ranks=None):
         """Assign the ranks of the excitation operators.
 
@@ -117,7 +116,7 @@ class AP1roGSDGeneralized(PCCD):
 
         """
         if ranks is not None:
-            raise TypeError('Only the default: ranks=[1, 2] is allowed')
+            raise TypeError("Only the default: ranks=[1, 2] is allowed")
         else:
             self.ranks = [1, 2]
 
@@ -146,19 +145,21 @@ class AP1roGSDGeneralized(PCCD):
 
         """
         if indices is not None:
-            raise TypeError('Only the excitation operators constructed by default from '
-                            'the given reference Slater determinant are allowed')
+            raise TypeError(
+                "Only the excitation operators constructed by default from "
+                "the given reference Slater determinant are allowed"
+            )
         else:
             exops = {}
             counter = 0
             ex_from = slater.occ_indices(self.refwfn)
             ex_to = [i for i in range(self.nspin) if i not in ex_from]
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
                 for virt in ex_to:
                     exop = [occ_alpha, virt]
                     exops[tuple(exop)] = counter
                     counter += 1
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
                 for virt in ex_to:
                     exop = [occ_alpha + self.nspatial, virt]
                     exops[tuple(exop)] = counter

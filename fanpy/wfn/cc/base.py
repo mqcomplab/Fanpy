@@ -1,4 +1,5 @@
 """Base class for excitation Coupled Cluster wavefunctions."""
+
 import numpy as np
 import functools
 from itertools import combinations, permutations, product, repeat
@@ -7,7 +8,6 @@ from fanpy.tools import slater
 from fanpy.tools import graphs
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.wfn.ci.base import CIWavefunction
-
 
 
 class BaseCC(BaseWavefunction):
@@ -124,8 +124,19 @@ class BaseCC(BaseWavefunction):
         to the given indices to be created.
 
     """
-    def __init__(self, nelec, nspin, memory=None, ranks=None, indices=None,
-                 refwfn=None, params=None, exop_combinations=None, refresh_exops=None):
+
+    def __init__(
+        self,
+        nelec,
+        nspin,
+        memory=None,
+        ranks=None,
+        indices=None,
+        refwfn=None,
+        params=None,
+        exop_combinations=None,
+        refresh_exops=None,
+    ):
         """Initialize the wavefunction.
 
         Parameters
@@ -247,26 +258,30 @@ class BaseCC(BaseWavefunction):
             ranks = self.nelec
         if isinstance(ranks, list):
             if not all(isinstance(rank, int) for rank in ranks):
-                raise TypeError('`ranks` must be an int or a list of ints.')
+                raise TypeError("`ranks` must be an int or a list of ints.")
             elif not all(rank > 0 for rank in ranks):
-                raise ValueError('All `ranks` must be positive ints.')
+                raise ValueError("All `ranks` must be positive ints.")
             elif max(ranks) > self.nelec:
-                raise ValueError('`ranks` cannot be greater than {},'
-                                 'the number of electrons of the wavefunction.'.format(self.nelec))
+                raise ValueError(
+                    "`ranks` cannot be greater than {},"
+                    "the number of electrons of the wavefunction.".format(self.nelec)
+                )
             else:
                 ranks = list(set(ranks))
                 ranks.sort()
                 self.ranks = ranks
         elif isinstance(ranks, int):
             if ranks <= 0:
-                raise ValueError('All `ranks` must be positive ints.')
+                raise ValueError("All `ranks` must be positive ints.")
             elif ranks > self.nelec:
-                raise ValueError('`ranks` cannot be greater than {},'
-                                 'the number of electrons of the wavefunction.'.format(self.nelec))
+                raise ValueError(
+                    "`ranks` cannot be greater than {},"
+                    "the number of electrons of the wavefunction.".format(self.nelec)
+                )
             else:
-                self.ranks = list(range(ranks+1))[1:]
+                self.ranks = list(range(ranks + 1))[1:]
         else:
-            raise TypeError('`ranks` must be an int or a list of ints.')
+            raise TypeError("`ranks` must be an int or a list of ints.")
 
     def assign_exops(self, indices=None):
         """Assign the excitation operators that will be used to construct the CC operator.
@@ -311,21 +326,20 @@ class BaseCC(BaseWavefunction):
             counter = 0
             for rank in self.ranks:
                 for annihilators in combinations(range(self.nspin), rank):
-                    for creators in combinations([i for i in range(self.nspin)
-                                                  if i not in annihilators], rank):
+                    for creators in combinations([i for i in range(self.nspin) if i not in annihilators], rank):
                         exops[(*annihilators, *creators)] = counter
                         counter += 1
             self.exops = exops
         elif isinstance(indices, list):
             if len(indices) != 2:
-                raise TypeError('`indices` must have exactly 2 elements')
+                raise TypeError("`indices` must have exactly 2 elements")
             for inds in indices:
                 if not isinstance(inds, list):
-                    raise TypeError('The elements of `indices` must be lists of non-negative ints')
+                    raise TypeError("The elements of `indices` must be lists of non-negative ints")
                 elif not all(isinstance(ind, int) for ind in inds):
-                    raise TypeError('The elements of `indices` must be lists of non-negative ints')
+                    raise TypeError("The elements of `indices` must be lists of non-negative ints")
                 elif not all(ind >= 0 for ind in inds):
-                    raise ValueError('All `indices` must be lists of non-negative ints')
+                    raise ValueError("All `indices` must be lists of non-negative ints")
             ex_from, ex_to = list(set(indices[0])), list(set(indices[1]))
             ex_from.sort()
             ex_to.sort()
@@ -338,7 +352,7 @@ class BaseCC(BaseWavefunction):
                         counter += 1
             self.exops = exops
         else:
-            raise TypeError('`indices` must be None or a list of 2 lists of non-negative ints')
+            raise TypeError("`indices` must be None or a list of 2 lists of non-negative ints")
 
     def assign_refwfn(self, refwfn=None):
         """Assign the reference wavefunction upon which the CC operator will act.
@@ -364,18 +378,18 @@ class BaseCC(BaseWavefunction):
             self.refwfn = slater.ground(nocc=self.nelec, norbs=self.nspin)
         elif isinstance(refwfn, int):
             if slater.total_occ(refwfn) != self.nelec:
-                raise ValueError('refwfn must have {} electrons'.format(self.nelec))
+                raise ValueError("refwfn must have {} electrons".format(self.nelec))
             # TODO: check that refwfn has the right number of spin-orbs
             self.refwfn = refwfn
         else:
             if not isinstance(refwfn, CIWavefunction):
-                raise TypeError('refwfn must be a CIWavefunction or a int object')
-            if not hasattr(refwfn, 'sds'):  # NOTE: Redundant test.
-                raise AttributeError('refwfn must have the sds attribute')
+                raise TypeError("refwfn must be a CIWavefunction or a int object")
+            if not hasattr(refwfn, "sds"):  # NOTE: Redundant test.
+                raise AttributeError("refwfn must have the sds attribute")
             if refwfn.nelec != self.nelec:
-                raise ValueError('refwfn must have {} electrons'.format(self.nelec))
+                raise ValueError("refwfn must have {} electrons".format(self.nelec))
             if refwfn.nspin != self.nspin:
-                raise ValueError('refwfn must have {} spin orbitals'.format(self.nspin))
+                raise ValueError("refwfn must have {} spin orbitals".format(self.nspin))
             self.refwfn = refwfn
 
     def assign_params(self, params=None, add_noise=False):
@@ -406,12 +420,10 @@ class BaseCC(BaseWavefunction):
         if isinstance(params, BaseCC):
             other = params
             if self.nelec != other.nelec:
-                raise ValueError('The number of electrons in the two wavefunctions must be the '
-                                 'same.')
+                raise ValueError("The number of electrons in the two wavefunctions must be the " "same.")
             if self.nspin != other.nspin:
-                raise ValueError('The number of spin orbitals in the two wavefunctions must be the '
-                                 'same.')
-            #if self.nexops != other.nexops:
+                raise ValueError("The number of spin orbitals in the two wavefunctions must be the " "same.")
+            # if self.nexops != other.nexops:
             #    raise ValueError('The number of excitation operators in the two wavefunctions'
             #                     'must be the same.')
             params = np.zeros(self.params_shape)
@@ -420,15 +432,15 @@ class BaseCC(BaseWavefunction):
                     params[self.get_ind(exop)] = other.params[ind]
                     # FIXME: Couldn't be just: params[self.get_ind(exop)] = other.params[ind]?
                 except ValueError:
-                    print('The excitation of the given wavefunction is not possible in the '
-                          'current wavefunction. Parameters corresponding to this excitation will'
-                          ' be ignored.')
+                    print(
+                        "The excitation of the given wavefunction is not possible in the "
+                        "current wavefunction. Parameters corresponding to this excitation will"
+                        " be ignored."
+                    )
         elif params is None:
             params = self.template_params
         elif params.shape != self.template_params.shape:
-            raise ValueError(
-                "Given parameters must have the shape, {}".format(self.template_params.shape)
-            )
+            raise ValueError("Given parameters must have the shape, {}".format(self.template_params.shape))
         super().assign_params(params=params, add_noise=add_noise)
         self.clear_cache()
 
@@ -454,8 +466,7 @@ class BaseCC(BaseWavefunction):
         try:
             return self.exops[tuple(exop)]
         except (ValueError, TypeError, KeyError):
-            raise ValueError('Given excitation operator, {0}, is not included in the '
-                             'wavefunction.'.format(exop))
+            raise ValueError("Given excitation operator, {0}, is not included in the " "wavefunction.".format(exop))
 
     def get_exop(self, ind):
         """Get the excitation operator that corresponds to the given index.
@@ -479,7 +490,7 @@ class BaseCC(BaseWavefunction):
         for exop, i in self.exops.items():
             if i == ind:
                 return exop
-        raise ValueError('Given index, {0}, is not used in the wavefunction'.format(ind))
+        raise ValueError("Given index, {0}, is not used in the wavefunction".format(ind))
 
     def product_amplitudes(self, inds, deriv=False):
         """Compute the product of the CC amplitudes that corresponds to the given indices.
@@ -502,7 +513,7 @@ class BaseCC(BaseWavefunction):
         if not deriv:
             return np.prod(self.params[inds])
         else:
-            #for i in inds:
+            # for i in inds:
             #    trunc_inds = [ind for ind in inds if ind != i]
             #    if trunc_inds:
             #        return self.product_amplitudes(trunc_inds)
@@ -583,7 +594,7 @@ class BaseCC(BaseWavefunction):
         if self.memory == np.inf:
             memory = None
         else:
-            memory = max(int((self.memory - 5*8*self.params.size) / (self.params.size + 1)), 0)
+            memory = max(int((self.memory - 5 * 8 * self.params.size) / (self.params.size + 1)), 0)
 
         # create function that will be cached
         @functools.lru_cache(maxsize=memory, typed=False)
@@ -597,12 +608,12 @@ class BaseCC(BaseWavefunction):
             return self._olp_deriv(sd1)
 
         # create cache
-        if not hasattr(self, '_cache_fns'):
+        if not hasattr(self, "_cache_fns"):
             self._cache_fns = {}
 
         # store the cached function
-        self._cache_fns['overlap'] = _olp
-        self._cache_fns['overlap derivative'] = _olp_deriv
+        self._cache_fns["overlap"] = _olp
+        self._cache_fns["overlap derivative"] = _olp_deriv
 
     def _olp(self, sd):
         r"""Calculate the matrix element of the CC operator between the Slater determinants.
@@ -626,6 +637,7 @@ class BaseCC(BaseWavefunction):
             Matrix element of the CC operator between the given Slater determinant.
 
         """
+
         def temp_olp(sd1, sd2):
             if sd1 == sd2:
                 return 1.0
@@ -659,7 +671,6 @@ class BaseCC(BaseWavefunction):
         else:
             return temp_olp(sd, self.refwfn)
 
-        
     def _olp_deriv(self, sd):
         """Calculate the derivative of the overlap with the Slater determinant.
 
@@ -676,6 +687,7 @@ class BaseCC(BaseWavefunction):
             Derivative of the overlap with respect to the given parameter.
 
         """
+
         def temp_olp(sd1, sd2):
             if sd1 == sd2:
                 return np.zeros(self.nparams)
@@ -753,10 +765,10 @@ class BaseCC(BaseWavefunction):
         """
         # if no derivatization
         if deriv is None:
-            return self._cache_fns['overlap'](sd)
+            return self._cache_fns["overlap"](sd)
         # if derivatization
         else:
-            val = self._cache_fns['overlap derivative'](sd)
+            val = self._cache_fns["overlap derivative"](sd)
             return val[deriv]
 
     def generate_possible_exops(self, a_inds, c_inds):
@@ -787,8 +799,7 @@ class BaseCC(BaseWavefunction):
         # NOTE: Is necessary to invert the results of int_partition_recursive
         # to be consistent with the ordering of operators in the CC operator.
         inds_multi = {}
-        for partition in list(graphs.int_partition_recursive(self.ranks,
-                                                             self.nranks, exrank))[::-1]:
+        for partition in list(graphs.int_partition_recursive(self.ranks, self.nranks, exrank))[::-1]:
             reduced_partition = Counter(partition)
             bin_size_num = []
             for bin_size in sorted(reduced_partition):
@@ -818,7 +829,9 @@ class BaseCC(BaseWavefunction):
                     creas_perms = {size: permutations(crea) for size, crea in creas_grouped.items()}
 
                     # combine permutations of each annihilation and creation pair (of same size)
-                    exc_perms = (zip(repeat(annhs_grouped[size_num[0]]), creas_perms[size_num[0]]) for size_num in bin_size_num)
+                    exc_perms = (
+                        zip(repeat(annhs_grouped[size_num[0]]), creas_perms[size_num[0]]) for size_num in bin_size_num
+                    )
 
                     # for each size, pick all the other sizes
                     for excs in product(*exc_perms):
@@ -828,7 +841,7 @@ class BaseCC(BaseWavefunction):
                             exc = zip(*exc)
                             for annh, crea in exc:
                                 # FIXME: remove
-                                #if len(annh) == 1:
+                                # if len(annh) == 1:
                                 #    if annh[0] < self.nspatial:
                                 #        annh = [annh[0], annh[0] + self.nspatial]
                                 #        crea = sorted([crea[0], annh[1]])
@@ -882,5 +895,5 @@ class BaseCC(BaseWavefunction):
             raise ValueError("Can only support 2**63 number of parameters")
 
         for i, indices in inds_multi.items():
-            inds_multi[i] = np.array(indices, dtype=dtype).reshape(-1, i+1)
+            inds_multi[i] = np.array(indices, dtype=dtype).reshape(-1, i + 1)
         self.exop_combinations[tuple(a_inds + c_inds)] = inds_multi

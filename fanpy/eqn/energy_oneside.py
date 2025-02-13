@@ -1,4 +1,5 @@
 """Energy of the Schrodinger equation integrated against a reference wavefunction."""
+
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.tools import sd_list, slater
 from fanpy.wfn.ci.base import CIWavefunction
@@ -209,9 +210,7 @@ class EnergyOneSideProjection(BaseSchrodinger):
         """
         if refwfn is None:
             self.refwfn = tuple(
-                sd_list.sd_list(
-                    self.wfn.nelec, self.wfn.nspin, spin=self.wfn.spin, seniority=self.wfn.seniority
-                )
+                sd_list.sd_list(self.wfn.nelec, self.wfn.nspin, spin=self.wfn.spin, seniority=self.wfn.seniority)
             )
             # break out of function
             return

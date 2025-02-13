@@ -1,4 +1,5 @@
 """Tools for keeping track of active parameters in the optimization process."""
+
 from collections import OrderedDict
 
 from fanpy.ham.base import BaseHamiltonian
@@ -78,14 +79,8 @@ class ParamContainer:
             params = np.array([params])
 
         if __debug__:
-            if not (
-                isinstance(params, np.ndarray)
-                and params.ndim == 1
-                and np.issubdtype(params.dtype, np.number)
-            ):
-                raise TypeError(
-                    "Parameters must be given as a numpy array (or list or tuple) of numbers."
-                )
+            if not (isinstance(params, np.ndarray) and params.ndim == 1 and np.issubdtype(params.dtype, np.number)):
+                raise TypeError("Parameters must be given as a numpy array (or list or tuple) of numbers.")
             if params.size == 0:
                 raise ValueError("Number of parameters cannot be zero.")
 
@@ -151,18 +146,11 @@ class ComponentParameterIndices(OrderedDict):
 
         if __debug__:
             if not isinstance(component, (BaseWavefunction, BaseHamiltonian, ParamContainer)):
-                raise TypeError(
-                    "Provided key must be a `BaseWavefunction`, `BaseHamiltonian`, or "
-                    "`ParamContainer`."
-                )
+                raise TypeError("Provided key must be a `BaseWavefunction`, `BaseHamiltonian`, or " "`ParamContainer`.")
             if not (
                 isinstance(indices, np.ndarray)
                 and indices.ndim == 1
-                and (
-                    indices.dtype == np.bool_
-                    or np.issubdtype(indices.dtype, np.integer)
-                    or indices.size == 0
-                )
+                and (indices.dtype == np.bool_ or np.issubdtype(indices.dtype, np.integer) or indices.size == 0)
             ):
                 raise TypeError(
                     "Indices for the selected (active) parameters must be given as a "

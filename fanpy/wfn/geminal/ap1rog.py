@@ -1,4 +1,5 @@
 """Antisymmetric Product of One-Reference-Orbital (AP1roG) Geminals wavefunction."""
+
 from fanpy.tools import slater
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.wfn.geminal.apig import APIG
@@ -202,9 +203,7 @@ class AP1roG(APIG):
             if not slater.is_sd_compatible(sd):
                 raise TypeError("Slater determinant must be given as an integer.")
             if slater.total_occ(sd) != self.nelec:
-                raise ValueError(
-                    "Given Slater determinant does not have the correct number of " "electrons"
-                )
+                raise ValueError("Given Slater determinant does not have the correct number of " "electrons")
             if self.spin is not None and slater.get_spin(sd, self.nspatial):
                 raise ValueError("Given Slater determinant does not have the correct spin.")
             if self.seniority is not None and slater.get_seniority(sd, self.nspatial):
@@ -269,12 +268,9 @@ class AP1roG(APIG):
         """
         super().assign_orbpairs(orbpairs=orbpairs)
         if __debug__ and not (
-            set(self.dict_orbpair_ind.keys())
-            <= set((i, i + self.nspatial) for i in range(self.nspatial))
+            set(self.dict_orbpair_ind.keys()) <= set((i, i + self.nspatial) for i in range(self.nspatial))
         ):
-            raise ValueError(
-                "Only the alpha-beta spin orbital pair of each spatial orbital is allowed."
-            )
+            raise ValueError("Only the alpha-beta spin orbital pair of each spatial orbital is allowed.")
         # removing orbital indices that correspond to the reference Slater determinant
         dict_orbpair_ind = {}
         dict_reforbpair_ind = {}
@@ -308,12 +304,8 @@ class AP1roG(APIG):
         spatial_sd, _ = slater.split_spin(sd, self.nspatial)
         spatial_ref_sd, _ = slater.split_spin(self.ref_sd, self.nspatial)
         orbs_annihilated, orbs_created = slater.diff_orbs(spatial_ref_sd, spatial_sd)
-        inds_annihilated = np.array(
-            [self.dict_reforbpair_ind[(i, i + self.nspatial)] for i in orbs_annihilated]
-        )
-        inds_created = np.array(
-            [self.dict_orbpair_ind[(i, i + self.nspatial)] for i in orbs_created]
-        )
+        inds_annihilated = np.array([self.dict_reforbpair_ind[(i, i + self.nspatial)] for i in orbs_annihilated])
+        inds_created = np.array([self.dict_orbpair_ind[(i, i + self.nspatial)] for i in orbs_created])
 
         # FIXME: missing signature. see apig. Not a problem if alpha beta spin pairing
         return self.compute_permanent(row_inds=inds_annihilated, col_inds=inds_created)
@@ -337,12 +329,8 @@ class AP1roG(APIG):
         spatial_sd, _ = slater.split_spin(sd, self.nspatial)
         spatial_ref_sd, _ = slater.split_spin(self.ref_sd, self.nspatial)
         orbs_annihilated, orbs_created = slater.diff_orbs(spatial_ref_sd, spatial_sd)
-        inds_annihilated = np.array(
-            [self.dict_reforbpair_ind[(i, i + self.nspatial)] for i in orbs_annihilated]
-        )
-        inds_created = np.array(
-            [self.dict_orbpair_ind[(i, i + self.nspatial)] for i in orbs_created]
-        )
+        inds_annihilated = np.array([self.dict_reforbpair_ind[(i, i + self.nspatial)] for i in orbs_annihilated])
+        inds_created = np.array([self.dict_orbpair_ind[(i, i + self.nspatial)] for i in orbs_created])
 
         # FIXME: missing signature. see apig. Not a problem if alpha beta spin pairing
         return self.compute_permanent(row_inds=inds_annihilated, col_inds=inds_created, deriv=deriv)
@@ -382,9 +370,7 @@ class AP1roG(APIG):
         if __debug__:
             if not slater.is_sd_compatible(sd):
                 raise TypeError("Slater determinant must be given as an integer.")
-            if deriv is not None and not (
-                isinstance(deriv, np.ndarray) and deriv.ndim == 1 and deriv.dtype == int
-            ):
+            if deriv is not None and not (isinstance(deriv, np.ndarray) and deriv.ndim == 1 and deriv.dtype == int):
                 raise TypeError("deriv must be given as a one dimensional numpy array of integers.")
 
         # cut off beta part (for just the alpha/spatial part)
@@ -408,12 +394,8 @@ class AP1roG(APIG):
         # convert to spatial orbitals
         # NOTE: these variables are essentially the same as the output of
         #       generate_possible_orbpairs
-        inds_annihilated = np.array(
-            [self.dict_reforbpair_ind[(i, i + self.nspatial)] for i in orbs_annihilated]
-        )
-        inds_created = np.array(
-            [self.dict_orbpair_ind[(i, i + self.nspatial)] for i in orbs_created]
-        )
+        inds_annihilated = np.array([self.dict_reforbpair_ind[(i, i + self.nspatial)] for i in orbs_annihilated])
+        inds_created = np.array([self.dict_orbpair_ind[(i, i + self.nspatial)] for i in orbs_created])
 
         # if no derivatization
         if deriv is None:

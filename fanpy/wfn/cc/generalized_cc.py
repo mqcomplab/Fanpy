@@ -1,4 +1,5 @@
 """Generalized Coupled Cluster wavefunction."""
+
 from fanpy.wfn.cc.base import BaseCC
 
 
@@ -111,6 +112,7 @@ class GeneralizedCC(BaseCC):
         to the given indices to be created.
 
     """
+
     def assign_exops(self, indices=None):
         """Assign the excitation operators that will be used to construct the CC operator.
 
@@ -135,5 +137,5 @@ class GeneralizedCC(BaseCC):
 
         """
         if indices is not None:
-            raise TypeError('Only the default (i.e. using all possible indices) is allowed')
+            raise TypeError("Only the default (i.e. using all possible indices) is allowed")
         super().assign_exops(indices)

@@ -1,4 +1,5 @@
 """Seniority-zero Hamiltonian object that interacts with the wavefunction."""
+
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.tools import slater
 
@@ -113,11 +114,7 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
                     "parameters, but not both."
                 )
             if ham_deriv is not None:
-                if not (
-                    isinstance(ham_deriv, np.ndarray)
-                    and ham_deriv.ndim == 1
-                    and ham_deriv.dtype == int
-                ):
+                if not (isinstance(ham_deriv, np.ndarray) and ham_deriv.ndim == 1 and ham_deriv.dtype == int):
                     raise TypeError(
                         "Derivative indices for the Hamiltonian parameters must be given as a "
                         "one-dimensional numpy array of integers."
@@ -148,9 +145,7 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
                     slater.spin_index(a, nspatial, "alpha"),
                 )
                 coeff = wfn.get_overlap(sd_m, deriv=wfn_deriv)
-                integral += coeff * self.integrate_sd_sd(
-                    sd, sd_m, deriv=ham_deriv, components=components
-                )
+                integral += coeff * self.integrate_sd_sd(sd, sd_m, deriv=ham_deriv, components=components)
 
         return integral
 
@@ -240,13 +235,9 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
         # two sd's are the same
         if diff_order == 0:
             one_electron = 2 * np.sum(self.one_int[shared_indices, shared_indices])
-            coulomb = 2 * np.sum(
-                np.triu(self._cached_two_int_ijij[shared_indices[:, None], shared_indices], k=1)
-            )
+            coulomb = 2 * np.sum(np.triu(self._cached_two_int_ijij[shared_indices[:, None], shared_indices], k=1))
             coulomb += np.sum(self._cached_two_int_ijij[shared_indices[:, None], shared_indices])
-            exchange = -2 * np.sum(
-                np.triu(self._cached_two_int_ijji[shared_indices[:, None], shared_indices], k=1)
-            )
+            exchange = -2 * np.sum(np.triu(self._cached_two_int_ijji[shared_indices[:, None], shared_indices], k=1))
         # two sd's are different by double excitation
         else:
             (a,) = diff_sd1

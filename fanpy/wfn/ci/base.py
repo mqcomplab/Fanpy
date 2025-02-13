@@ -1,4 +1,5 @@
 """Parent class of CI wavefunctions."""
+
 import itertools
 
 from fanpy.tools import slater
@@ -67,6 +68,8 @@ class CIWavefunction(BaseWavefunction):
         Assign memory available for the wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign parameters of the wavefunction.
+    import_params(self, guess)
+        Transfers parameters from a guess wavefunction to the wavefunction.
     enable_cache(self)
         Load the functions whose values will be cached.
     clear_cache(self)
@@ -80,6 +83,8 @@ class CIWavefunction(BaseWavefunction):
     get_overlap(self, sd, deriv=None) : {float, np.ndarray}
         Return the overlap (or derivative of the overlap) of the wavefunction with a Slater
         determinant.
+    compute_1rdm(self) : np.ndarray
+        Compute the one-particle reduced density matrix (1-RDM) for a CI wavefunction.
 
     """
 
@@ -284,14 +289,9 @@ class CIWavefunction(BaseWavefunction):
                     )
                 if isinstance(self.spin, float) and slater.get_spin(sd, self.nspatial) != self.spin:
                     raise ValueError(
-                        "Slater determinant, {0}, does not have the correct spin, {1}".format(
-                            bin(sd), self.spin
-                        )
+                        "Slater determinant, {0}, does not have the correct spin, {1}".format(bin(sd), self.spin)
                     )
-                if (
-                    isinstance(self.seniority, int)
-                    and slater.get_seniority(sd, self.nspatial) != self.seniority
-                ):
+                if isinstance(self.seniority, int) and slater.get_seniority(sd, self.nspatial) != self.seniority:
                     raise ValueError(
                         "Slater determinant, {0}, does not have the correct seniority, {1}".format(
                             bin(sd), self.seniority
@@ -320,6 +320,24 @@ class CIWavefunction(BaseWavefunction):
             params[0] = 1
 
         super().assign_params(params=params, add_noise=add_noise)
+
+    def import_params(self, guess):
+        """Transfers parameters from a guess wavefunction to the wavefunction.
+
+        Parameters
+        ----------
+        guess : BaseWavefunction
+            The wavefunction object providing the guess parameters.
+
+        """
+        # Extract Slater determinants and parameters
+        if isinstance(guess, CIWavefunction):
+            for index, sd in enumerate(self.sds):
+                if sd in guess.sds:
+                    guess_index = guess.sds.index(sd)
+                    self.params[index] = guess.params[guess_index]
+        else:
+            raise TypeError("Wavefunctions not supported. Both wavefunctions must be an instance of CIWavefunction.")
 
     def get_overlap(self, sd, deriv=None):
         r"""Return the overlap of the CI wavefunction with a Slater determinant.
@@ -374,3 +392,43 @@ class CIWavefunction(BaseWavefunction):
         except KeyError:
             pass
         return output[deriv]
+
+    def compute_1rdm(self):
+        """Compute the one-particle reduced density matrix (1-RDM) for a CI wavefunction.
+
+        Returns
+        -------
+        rdm1 : np.ndarray
+            NumPy array representing the computed 1-RDM.
+
+        """
+        # Initialize the one-particle reduced density matrix (1-RDM)
+        rdm1 = np.zeros((self.nspin, self.nspin))
+
+        # Loop through Slater determinants and their corresponding parameters
+        for sd, param in zip(self.sds, self.params):
+            # Get occupied and virtual orbital indices
+            occupied_indices = slater.occ_indices(sd)
+            virtual_indices = slater.vir_indices(sd, self.nspin)
+
+            # Diagonal contributions to 1-RDM
+            rdm1[occupied_indices, occupied_indices] += param * param
+
+            # Single excitation contributions to 1-RDM
+            for occ_index in occupied_indices:
+                for vir_index in virtual_indices:
+                    # Generate the singly-excited determinant
+                    excited_sd = slater.excite(sd, occ_index, vir_index)
+
+                    # Check if the excited determinant exists in the wavefunction
+                    if excited_sd in self.sds:
+                        excited_param = self.params[self.dict_sd_index[excited_sd]]
+
+                        # Compute the contribution with the excitation phase
+                        phase = slater.sign_excite(sd, [occ_index], [vir_index])
+                        contribution = param * excited_param * phase
+
+                        # Update the 1-RDM with the off-diagonal term
+                        rdm1[occ_index, vir_index] += contribution
+
+        return rdm1

@@ -14,6 +14,7 @@ permanent_borchardt(matrix)
     Computes the permanent of rank-2 Cauchy matrix
 
 """
+
 # pylint: disable=C0103
 from itertools import combinations, permutations
 
@@ -179,9 +180,7 @@ def permanent_ryser(matrix):
         if nrow > ncol:
             matrix = matrix.transpose()
             nrow, ncol = ncol, nrow
-        matrix = np.pad(
-            matrix, ((0, ncol - nrow), (0, 0)), mode="constant", constant_values=((0, 1.0), (0, 0))
-        )
+        matrix = np.pad(matrix, ((0, ncol - nrow), (0, 0)), mode="constant", constant_values=((0, 1.0), (0, 0)))
         factor /= np.math.factorial(ncol - nrow)
 
     # Initialize rowsum array.
@@ -291,7 +290,7 @@ def permanent_borchardt(lambdas, epsilons, zetas, etas=None):
         indices = np.array(indices)
         submatrix = cauchy_matrix[:, indices]
         perm_zetas = np.product(zetas[indices])
-        perm_cauchy += np.linalg.det(submatrix ** 2) / np.linalg.det(submatrix) * perm_zetas
+        perm_cauchy += np.linalg.det(submatrix**2) / np.linalg.det(submatrix) * perm_zetas
 
     perm_etas = np.prod(etas)
 
@@ -345,10 +344,7 @@ def unitary_matrix(antiherm_elements, norm_threshold=1e-8, num_threshold=100):
 
     dim = (1 + np.sqrt(1 + 8 * antiherm_elements.size)) / 2
     if __debug__ and not dim.is_integer():
-        raise ValueError(
-            "Number of elements is not compatible with the upper triangular part of "
-            "any square matrix."
-        )
+        raise ValueError("Number of elements is not compatible with the upper triangular part of " "any square matrix.")
     dim = int(dim)
 
     antiherm = np.zeros((dim, dim))
@@ -371,14 +367,13 @@ def unitary_matrix(antiherm_elements, norm_threshold=1e-8, num_threshold=100):
 
 
 class OrthogonalizationError(Exception):
-    """ Exception class for errors in the orthogonalization module
+    """Exception class for errors in the orthogonalization module"""
 
-    """
     pass
 
 
 def eigh(matrix, threshold=1e-9):
-    '''Returns eigenvalues and eigenvectors of a Hermitian matrix where the
+    """Returns eigenvalues and eigenvectors of a Hermitian matrix where the
     eigenvectors (and eigenvalues) with eigenvalues less than the threshold are
     removed.
 
@@ -404,28 +399,32 @@ def eigh(matrix, threshold=1e-9):
     NOTE
     ----
     This code mainly uses numpy.eigh
-    '''
+    """
     if not isinstance(matrix, np.ndarray):
-        raise OrthogonalizationError('Unsupported matrix type, {0}'.format(type(matrix)))
+        raise OrthogonalizationError("Unsupported matrix type, {0}".format(type(matrix)))
     if len(matrix.shape) != 2 or matrix.shape[0] != matrix.shape[1]:
-        raise OrthogonalizationError('Unsupported matrix shape, {0}'.format(matrix.shape))
+        raise OrthogonalizationError("Unsupported matrix shape, {0}".format(matrix.shape))
     eigval, eigvec = np.linalg.eigh(matrix)
     # discard eigenvalues less than threshold
     kept_indices = np.abs(eigval) > threshold
     if np.sum(-kept_indices) > 0:
-        print('WARNING: Discarded {0} eigenvalues (threshold= {1}):\n'
-              '{2}'.format(sum(-kept_indices), threshold, eigval[-kept_indices]))
+        print(
+            "WARNING: Discarded {0} eigenvalues (threshold= {1}):\n"
+            "{2}".format(sum(-kept_indices), threshold, eigval[-kept_indices])
+        )
     if np.any(eigval < -threshold):
-        print('WARNING: {0} eigenvalues are quite negative:\n'
-              '{1}'.format(np.sum(eigval < -threshold), eigval[eigval < -threshold]))
+        print(
+            "WARNING: {0} eigenvalues are quite negative:\n"
+            "{1}".format(np.sum(eigval < -threshold), eigval[eigval < -threshold])
+        )
     eigval, eigvec = eigval[kept_indices], eigvec[:, kept_indices]
     # sort it by decreasing eigenvalue
-    sorted_indices = np.argsort(eigval, kind='quicksort')[::-1]
+    sorted_indices = np.argsort(eigval, kind="quicksort")[::-1]
     return eigval[sorted_indices], eigvec[:, sorted_indices]
 
 
 def power_symmetric(matrix, k, threshold_eig=1e-9, threshold_symm=1e-10):
-    """ Return kth power of a symmetric matrix
+    """Return kth power of a symmetric matrix
 
     Parameters
     ----------
@@ -453,13 +452,12 @@ def power_symmetric(matrix, k, threshold_eig=1e-9, threshold_symm=1e-10):
         If the power is a fraction and the any eigenvalues are negative
     """
     if not isinstance(matrix, np.ndarray):
-        raise OrthogonalizationError('Unsupported matrix type, {0}'.format(type(matrix)))
+        raise OrthogonalizationError("Unsupported matrix type, {0}".format(type(matrix)))
     if len(matrix.shape) != 2 or matrix.shape[0] != matrix.shape[1]:
-        raise OrthogonalizationError('Unsupported matrix shape, {0}'.format(matrix.shape))
-    if np.max(np.abs(matrix.T-matrix)) > threshold_symm:
-        raise OrthogonalizationError('Matrix is not symmetric')
+        raise OrthogonalizationError("Unsupported matrix shape, {0}".format(matrix.shape))
+    if np.max(np.abs(matrix.T - matrix)) > threshold_symm:
+        raise OrthogonalizationError("Matrix is not symmetric")
     eigval, eigvec = eigh(matrix, threshold=threshold_eig)
     if k % 1 != 0 and np.any(eigval < 0):
-        raise OrthogonalizationError('Fractional power of negative eigenvalues. '
-                                     'Imaginary numbers not supported.')
-    return (eigvec*(eigval**k)).dot(eigvec.T)
+        raise OrthogonalizationError("Fractional power of negative eigenvalues. " "Imaginary numbers not supported.")
+    return (eigvec * (eigval**k)).dot(eigvec.T)

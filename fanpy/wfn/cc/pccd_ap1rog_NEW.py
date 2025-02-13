@@ -1,9 +1,7 @@
 """Pair Coupled Cluster Doubles-AP1roG wavefunction."""
+
 import numpy as np
-from itertools import combinations
-from collections import Counter
 from fanpy.tools import slater
-from fanpy.tools import graphs
 from fanpy.wfn.cc.base import BaseCC
 from fanpy.wfn.ci.base import CIWavefunction
 
@@ -116,8 +114,20 @@ class PCCD(BaseCC):
         Assign the s_type option.
 
     """
-    def __init__(self, nelec, nspin, memory=None, ranks=None, indices=None,
-                 refwfn=None, params=None, exop_combinations=None, refresh_exops=None, s_type='sen-o'):
+
+    def __init__(
+        self,
+        nelec,
+        nspin,
+        memory=None,
+        ranks=None,
+        indices=None,
+        refwfn=None,
+        params=None,
+        exop_combinations=None,
+        refresh_exops=None,
+        s_type="sen-o",
+    ):
         """Initialize the wavefunction.
 
         Parameters
@@ -151,8 +161,9 @@ class PCCD(BaseCC):
             annihilation to the creation operators.
 
         """
-        super().__init__(nelec, nspin, memory=memory, params=params,
-                         exop_combinations=exop_combinations, refresh_exops=refresh_exops)
+        super().__init__(
+            nelec, nspin, memory=memory, params=params, exop_combinations=exop_combinations, refresh_exops=refresh_exops
+        )
         self.assign_s_type(s_type=s_type)
         self.assign_ranks(ranks=ranks)
         self.assign_exops(indices=indices)
@@ -180,7 +191,7 @@ class PCCD(BaseCC):
         """
         super().assign_nelec(nelec)
         if self.nelec % 2 != 0:
-            raise ValueError('Odd number of electrons is not supported')
+            raise ValueError("Odd number of electrons is not supported")
 
     def assign_ranks(self, ranks=None):
         """Assign the ranks of the excitation operators.
@@ -198,9 +209,9 @@ class PCCD(BaseCC):
 
         """
         if ranks is not None:
-            raise ValueError('Only the default, rank = 2, is allowed')
+            raise ValueError("Only the default, rank = 2, is allowed")
         if self.nelec <= 1:
-            raise ValueError('Only wavefunctions with more than 1 electron can be considered')
+            raise ValueError("Only wavefunctions with more than 1 electron can be considered")
         self.ranks = [2]
 
     def assign_exops(self, indices=None):
@@ -228,17 +239,18 @@ class PCCD(BaseCC):
 
         """
         if indices is not None:
-            raise TypeError('Only the excitation operators constructed by default from '
-                            'the given reference Slater determinant are allowed')
+            raise TypeError(
+                "Only the excitation operators constructed by default from "
+                "the given reference Slater determinant are allowed"
+            )
         else:
             exops = {}
             counter = 0
             ex_from = slater.occ_indices(self.refwfn)
             ex_to = [i for i in range(self.nspin) if i not in ex_from]
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
-                for virt_alpha in ex_to[:len(ex_to) // 2]:
-                    exop = [occ_alpha, occ_alpha + self.nspatial,
-                            virt_alpha, virt_alpha + self.nspatial]
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
+                for virt_alpha in ex_to[: len(ex_to) // 2]:
+                    exop = [occ_alpha, occ_alpha + self.nspatial, virt_alpha, virt_alpha + self.nspatial]
                     exops[tuple(exop)] = counter
                     counter += 1
             self.exops = exops
@@ -266,14 +278,14 @@ class PCCD(BaseCC):
             self.refwfn = slater.ground(nocc=self.nelec, norbs=self.nspin)
         else:
             if not isinstance(refwfn, int):
-                raise TypeError('refwfn must be a int object')
+                raise TypeError("refwfn must be a int object")
             if slater.total_occ(refwfn) != self.nelec:
-                raise ValueError('refwfn must have {} electrons'.format(self.nelec))
-            if not all([i + self.nspatial in slater.occ_indices(refwfn) for i in
-                        slater.occ_indices(refwfn)[:self.nspatial]] +
-                       [i - self.nspatial in slater.occ_indices(refwfn) for i in
-                        slater.occ_indices(refwfn)[self.nspatial:]]):
-                raise ValueError('refwfn must be a seniority-0 wavefuntion')
+                raise ValueError("refwfn must have {} electrons".format(self.nelec))
+            if not all(
+                [i + self.nspatial in slater.occ_indices(refwfn) for i in slater.occ_indices(refwfn)[: self.nspatial]]
+                + [i - self.nspatial in slater.occ_indices(refwfn) for i in slater.occ_indices(refwfn)[self.nspatial :]]
+            ):
+                raise ValueError("refwfn must be a seniority-0 wavefuntion")
             # TODO: check that refwfn has the right number of spin-orbs
             self.refwfn = refwfn
 
@@ -322,6 +334,7 @@ class PCCD(BaseCC):
             Matrix element of the CC operator between the given Slater determinant.
 
         """
+
         def temp_olp(sd1, sd2):
             if sd1 == sd2:
                 return 1.0
@@ -343,14 +356,14 @@ class PCCD(BaseCC):
             # FIXME: sometimes exop contains virtual orbitals in annihilators may need to explicitly
             # excite
             indices_multi = self.exop_combinations[tuple(a_inds + c_inds)]
-            #print("indices_multi", indices_multi)
-            # FIXME: filter out rows whose excitation operators does not have annihilator that is 
+            # print("indices_multi", indices_multi)
+            # FIXME: filter out rows whose excitation operators does not have annihilator that is
             # doubly occupied
             occ_indices = set(slater.occ_indices(sd2))
-            #virt_indices = set(slater.virt_indices(sd, self.nspin))
-            #print(indices_multi)
-            #"Break occupied pairs"
-            if self.s_type == 'sen-o':
+            # virt_indices = set(slater.virt_indices(sd, self.nspin))
+            # print(indices_multi)
+            # "Break occupied pairs"
+            if self.s_type == "sen-o":
                 for exc_order in indices_multi:
                     indices_sign = indices_multi[exc_order]
                     selected_rows = []
@@ -385,7 +398,7 @@ class PCCD(BaseCC):
                                         trash.add(exop[0] - self.nspatial)
                             # FIXME: not sure
                             else:
-                                for j in exop[:len(exop)//2]:
+                                for j in exop[: len(exop) // 2]:
                                     if j in trash:
                                         # skip
                                         skip_row = True
@@ -394,16 +407,16 @@ class PCCD(BaseCC):
                                         trash.add(j)
                                 if skip_row:
                                     break
-                
+
                         if not skip_row:
                             selected_rows.append(row_ind)
-                
+
                     indices_multi[exc_order] = indices_sign[selected_rows]
-                    #FIXME:
-                    #print(selected_rows)
-                    #print(indices_multi[exc_order])
-            #"Don't form virtual pairs"
-            elif self.s_type == 'sen-v':
+                    # FIXME:
+                    # print(selected_rows)
+                    # print(indices_multi[exc_order])
+            # "Don't form virtual pairs"
+            elif self.s_type == "sen-v":
                 for exc_order in indices_multi:
                     indices_sign = indices_multi[exc_order]
                     selected_rows = []
@@ -438,7 +451,7 @@ class PCCD(BaseCC):
                                         trash.add(exop[1] - self.nspatial)
                             # FIXME: not sure
                             else:
-                                for j in exop[len(exop)//2:]:
+                                for j in exop[len(exop) // 2 :]:
                                     if j in trash:
                                         # skip
                                         skip_row = True
@@ -447,16 +460,16 @@ class PCCD(BaseCC):
                                         trash.add(j)
                                 if skip_row:
                                     break
-                
+
                         if not skip_row:
                             selected_rows.append(row_ind)
-                
+
                     indices_multi[exc_order] = indices_sign[selected_rows]
-                    #FIXME:
-                    #print(selected_rows)
-                    #print(indices_multi[exc_order])
-            #"Break occupied pairs AND don't form virtual pairs"
-            elif self.s_type == 'sen-ov':
+                    # FIXME:
+                    # print(selected_rows)
+                    # print(indices_multi[exc_order])
+            # "Break occupied pairs AND don't form virtual pairs"
+            elif self.s_type == "sen-ov":
                 for exc_order in indices_multi:
                     indices_sign = indices_multi[exc_order]
                     selected_rows = []
@@ -518,17 +531,17 @@ class PCCD(BaseCC):
                                         trash.add(j)
                                 if skip_row:
                                     break
-                
+
                         if not skip_row:
                             selected_rows.append(row_ind)
-                
+
                     indices_multi[exc_order] = indices_sign[selected_rows]
-                    #FIXME:
-                    #print(selected_rows)
-                    #print(indices_multi[exc_order])
+                    # FIXME:
+                    # print(selected_rows)
+                    # print(indices_multi[exc_order])
 
             amplitudes = self.product_amplitudes_multi(indices_multi)
-            #print(amplitudes)
+            # print(amplitudes)
             val = sign * amplitudes
             return val
 
@@ -556,6 +569,7 @@ class PCCD(BaseCC):
             Derivative of the overlap with respect to the given parameter.
 
         """
+
         def temp_olp(sd1, sd2):
             if sd1 == sd2:
                 return np.zeros(self.nparams)
@@ -578,7 +592,7 @@ class PCCD(BaseCC):
             # FIXME: sometimes exop contains virtual orbitals in annihilators may need to explicitly
             # excite
             indices_multi = self.exop_combinations[tuple(a_inds + c_inds)]
-            # FIXME: filter out rows whose excitation operators do not have annihilator that is 
+            # FIXME: filter out rows whose excitation operators do not have annihilator that is
             # doubly occupied
             occ_indices = set(slater.occ_indices(sd))
             for exc_order in indices_multi:
@@ -621,7 +635,7 @@ class PCCD(BaseCC):
                                     trash.add(exop[0] - self.nspatial)
                         # FIXME: not sure
                         else:
-                            for j in exop[:len(exop)//2]:
+                            for j in exop[: len(exop) // 2]:
                                 # skip because annihilator was used before as part of a single
                                 # excitation or its opposite spin component
                                 if j in trash:
@@ -639,12 +653,12 @@ class PCCD(BaseCC):
                         selected_rows.append(row_ind)
 
                 indices_multi[exc_order] = indices_sign[selected_rows]
-                #FIXME:
-                #print(selected_rows)
-                #print(indices_multi[exc_order])
+                # FIXME:
+                # print(selected_rows)
+                # print(indices_multi[exc_order])
 
             amplitudes = self.product_amplitudes_multi(indices_multi, deriv=True)
-            #print(amplitudes)
+            # print(amplitudes)
             val = sign * amplitudes
             return val
 

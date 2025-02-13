@@ -1,21 +1,14 @@
 """Parent class of CI wavefunctions."""
+
 import itertools
 
 from fanpy.tools import slater
 from fanpy.tools.sd_list import sd_list
-from fanpy.wfn.ci.fci import FCI
 from fanpy.wfn.base import BaseWavefunction
 
 import numpy as np
- 
 
 
-'''
-BaseWavefuction 
-
-params = np array
-
-'''
 class NonLinear(BaseWavefunction):
     def __init__(self, nelec, nspin, memory=None, params=None, sds=None, spin=None, seniority=None):
         super().__init__(nelec, nspin, memory=memory)
@@ -27,7 +20,6 @@ class NonLinear(BaseWavefunction):
         self.assign_params(params=params)
         # FIXME: product hack
         self.default_val = 0
-
 
     @property
     def spin(self):
@@ -136,11 +128,6 @@ class NonLinear(BaseWavefunction):
                 raise ValueError("Seniority must be greater than or equal to zero.")
         self._seniority = seniority
 
-
-
-
-
-
     def assign_sds(self, sds=None):
         """Assign the list of Slater determinants from which the CI wavefunction is constructed.
 
@@ -195,14 +182,9 @@ class NonLinear(BaseWavefunction):
                     )
                 if isinstance(self.spin, float) and slater.get_spin(sd, self.nspatial) != self.spin:
                     raise ValueError(
-                        "Slater determinant, {0}, does not have the correct spin, {1}".format(
-                            bin(sd), self.spin
-                        )
+                        "Slater determinant, {0}, does not have the correct spin, {1}".format(bin(sd), self.spin)
                     )
-                if (
-                    isinstance(self.seniority, int)
-                    and slater.get_seniority(sd, self.nspatial) != self.seniority
-                ):
+                if isinstance(self.seniority, int) and slater.get_seniority(sd, self.nspatial) != self.seniority:
                     raise ValueError(
                         "Slater determinant, {0}, does not have the correct seniority, {1}".format(
                             bin(sd), self.seniority
@@ -213,7 +195,6 @@ class NonLinear(BaseWavefunction):
 
         self.sds = tuple(sds)
 
-
     def assign_params(self, params=None, add_noise=False):
         if params is None:
             params = np.zeros(self.nspin)
@@ -221,11 +202,9 @@ class NonLinear(BaseWavefunction):
             occs = slater.occ_indices(ground_state)
             params[occs] = 4
         else:
-            if params.shape != (self.nspin, ):
-                raise ValueError('The number of the parameters must be equal to the number of spin orbitals.')
+            if params.shape != (self.nspin,):
+                raise ValueError("The number of the parameters must be equal to the number of spin orbitals.")
         super().assign_params(params=params, add_noise=add_noise)
-
-
 
     def get_overlap(self, sd, deriv=None):
         occ_indx = slater.occ_indices(sd)

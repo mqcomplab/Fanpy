@@ -1,4 +1,5 @@
 """Energy of the Schrodinger equation integrated against projected forms of the wavefunction."""
+
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.tools import sd_list, slater
 
@@ -217,9 +218,7 @@ class EnergyTwoSideProjection(BaseSchrodinger):
 
         """
         if pspace_l is None:
-            pspace_l = sd_list.sd_list(
-                self.wfn.nelec, self.wfn.nspin, spin=self.wfn.spin, seniority=self.wfn.seniority
-            )
+            pspace_l = sd_list.sd_list(self.wfn.nelec, self.wfn.nspin, spin=self.wfn.spin, seniority=self.wfn.seniority)
 
         for pspace in [pspace_l, pspace_r, pspace_n]:
             if pspace is None:
@@ -231,13 +230,11 @@ class EnergyTwoSideProjection(BaseSchrodinger):
                     occs = slater.occ_indices(state)
                     if len(occs) != self.wfn.nelec:
                         raise ValueError(
-                            "Given state does not have the same number of electrons as"
-                            " the given wavefunction."
+                            "Given state does not have the same number of electrons as" " the given wavefunction."
                         )
                     if any(i >= self.wfn.nspin for i in occs):
                         raise ValueError(
-                            "Given state does not have the same number of spin "
-                            "orbitals as the given wavefunction."
+                            "Given state does not have the same number of spin " "orbitals as the given wavefunction."
                         )
                 else:
                     raise TypeError("Projection space must only contain Slater determinants.")

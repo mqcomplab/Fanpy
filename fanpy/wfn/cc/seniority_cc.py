@@ -1,6 +1,6 @@
 """Seniority Coupled Cluster wavefunctions."""
+
 import numpy as np
-import functools
 from itertools import combinations
 from collections import Counter
 from fanpy.tools import slater
@@ -110,8 +110,19 @@ class SeniorityCC(BaseCC):
         to the given indices to be created.
 
     """
-    def __init__(self, nelec, nspin, memory=None, ranks=None, indices=None,
-                 refwfn=None, params=None, exop_combinations=None, refresh_exops=None):
+
+    def __init__(
+        self,
+        nelec,
+        nspin,
+        memory=None,
+        ranks=None,
+        indices=None,
+        refwfn=None,
+        params=None,
+        exop_combinations=None,
+        refresh_exops=None,
+    ):
         """Initialize the wavefunction.
 
         Parameters
@@ -145,8 +156,16 @@ class SeniorityCC(BaseCC):
             annihilation to the creation operators.
 
         """
-        super().__init__(nelec, nspin, memory=memory, ranks=ranks, indices=indices, params=params,
-                         exop_combinations=exop_combinations, refresh_exops=refresh_exops)
+        super().__init__(
+            nelec,
+            nspin,
+            memory=memory,
+            ranks=ranks,
+            indices=indices,
+            params=params,
+            exop_combinations=exop_combinations,
+            refresh_exops=refresh_exops,
+        )
         self.assign_refwfn(refwfn=refwfn)
         self.load_cache()
 
@@ -169,7 +188,7 @@ class SeniorityCC(BaseCC):
         """
         super().assign_nelec(nelec)
         if self.nelec % 2 != 0:
-            raise ValueError('Odd number of electrons is not supported')
+            raise ValueError("Odd number of electrons is not supported")
 
     def assign_refwfn(self, refwfn=None):
         """Assign the reference wavefunction upon which the CC operator will act.
@@ -196,7 +215,7 @@ class SeniorityCC(BaseCC):
             self.refwfn = slater.ground(nocc=self.nelec, norbs=self.nspin)
         elif isinstance(refwfn, int):
             if slater.total_occ(refwfn) != self.nelec:
-                raise ValueError('refwfn must have {} electrons'.format(self.nelec))
+                raise ValueError("refwfn must have {} electrons".format(self.nelec))
             # TODO: check that refwfn has the right number of spin-orbs
             # FIXME: bad check
             # if not all([i + self.nspatial in slater.occ_indices(refwfn) for i in
@@ -207,15 +226,15 @@ class SeniorityCC(BaseCC):
             self.refwfn = refwfn
         else:
             if not isinstance(refwfn, CIWavefunction):
-                raise TypeError('refwfn must be a CIWavefunction or a int object')
-            if not hasattr(refwfn, 'sds'):  # NOTE: Redundant test.
-                raise AttributeError('refwfn must have the sds attribute')
+                raise TypeError("refwfn must be a CIWavefunction or a int object")
+            if not hasattr(refwfn, "sds"):  # NOTE: Redundant test.
+                raise AttributeError("refwfn must have the sds attribute")
             if refwfn.nelec != self.nelec:
-                raise ValueError('refwfn must have {} electrons'.format(self.nelec))
+                raise ValueError("refwfn must have {} electrons".format(self.nelec))
             if refwfn.nspin != self.nspin:
-                raise ValueError('refwfn must have {} spin orbitals'.format(self.nspin))
+                raise ValueError("refwfn must have {} spin orbitals".format(self.nspin))
             if refwfn.seniority != 0:
-                raise ValueError('refwfn must be a seniority-0 wavefuntion')
+                raise ValueError("refwfn must be a seniority-0 wavefuntion")
             self.refwfn = refwfn
 
     def _olp(self, sd):
@@ -289,14 +308,14 @@ class SeniorityCC(BaseCC):
                     sign = 1
                     extra_sd = sd2
                     for exop in exop_list:
-                        if not all([complement_occ(i, extra_sd) for i in exop[:len(exop) // 2]]
-                                    + [complement_empty(i, extra_sd) for i in
-                                        exop[len(exop) // 2:]]):
+                        if not all(
+                            [complement_occ(i, extra_sd) for i in exop[: len(exop) // 2]]
+                            + [complement_empty(i, extra_sd) for i in exop[len(exop) // 2 :]]
+                        ):
                             sign = None
                             break
                         try:
-                            sign *= slater.sign_excite(extra_sd, exop[:len(exop) // 2],
-                                                        exop[len(exop) // 2:])
+                            sign *= slater.sign_excite(extra_sd, exop[: len(exop) // 2], exop[len(exop) // 2 :])
                         except ValueError:
                             sign = None
                             break
@@ -380,14 +399,14 @@ class SeniorityCC(BaseCC):
                     sign = 1
                     extra_sd = sd2
                     for exop in exop_list:
-                        if not all([complement_occ(i, extra_sd) for i in exop[:len(exop) // 2]]
-                                + [complement_empty(i, extra_sd) for i in
-                                    exop[len(exop) // 2:]]):
+                        if not all(
+                            [complement_occ(i, extra_sd) for i in exop[: len(exop) // 2]]
+                            + [complement_empty(i, extra_sd) for i in exop[len(exop) // 2 :]]
+                        ):
                             sign = None
                             break
                         try:
-                            sign *= slater.sign_excite(extra_sd, exop[:len(exop) // 2],
-                                                    exop[len(exop) // 2:])
+                            sign *= slater.sign_excite(extra_sd, exop[: len(exop) // 2], exop[len(exop) // 2 :])
                         except ValueError:
                             sign = None
                             break
@@ -436,8 +455,7 @@ class SeniorityCC(BaseCC):
         check_ops = []
         # NOTE: Is necessary to invert the results of int_partition_recursive
         # to be consistent with the ordering of operators in the CC operator.
-        for partition in list(graphs.int_partition_recursive(self.ranks,
-                                                             self.nranks, exrank))[::-1]:
+        for partition in list(graphs.int_partition_recursive(self.ranks, self.nranks, exrank))[::-1]:
             reduced_partition = Counter(partition)
             bin_size_num = []
             for bin_size in sorted(reduced_partition):
@@ -451,7 +469,7 @@ class SeniorityCC(BaseCC):
                     for annh in annhs:
                         for crea in creas:
                             if len(annh) == len(crea):
-                                combs.append(annh+crea)
+                                combs.append(annh + crea)
                     for match in combinations(combs, nops):
                         matchs = []
                         for op in match:
@@ -462,6 +480,5 @@ class SeniorityCC(BaseCC):
         self.exop_combinations[tuple(a_inds + c_inds)] = []
         for op_list in check_ops:
             if all(tuple(op) in self.exops for op in op_list):
-            # if all(tuple(op) in self.exops for op in op_list):
+                # if all(tuple(op) in self.exops for op in op_list):
                 self.exop_combinations[tuple(a_inds + c_inds)].append(op_list)
-
