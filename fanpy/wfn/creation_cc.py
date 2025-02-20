@@ -1,3 +1,4 @@
+"""Creation Coupled-Cluster wavefunction."""
 import numpy as np
 from itertools import combinations
 
@@ -6,6 +7,61 @@ from fanpy.tools import slater
 
 
 class CreationCC(BaseWavefunction):
+    r"""Creation Coupled-Cluster wavefunction.
+
+    The creation CC wavefunction is given by
+
+    .. math::
+        |\Psi \rangle = \exp(\sum_{ij}c_{ij}a^{\dagger}_i a^{\dagger}_j) | 0 \rangle
+    
+    where :math: | 0 \rangle is the vacuum state, :math: a^{\dagger}_i is the creation operator
+    for the i-th spin orbital, and :math: c_{ij} are the parameters of the wavefunction.
+    
+    Attributes
+    ----------
+    nelec : int
+        Number of electrons.
+    nspin : int
+        Number of spin orbitals.
+    memory : {float, int, str, None}
+        Memory available for the wavefunction.
+    dict_orbpair_ind : dict of 2-tuple of int: int
+        Dictionary that maps orbital pairs to column indices.
+    dict_ind_orbpair : dict of int: 2-tuple of int
+        Dictionary that maps column indices to orbital pairs.
+    params : np.ndarray
+        Parameters of the wavefunction.
+    permutations : list of list of 2-tuple of int
+        Permutations of the orbital pairs.
+    signs : list of int
+        Signs of the permutations.
+    
+    Methods
+    -------
+    __init__(nelec, nspin, memory=None, orbpairs=None, params=None)
+        Initialize the wavefunction.
+    assign_nelec(nelec)
+        Assign the number of electrons.
+    assign_params(params=None, add_noise=False)
+        Assign the parameters of the wavefunction.
+    assign_orbpairs(orbpairs=None)
+        Assign the orbital pairs used to construct the wavefunction.
+    get_col_ind(orbpair)
+        Get the column index that corresponds to the given orbital pair.
+    get_permutations()
+        Get the permutations of the given indices.
+    get_sign(indices)
+        Get the sign of the permutation of the given indices.
+    _olp(sd)
+        Calculate overlap with Slater determinant.
+    _olp_deriv(sd)
+        Calculate the derivative of the overlap.
+    get_overlap(sd, deriv=None) : {float, np.ndarray}
+        Return the (derivative) overlap of the wavefunction with a Slater determinant.
+    calculate_product(occ_indices, permutation, sign)
+        Calculate the product of the parameters of the given permutation.
+    """
+
     def __init__(self, nelec, nspin, memory=None, orbpairs=None, params=None):
         """Initialize the wavefunction
         Parameters
@@ -29,7 +85,7 @@ class CreationCC(BaseWavefunction):
         self.assign_orbpairs(orbpairs=orbpairs)
         self.assign_params(params=params)
         self.permutations, self.signs = self.get_permutations()
-
+        
     def assign_nelec(self, nelec: int):
         """Assign the number of electrons.
 
@@ -55,6 +111,7 @@ class CreationCC(BaseWavefunction):
 
     def assign_params(self, params=None, add_noise=False):
         """Assign the parameters of the creation cc wfn.
+
         Parameters
         ----------
         params : {np.ndarray, None}
@@ -80,7 +137,7 @@ class CreationCC(BaseWavefunction):
         super().assign_params(params=params, add_noise=add_noise)
 
     def assign_orbpairs(self, orbpairs=None):
-        """Assign the orbital pairs.
+        """Assign the orbital pairs used to construct the creation CC wavefunction.
 
         Parameters
         ----------
@@ -157,19 +214,16 @@ class CreationCC(BaseWavefunction):
             raise ValueError(f"Given orbital pair, {orbpair}, is not included in the wavefunction.")
 
     def get_permutations(self):
-        """Get the permutations of the given indices.
-
-        Parameters
-        ----------
-        indices : list of int
-            Indices of the orbitals.
+        """ Calculate the permutations of indices 0 to nelec.
 
         Returns
         -------
         perms : list of list of int
-            Permutations of the given indices.
-
+            Permutations of the indices (0 to nelec).
+        signs : list of int
+            Signs of the permutations.
         """
+
         indices = np.arange(self.nelec, dtype=int)
         perm_list = list(combinations(indices, r=2))
 
@@ -208,7 +262,6 @@ class CreationCC(BaseWavefunction):
 
     def _olp(self, sd: int):
         """Calculate overlap with Slater determinant.
-
         Parameters
         ----------
         sd : int
@@ -226,13 +279,29 @@ class CreationCC(BaseWavefunction):
         return olp
 
     def calculate_product(self, occ_indices, permutation, sign):
+        """Calculate the product of the parameters of the given permutation.
+        
+        Parameters
+        ----------
+        occ_indices : list of int
+            Occupation indices of the Slater determinant.
+        permutation : list of 2-tuple of int
+            Permutation of the orbital pairs.
+        sign : int
+            Sign of the permutation.
+        
+        Returns
+        -------
+        prod : float
+            Product of the parameters of the given permutation
+        """
+
         col_inds = list(map(self.get_col_ind, occ_indices.take(permutation)))
         prod = sign * np.prod(self.params[col_inds])
         return prod
 
     def _olp_deriv(self, sd: int):
         """Calculate the derivative of the overlap
-
         Parameters
         ----------
         sd : int
@@ -257,9 +326,10 @@ class CreationCC(BaseWavefunction):
         return output
 
     def get_overlap(self, sd: int, deriv=None):
-        """Return the overlap of the wavefunction with a Slater determinant.
-        Inlcude math later.
+        r"""Return the (derivative) overlap of the wavefunction with a Slater determinant.
 
+        .. math::
+           | \Psi \rangle = \sum_{\textbf{m} \in S} \sum_{\{i_1 j_1, ..., i_{n_m} j_{n_m} \} = \textbf{m}} sgn (\sigma(\{i_1 j_1, ..., i_{n_m} j_{n_m} \}))\prod_{k}^{n_m} c_{i_k j_k} | \textbf{m} \rangle
         Parameters
         ----------
         sd : int
@@ -273,6 +343,7 @@ class CreationCC(BaseWavefunction):
         overlap : {float, np.ndarray}
             Overlap (or derivative of the overlap) of the wavefunction with the given Slater
             determinant.
+
         """
 
         if deriv is None:
