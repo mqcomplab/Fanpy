@@ -1,4 +1,5 @@
 """Restricted Boltzmann Machine wavefunction."""
+
 from fanpy.tools import slater
 from fanpy.wfn.base import BaseWavefunction
 
@@ -6,9 +7,7 @@ import numpy as np
 
 
 class RestrictedBoltzmannMachine(BaseWavefunction):
-    def __init__(
-        self, nelec, nspin, nbath, params=None, memory=None, num_layers=1, orders=(1, 2)
-    ):
+    def __init__(self, nelec, nspin, nbath, params=None, memory=None, num_layers=1, orders=(1, 2)):
         super().__init__(nelec, nspin, memory=memory)
         self.nbath = nbath
         self.orders = np.array(orders)
@@ -21,7 +20,6 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         # self.probable_sds = {}
         # self.olp_threshold = 42
 
-    
     @property
     def params(self):
         return np.hstack([i.flat for i in self._params])
@@ -41,10 +39,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         """
         # NOTE: first layer is K x B
-        return (
-            np.sum(self.nbath * self.nspin ** self.orders) +
-            (self.num_layers - 1) * (self.nbath ** 2)
-        )
+        return np.sum(self.nbath * self.nspin**self.orders) + (self.num_layers - 1) * (self.nbath**2)
         # NOTE: first layer is K x K and K x B
         # return (
         #     np.sum(self.nspin * self.nspin ** self.orders) +
@@ -67,10 +62,9 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         """
         # NOTE: first layer is K x B
-        return (
-            [(self.nbath, *(self.nspin, ) * order) for order in self.orders] +
-            (self.num_layers - 1) * [(self.nbath, self.nbath)]
-        )
+        return [(self.nbath, *(self.nspin,) * order) for order in self.orders] + (self.num_layers - 1) * [
+            (self.nbath, self.nbath)
+        ]
         # NOTE: first layer is K x K and K x B
         # return (
         #     [(self.nspin, *(self.nspin, ) * order) for order in self.orders] +
@@ -170,8 +164,8 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         if isinstance(params, np.ndarray):
             structured_params = []
             for param_shape in self.params_shape:
-                structured_params.append(params[:np.prod(param_shape)].reshape(*param_shape))
-                params = params[np.prod(param_shape):]
+                structured_params.append(params[: np.prod(param_shape)].reshape(*param_shape))
+                params = params[np.prod(param_shape) :]
             params = structured_params
 
         # store parameters
@@ -234,7 +228,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         #     self.probable_sds[sd] = output
 
         return output
-    
+
     def _olp_helper(self, sd, cache=False):
         """Return output of the network (before the product layer)."""
         occ_indices = np.array(slater.occ_indices(sd))
@@ -252,7 +246,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
             # NOTE: if you want to use a different operator, you would change the corresponding
             # input here
             # get input vector/tensor
-            input_layer = np.zeros((self.nspin, ) * order)
+            input_layer = np.zeros((self.nspin,) * order)
             mask = occ_mask
             for _ in range(order - 1):
                 mask = occ_mask & np.expand_dims(mask, -1)
@@ -271,9 +265,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
             # output += layer_params
 
             # OR more generally (if inputs are not 0 or 1)
-            next_layer = np.sum(
-                layer_params * input_layer, axis=tuple(np.arange(1, layer_params.ndim))
-            )
+            next_layer = np.sum(layer_params * input_layer, axis=tuple(np.arange(1, layer_params.ndim)))
             output += next_layer
 
         if cache:
@@ -282,7 +274,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         output = self.activation(output)
 
-        for layer_params in self._params[len(self.orders):]:
+        for layer_params in self._params[len(self.orders) :]:
             if cache:
                 self.forward_cache_act.append(output)
             output = layer_params.dot(output)
@@ -324,7 +316,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         # get product of the network output that have not been derivatived
         indices = np.arange(self.nbath)
-        indices = np.array([np.roll(indices, - i - 1, axis=0)[:-1] for i in indices])
+        indices = np.array([np.roll(indices, -i - 1, axis=0)[:-1] for i in indices])
         other_vals = np.prod(vals[indices] * self.output_scale, axis=1)
 
         output = []
@@ -354,7 +346,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
             # NOTE: if you want to use a different operator, you would change the corresponding
             # input here
             # get input vector/tensor
-            input_layer = np.zeros((len(sds),) + (self.nspin, ) * order)
+            input_layer = np.zeros((len(sds),) + (self.nspin,) * order)
             mask = occ_mask
             for i in range(order - 1):
                 occ_mask = np.expand_dims(occ_mask, 1)
@@ -378,7 +370,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
             self.forward_cache_lin.append(vals)
         vals = self.activation(vals)
 
-        for layer_params in self._params[len(self.orders):]:
+        for layer_params in self._params[len(self.orders) :]:
             self.forward_cache_act.append(vals)
             vals = layer_params.dot(vals)
             self.forward_cache_lin.append(vals)
@@ -416,36 +408,24 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         # get product of the network output that have not been derivatived
         indices = np.arange(self.nbath)
-        indices = np.array([np.roll(indices, - i - 1, axis=0)[:-1] for i in indices])
+        indices = np.array([np.roll(indices, -i - 1, axis=0)[:-1] for i in indices])
         other_vals = np.prod(vals[indices] * self.output_scale, axis=1)
 
         output = []
         for grads_layer in grads[:-1]:
             output.append(
-                np.moveaxis(
-                    np.sum(other_vals[:, None, None] * grads_layer, axis=0), 2, 0
-                ).reshape(len(sds), -1)
+                np.moveaxis(np.sum(other_vals[:, None, None] * grads_layer, axis=0), 2, 0).reshape(len(sds), -1)
             )
-        output.append(
-            np.moveaxis(np.sum(other_vals[:, None, None, :] * grads[-1], axis=0), 2, 0).reshape(len(sds), -1)
-        )
+        output.append(np.moveaxis(np.sum(other_vals[:, None, None, :] * grads[-1], axis=0), 2, 0).reshape(len(sds), -1))
         return np.hstack(output)[:, deriv]
 
     def normalize(self, pspace=None):
         if pspace is not None:
-            norm = sum(self.get_overlap(sd)**2 for sd in pspace)
-            print(
-                norm,
-                sorted([abs(self.get_overlap(sd)) for sd in pspace], reverse=True)[:5],
-                'norm'
-            )
+            norm = sum(self.get_overlap(sd) ** 2 for sd in pspace)
+            print(norm, sorted([abs(self.get_overlap(sd)) for sd in pspace], reverse=True)[:5], "norm")
         else:
-            norm = sum(self.get_overlap(sd)**2 for sd in self.pspace_norm)
-            print(
-                norm,
-                sorted([abs(self.get_overlap(sd)) for sd in self.pspace_norm], reverse=True)[:5],
-                'norm'
-            )
+            norm = sum(self.get_overlap(sd) ** 2 for sd in self.pspace_norm)
+            print(norm, sorted([abs(self.get_overlap(sd)) for sd in self.pspace_norm], reverse=True)[:5], "norm")
         # norm = np.sum([olp ** 2 for olp in self.probable_sds.values()])
         # norm = max(self.probable_sds.values()) ** 2
         self.output_scale *= norm ** (-0.5 / self.params_shape[-1][0])

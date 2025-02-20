@@ -1,8 +1,6 @@
 """APG1ro wavefunction with single and double excitations."""
-from itertools import combinations
-from collections import Counter
+
 from fanpy.tools import slater
-from fanpy.tools import graphs
 from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
 
@@ -102,6 +100,7 @@ class AP1roGSDSpin(PCCD):
         to the given indices to be created.
 
     """
+
     def assign_ranks(self, ranks=None):
         """Assign the ranks of the excitation operators.
 
@@ -117,7 +116,7 @@ class AP1roGSDSpin(PCCD):
 
         """
         if ranks is not None:
-            raise TypeError('Only the default: ranks=[1, 2] is allowed')
+            raise TypeError("Only the default: ranks=[1, 2] is allowed")
         else:
             self.ranks = [1, 2]
 
@@ -146,22 +145,22 @@ class AP1roGSDSpin(PCCD):
 
         """
         if indices is not None:
-            raise TypeError('Only the excitation operators constructed by default from '
-                            'the given reference Slater determinant are allowed')
+            raise TypeError(
+                "Only the excitation operators constructed by default from "
+                "the given reference Slater determinant are allowed"
+            )
         else:
             exops = {}
             counter = 0
             ex_from = slater.occ_indices(self.refwfn)
-            virt_alphas = [i for i in range(self.nspin) if
-                           (i not in ex_from) and slater.is_alpha(i, self.nspatial)]
-            virt_betas = [i for i in range(self.nspin) if
-                          (i not in ex_from) and not slater.is_alpha(i, self.nspatial)]
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
+            virt_alphas = [i for i in range(self.nspin) if (i not in ex_from) and slater.is_alpha(i, self.nspatial)]
+            virt_betas = [i for i in range(self.nspin) if (i not in ex_from) and not slater.is_alpha(i, self.nspatial)]
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
                 for virt_alpha in virt_alphas:
                     exop = [occ_alpha, virt_alpha]
                     exops[tuple(exop)] = counter
                     counter += 1
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
                 for virt_beta in virt_betas:
                     exop = [occ_alpha + self.nspatial, virt_beta]
                     exops[tuple(exop)] = counter

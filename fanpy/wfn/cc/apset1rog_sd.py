@@ -1,8 +1,6 @@
 """APset1roG wavefunction with single and double excitations."""
-from itertools import combinations
-from collections import Counter
+
 from fanpy.tools import slater
-from fanpy.tools import graphs
 from fanpy.wfn.cc.apset1rog_d import APset1roGD
 
 
@@ -104,6 +102,7 @@ class APset1roGSD(APset1roGD):
         to the given indices to be created.
 
     """
+
     def assign_ranks(self, ranks=None):
         """Assign the ranks of the excitation operators.
 
@@ -119,7 +118,7 @@ class APset1roGSD(APset1roGD):
 
         """
         if ranks is not None:
-            raise TypeError('Only the default: ranks=[1, 2] is allowed')
+            raise TypeError("Only the default: ranks=[1, 2] is allowed")
         else:
             self.ranks = [1, 2]
 
@@ -164,16 +163,14 @@ class APset1roGSD(APset1roGD):
             exops = {}
             counter = 0
             ex_from = slater.occ_indices(self.refwfn)
-            virt_alphas = [i for i in range(self.nspin) if
-                           (i not in ex_from) and slater.is_alpha(i, self.nspatial)]
-            virt_betas = [i for i in range(self.nspin) if
-                          (i not in ex_from) and not slater.is_alpha(i, self.nspatial)]
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
+            virt_alphas = [i for i in range(self.nspin) if (i not in ex_from) and slater.is_alpha(i, self.nspatial)]
+            virt_betas = [i for i in range(self.nspin) if (i not in ex_from) and not slater.is_alpha(i, self.nspatial)]
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
                 for virt_alpha in virt_alphas:
                     exop = [occ_alpha, virt_alpha]
                     exops[tuple(exop)] = counter
                     counter += 1
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
                 for virt_beta in virt_betas:
                     exop = [occ_alpha + self.nspatial, virt_beta]
                     exops[tuple(exop)] = counter
@@ -189,27 +186,27 @@ class APset1roGSD(APset1roGD):
             counter = 0
             ex_from = slater.occ_indices(self.refwfn)
             if len(indices) != 2:
-                raise TypeError('`indices` must have exactly 2 elements')
+                raise TypeError("`indices` must have exactly 2 elements")
             for inds in indices:
                 if not isinstance(inds, list):
-                    raise TypeError('The elements of `indices` must be lists of non-negative ints')
+                    raise TypeError("The elements of `indices` must be lists of non-negative ints")
                 elif not all(isinstance(ind, int) for ind in inds):
-                    raise TypeError('The elements of `indices` must be lists of non-negative ints')
+                    raise TypeError("The elements of `indices` must be lists of non-negative ints")
                 elif not all(ind >= 0 for ind in inds):
-                    raise ValueError('All `indices` must be lists of non-negative ints')
+                    raise ValueError("All `indices` must be lists of non-negative ints")
                 if not set(ex_from).isdisjoint(inds):
-                    raise ValueError('`indices` cannot correspond to occupied spin-orbitals')
+                    raise ValueError("`indices` cannot correspond to occupied spin-orbitals")
             if not set(indices[0]).isdisjoint(indices[1]):
-                raise ValueError('The sets of annihilation operators must be disjoint')
+                raise ValueError("The sets of annihilation operators must be disjoint")
             indices = [list(set(indices[0])), list(set(indices[1]))]
             indices[0].sort()
             indices[1].sort()
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
                 for i in indices[0]:
                     exop = [occ_alpha, i]
                     exops[tuple(exop)] = counter
                     counter += 1
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
                 for j in indices[1]:
                     exop = [occ_alpha + self.nspatial, j]
                     exops[tuple(exop)] = counter

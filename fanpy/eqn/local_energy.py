@@ -1,4 +1,5 @@
 """Local energy used in orbital space variational quantum Monte Carlo."""
+
 from fanpy.eqn.energy_oneside import EnergyOneSideProjection
 from fanpy.tools import slater
 
@@ -167,11 +168,7 @@ class LocalEnergy(EnergyOneSideProjection):
 
         """
         if __debug__ and not (
-            pspace is None
-            or (
-                isinstance(pspace, (list, tuple))
-                and all(slater.is_sd_compatible(sd) for sd in pspace)
-            )
+            pspace is None or (isinstance(pspace, (list, tuple)) and all(slater.is_sd_compatible(sd) for sd in pspace))
         ):
             raise TypeError("Projection space must be given as a list/tuple of integers.")
         super().assign_refwfn(pspace)

@@ -1,4 +1,5 @@
 """Antisymmeterized Product of Set divided Geminals (APsetG) Wavefunction."""
+
 from fanpy.tools import graphs
 from fanpy.wfn.geminal.base import BaseGeminal
 
@@ -134,9 +135,7 @@ class BasicAPsetG(BaseGeminal):
         i, j = orbpair
         # ASSUMES: specific structure for alpha and beta orbitals (first alpha then beta)
         if __debug__ and not 0 <= i < self.nspatial <= j < self.nspin:
-            raise ValueError(
-                "Given orbital pair, {0}, is not included in the wavefunction.".format(orbpair)
-            )
+            raise ValueError("Given orbital pair, {0}, is not included in the wavefunction.".format(orbpair))
         return int(self.nspatial * i + j - self.nspatial)
 
     def get_orbpair(self, col_ind):
@@ -159,10 +158,8 @@ class BasicAPsetG(BaseGeminal):
             If given orbital pair is not valid.
 
         """
-        if __debug__ and not 0 <= col_ind < self.nspatial ** 2:
-            raise ValueError(
-                "Given column index, {0}, is not used in the wavefunction".format(col_ind)
-            )
+        if __debug__ and not 0 <= col_ind < self.nspatial**2:
+            raise ValueError("Given column index, {0}, is not used in the wavefunction".format(col_ind))
         i = col_ind // self.nspatial
         j = col_ind - i * self.nspatial + self.nspatial
         return (i, j)

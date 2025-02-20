@@ -1,4 +1,5 @@
 """Solvers for system of Schrodinger equations."""
+
 from fanpy.eqn.least_squares import ProjectedSchrodinger
 from fanpy.solver.wrappers import wrap_scipy
 
@@ -128,8 +129,7 @@ def root(objective, **kwargs):
         raise TypeError("Given objective must be an instance of ProjectedSchrodinger.")
     if objective.num_eqns < objective.active_params.size:
         raise ValueError(
-            "Given objective must be greater than or equal to the number of equations as the number"
-            " of parameters."
+            "Given objective must be greater than or equal to the number of equations as the number" " of parameters."
         )
     if objective.num_eqns > objective.active_params.size:
         print("Too many equations for root solver. Excess equations will be truncated.")

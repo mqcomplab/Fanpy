@@ -1,4 +1,5 @@
 """Antisymmeterized Product of Geminals (APG) Wavefunction."""
+
 from fanpy.tools.graphs import generate_complete_pmatch
 from fanpy.wfn.geminal.base import BaseGeminal
 
@@ -104,8 +105,7 @@ class APG(BaseGeminal):
         """
         if orbpairs is not None:
             raise ValueError(
-                "Cannot specify the orbital pairs for the APG wavefunction. All possible orbital "
-                "pairs will be used."
+                "Cannot specify the orbital pairs for the APG wavefunction. All possible orbital " "pairs will be used."
             )
         orbpairs = tuple((i, j) for i in range(self.nspin) for j in range(i + 1, self.nspin))
         self.dict_orbpair_ind = {orbpair: i for i, orbpair in enumerate(orbpairs)}
@@ -145,9 +145,7 @@ class APG(BaseGeminal):
         if i > j:
             i, j = j, i
         if __debug__ and not all(0 <= i < j < self.nspin for orb in orbpair):
-            raise ValueError(
-                "Given orbital pair, {0}, is not included in the wavefunction.".format(orbpair)
-            )
+            raise ValueError("Given orbital pair, {0}, is not included in the wavefunction.".format(orbpair))
         # col_ind = (iK - i(i+1)/2) + (j - i)
         return self.nspin * i - i * (i + 1) // 2 + (j - i - 1)
 
@@ -174,8 +172,7 @@ class APG(BaseGeminal):
         # pylint: disable=C0103
         if __debug__ and not 0 <= col_ind < self.nspin * (self.nspin - 1) / 2:
             raise ValueError(
-                "Column index, {0}, is less than 0 or greater than or the number of columns."
-                "".format(col_ind)
+                "Column index, {0}, is less than 0 or greater than or the number of columns." "".format(col_ind)
             )
         i = (2 * self.nspin - 1 - ((1 - 2 * self.nspin) ** 2 - 8 * col_ind) ** 0.5) // 2
         j = col_ind - (i * self.nspin - i * (i + 1) // 2 - i - 1)

@@ -1,4 +1,5 @@
 """Normalization constraint on the wavefunction."""
+
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.eqn.energy_oneside import EnergyOneSideProjection
 from fanpy.eqn.utils import ComponentParameterIndices
@@ -78,9 +79,7 @@ class NormConstraint(BaseSchrodinger):
         """
         # pylint: disable=W0231
         if not isinstance(wfn, BaseWavefunction):
-            raise TypeError(
-                "Given wavefunction is not an instance of BaseWavefunction (or its " "child)."
-            )
+            raise TypeError("Given wavefunction is not an instance of BaseWavefunction (or its " "child).")
         self.wfn = wfn
         self.assign_refwfn(refwfn)
 
@@ -205,7 +204,5 @@ class NormConstraint(BaseSchrodinger):
             d_ref_coeffs = np.array([get_overlap(k, True) for k in ref])
         # Compute
         d_norm = np.sum(d_ref_coeffs * overlaps[:, None], axis=0)
-        d_norm += np.sum(
-            ref_coeffs[:, None] * np.array([get_overlap(i, True) for i in ref_sds]), axis=0
-        )
+        d_norm += np.sum(ref_coeffs[:, None] * np.array([get_overlap(i, True) for i in ref_sds]), axis=0)
         return d_norm

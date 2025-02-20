@@ -60,7 +60,13 @@ class PYSCF:
         self.one_int_ao = mf.get_hcore()
 
         info("> Transforming one-electron integrals from AO to MO basis...")
-        self.one_int = np.einsum("ji,jk,kl->il", self.mo_coeff, self.one_int_ao, self.mo_coeff, optimize="greedy")
+        self.one_int = np.einsum(
+            "ji,jk,kl->il",
+            self.mo_coeff,
+            self.one_int_ao,
+            self.mo_coeff,
+            optimize="greedy",
+        )
 
         # Two-electron integrals
         from pyscf import ao2mo
@@ -73,7 +79,9 @@ class PYSCF:
 
         info("> Transforming two-electron integrals from AO to MO basis...")
         self.two_int = ao2mo.general(
-            self.two_int_ao, (self.mo_coeff, self.mo_coeff, self.mo_coeff, self.mo_coeff), compact=False
+            self.two_int_ao,
+            (self.mo_coeff, self.mo_coeff, self.mo_coeff, self.mo_coeff),
+            compact=False,
         )
 
         ## Convert integrals to Physicist's notation

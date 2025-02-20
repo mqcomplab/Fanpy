@@ -1,1 +1,1 @@
-"""Module for creating Geminal wavefunction."""
+"""Module for creating Coupled-Cluster wavefunction."""

@@ -1,4 +1,5 @@
 """Full Configuration Interaction wavefunction."""
+
 from fanpy.wfn.ci.base import CIWavefunction
 
 

@@ -6,9 +6,8 @@ import numpy as np
 
 
 class EmbeddedWavefunction(ProductWavefunction):
-    """Embedding of multiple subsystems.
+    """Embedding of multiple subsystems."""
 
-    """
     def __init__(self, nelec, nspin, indices_list, wfns, memory=None, disjoint=True):
         """Initialize the wavefunction.
 
@@ -42,13 +41,9 @@ class EmbeddedWavefunction(ProductWavefunction):
             if any(not isinstance(wfn, BaseWavefunction) for wfn in wfns):
                 raise TypeError("Each wavefunction must be a instance of `BaseWavefunction`.")
             if set(i for indices in indices_list for i in indices) != set(range(nspin)):
-                raise ValueError(
-                    "Indices in the subsystems must span the indices in the system."
-                )
+                raise ValueError("Indices in the subsystems must span the indices in the system.")
             if len(wfns) != len(indices_list):
-                raise ValueError(
-                    "Number of wavefunctions must be equal to the number of index lists."
-                )
+                raise ValueError("Number of wavefunctions must be equal to the number of index lists.")
             for wfn, indices in zip(wfns, indices_list):
                 if wfn.nspin != len(indices):
                     raise ValueError(
@@ -69,7 +64,7 @@ class EmbeddedWavefunction(ProductWavefunction):
                     )
                 for i, indices1 in enumerate(indices_list):
                     indices1 = set(indices1)
-                    for indices2 in indices_list[i + 1:]:
+                    for indices2 in indices_list[i + 1 :]:
                         if indices1.intersection(indices2):
                             raise ValueError(
                                 "For disjoint partitions, indices for the subsytems cannot be "
@@ -146,9 +141,7 @@ class EmbeddedWavefunction(ProductWavefunction):
 
         """
         sd_list = self.split_sd(sd)
-        wfn_contrib = np.array(
-            [wfn.get_overlap(sd_system, deriv=None) for sd_system, wfn in zip(sd_list, self.wfns)]
-        )
+        wfn_contrib = np.array([wfn.get_overlap(sd_system, deriv=None) for sd_system, wfn in zip(sd_list, self.wfns)])
         if deriv is None:
             return np.prod(wfn_contrib)
 
@@ -181,7 +174,7 @@ class EmbeddedWavefunction(ProductWavefunction):
         wfn_index = self.wfns.index(wfn)
         # NOTE: assume that parameters are not shared between wavefunctions
         output = np.prod(wfn_contrib[:wfn_index])
-        output *= np.prod(wfn_contrib[wfn_index + 1:])
+        output *= np.prod(wfn_contrib[wfn_index + 1 :])
         output *= wfn.get_overlap(sd_list[wfn_index], deriv=indices)
         return output
 
@@ -267,11 +260,9 @@ class EmbeddedWavefunction(ProductWavefunction):
         wfn_index = self.wfns.index(wfn)
         # NOTE: assume that parameters are not shared between wavefunctions
         output = np.prod(wfn_contrib[:wfn_index], axis=0)
-        output *= np.prod(wfn_contrib[wfn_index + 1:], axis=0)
+        output *= np.prod(wfn_contrib[wfn_index + 1 :], axis=0)
         if hasattr(wfn, "get_overlaps"):
             output = output[:, None] * wfn.get_overlaps(sds_list[wfn_index], deriv=indices)
         else:
-            output = output[:, None] * np.array(
-                [wfn.get_overlap(sd, deriv=indices) for sd in sds_list[wfn_index]]
-            )
+            output = output[:, None] * np.array([wfn.get_overlap(sd, deriv=indices) for sd in sds_list[wfn_index]])
         return output

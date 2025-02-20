@@ -10,8 +10,6 @@ concatenate_dataframes(*dfs): {DataFrames}
     Concatenate multiple CI dataframes in a single dataframe.
 """
 
-import pandas as pd
-
 
 def create_dataframe_from(wfn, label=None):
     """Create a dataframe containing Slater determinants and CI parameters based on a reference wavefunction.
@@ -28,6 +26,7 @@ def create_dataframe_from(wfn, label=None):
         pd.DataFrame
             DataFrame containing the Slater determinants and associated CI parameters.
     """
+    import pandas as pd
 
     # Extract Slater determinants and CI parameters from wavefunction
     sds = wfn.sds
@@ -54,6 +53,7 @@ def add_wfn_to_dataframe(df, wfn, label=None):
     label : str, optional
         Column label for CI parameters in the DataFrame. If None, defaults to the wavefunction class name.
     """
+    import pandas as pd
 
     # Extract Slater determinants and CI parameters from wavefunction
     sds = wfn.sds
@@ -81,6 +81,7 @@ def concatenate_dataframes(*dfs):
     dfs: DataFrame
         Multiple DataFrames containg previously extracted CIWavefunction data.
     """
+    import pandas as pd
 
     df = pd.concat(dfs, axis=1)
 

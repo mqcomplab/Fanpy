@@ -1,4 +1,5 @@
 """Base class for objectives related to solving the Schrodinger equation."""
+
 import abc
 import os
 
@@ -146,17 +147,11 @@ class BaseSchrodinger:
         """
         if __debug__:
             if not isinstance(wfn, BaseWavefunction):
-                raise TypeError(
-                    "Given wavefunction is not an instance of BaseWavefunction (or its child)."
-                )
+                raise TypeError("Given wavefunction is not an instance of BaseWavefunction (or its child).")
             if not isinstance(ham, BaseHamiltonian):
-                raise TypeError(
-                    "Given Hamiltonian is not an instance of BaseWavefunction (or its child)."
-                )
+                raise TypeError("Given Hamiltonian is not an instance of BaseWavefunction (or its child).")
             if wfn.nspin != ham.nspin:
-                raise ValueError(
-                    "Wavefunction and Hamiltonian do not have the same number of spin orbitals."
-                )
+                raise ValueError("Wavefunction and Hamiltonian do not have the same number of spin orbitals.")
             if not isinstance(tmpfile, str):
                 raise TypeError("`tmpfile` must be a string.")
 
@@ -165,6 +160,8 @@ class BaseSchrodinger:
 
         if param_selection is None:
             param_selection = [(self.wfn, np.arange(self.wfn.nparams))]
+        self._param_selection = param_selection
+
         if isinstance(param_selection, ComponentParameterIndices):
             self.indices_component_params = param_selection
         else:
@@ -172,9 +169,9 @@ class BaseSchrodinger:
             for component, indices in param_selection:
                 self.indices_component_params[component] = indices
 
+        self._optimize_orbitals = optimize_orbitals
         if optimize_orbitals and (
-            self.ham not in self.indices_component_params
-            or self.indices_component_params[self.ham].size == 0
+            self.ham not in self.indices_component_params or self.indices_component_params[self.ham].size == 0
         ):
             self.indices_component_params[self.ham] = np.arange(self.ham.nparams)
 
@@ -183,6 +180,22 @@ class BaseSchrodinger:
         self.step_print = step_print
         self.step_save = step_save
         self.print_queue = {}
+
+    @property
+    def optimize_orbitals(self):
+        """
+        Flag to select if orbitals are optimized in the objective.
+
+        """
+        return self._optimize_orbitals
+
+    @property
+    def param_selection(self):
+        """
+        Parameter selection of the objective.
+
+        """
+        return self._param_selection
 
     @property
     def indices_objective_params(self):
@@ -246,9 +259,7 @@ class BaseSchrodinger:
         np.ndarray([1, 3, 5, 7])
 
         """
-        return np.hstack(
-            [comp.params.ravel()[inds] for comp, inds in self.indices_component_params.items()]
-        )
+        return np.hstack([comp.params.ravel()[inds] for comp, inds in self.indices_component_params.items()])
 
     @property
     def active_nparams(self):
@@ -311,8 +322,7 @@ class BaseSchrodinger:
                 raise TypeError("Given parameter must be a one-dimensional numpy array.")
             if sum(indices.size for indices in indices_objective_params.values()) != params.size:
                 raise ValueError(
-                    "Number of given parameters must be equal to the number of active/selected "
-                    "parameters."
+                    "Number of given parameters must be equal to the number of active/selected " "parameters."
                 )
 
         for component, indices in self.indices_component_params.items():
@@ -352,8 +362,8 @@ class BaseSchrodinger:
 
         output = np.zeros(self.active_nparams)
         if not isinstance(
-                self.wfn,
-                (BaseCompositeOneWavefunction, LinearCombinationWavefunction, ProductWavefunction),
+            self.wfn,
+            (BaseCompositeOneWavefunction, LinearCombinationWavefunction, ProductWavefunction),
         ):
             inds_component = self.indices_component_params[self.wfn]
             if inds_component.size > 0:
@@ -411,15 +421,13 @@ class BaseSchrodinger:
         output = np.zeros(self.active_nparams)
 
         if not isinstance(
-                self.wfn,
-                (BaseCompositeOneWavefunction, LinearCombinationWavefunction, ProductWavefunction),
+            self.wfn,
+            (BaseCompositeOneWavefunction, LinearCombinationWavefunction, ProductWavefunction),
         ):
             wfn_inds_component = self.indices_component_params[self.wfn]
             if wfn_inds_component.size > 0:
                 wfn_inds_objective = self.indices_objective_params[self.wfn]
-                output[wfn_inds_objective] = self.ham.integrate_sd_wfn(
-                    sd, self.wfn, wfn_deriv=wfn_inds_component
-                )
+                output[wfn_inds_objective] = self.ham.integrate_sd_wfn(sd, self.wfn, wfn_deriv=wfn_inds_component)
         else:
             if isinstance(self.wfn, BaseCompositeOneWavefunction):  # pragma: no cover
                 wfns = [self.wfn, self.wfn.wfn]
@@ -440,9 +448,7 @@ class BaseSchrodinger:
         ham_inds_component = self.indices_component_params[self.ham]
         if ham_inds_component.size > 0:
             ham_inds_objective = self.indices_objective_params[self.ham]
-            output[ham_inds_objective] = self.ham.integrate_sd_wfn(
-                sd, self.wfn, ham_deriv=ham_inds_component
-            )
+            output[ham_inds_objective] = self.ham.integrate_sd_wfn(sd, self.wfn, ham_deriv=ham_inds_component)
 
         return output
 
@@ -576,8 +582,7 @@ class BaseSchrodinger:
                     inds_objective = self.indices_objective_params[refwfn]
                     d_ref_coeffs[inds_component, inds_objective] = 1.0
         elif slater.is_sd_compatible(refwfn) or (
-            isinstance(refwfn, (list, tuple, np.ndarray))
-            and all(slater.is_sd_compatible(sd) for sd in refwfn)
+            isinstance(refwfn, (list, tuple, np.ndarray)) and all(slater.is_sd_compatible(sd) for sd in refwfn)
         ):
             if slater.is_sd_compatible(refwfn):
                 refwfn = [refwfn]
@@ -607,9 +612,7 @@ class BaseSchrodinger:
             return energy
 
         d_norm = np.sum(d_ref_coeffs * overlaps[:, None], axis=0)
-        d_norm += np.sum(
-            ref_coeffs[:, None] * np.array([get_overlap(i, deriv) for i in ref_sds]), axis=0
-        )
+        d_norm += np.sum(ref_coeffs[:, None] * np.array([get_overlap(i, deriv) for i in ref_sds]), axis=0)
         d_energy = np.sum(d_ref_coeffs * integrals[:, None], axis=0) / norm
         d_energy += (
             np.sum(
@@ -696,10 +699,7 @@ class BaseSchrodinger:
             for pspace in [pspace_l, pspace_r, pspace_norm]:
                 if not (
                     slater.is_sd_compatible(pspace)
-                    or (
-                        isinstance(pspace, (list, tuple))
-                        and all(slater.is_sd_compatible(sd) for sd in pspace)
-                    )
+                    or (isinstance(pspace, (list, tuple)) and all(slater.is_sd_compatible(sd) for sd in pspace))
                 ):
                     raise TypeError(
                         "Projection space must be given as a Slater determinant or a "
@@ -727,20 +727,16 @@ class BaseSchrodinger:
         overlaps_norm = np.array([get_overlap(i) for i in pspace_norm])
 
         # norm
-        norm = np.sum(overlaps_norm ** 2)
+        norm = np.sum(overlaps_norm**2)
 
         # energy
         if not deriv:
             return np.sum(overlaps_l * ci_matrix * overlaps_r) / norm
 
-        d_norm = 2 * np.sum(
-            overlaps_norm[:, None] * np.array([get_overlap(i, deriv) for i in pspace_norm]), axis=0
-        )
+        d_norm = 2 * np.sum(overlaps_norm[:, None] * np.array([get_overlap(i, deriv) for i in pspace_norm]), axis=0)
         d_energy = (
             np.sum(
-                np.array([[get_overlap(i, deriv)] for i in pspace_l])
-                * ci_matrix[:, :, None]
-                * overlaps_r[:, :, None],
+                np.array([[get_overlap(i, deriv)] for i in pspace_l]) * ci_matrix[:, :, None] * overlaps_r[:, :, None],
                 axis=(0, 1),
             )
             / norm
@@ -756,14 +752,12 @@ class BaseSchrodinger:
         )
         d_energy += (
             np.sum(
-                overlaps_l[:, :, None]
-                * ci_matrix[:, :, None]
-                * np.array([[get_overlap(i, deriv) for i in pspace_r]]),
+                overlaps_l[:, :, None] * ci_matrix[:, :, None] * np.array([[get_overlap(i, deriv) for i in pspace_r]]),
                 axis=(0, 1),
             )
             / norm
         )
-        d_energy -= d_norm * np.sum(overlaps_l * ci_matrix * overlaps_r) / norm ** 2
+        d_energy -= d_norm * np.sum(overlaps_l * ci_matrix * overlaps_r) / norm**2
         return d_energy
 
     @abc.abstractproperty
@@ -813,8 +807,7 @@ class BaseSchrodinger:
 
         """
         raise NotImplementedError(
-            "Gradient is not implemented. May need to use a derivative-free optimization algorithm"
-            " (e.g. cma)."
+            "Gradient is not implemented. May need to use a derivative-free optimization algorithm" " (e.g. cma)."
         )
 
     def jacobian(self, params):

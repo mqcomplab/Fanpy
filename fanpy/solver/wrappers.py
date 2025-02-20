@@ -4,6 +4,7 @@ Since each module uses a different API for its solvers, the input and output of 
 wrapped such that they all have the same API within the `fanpy.solver` module.
 
 """
+
 from functools import wraps
 
 

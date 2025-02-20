@@ -8,9 +8,6 @@ print_excitation_operators_indices(wavefunction, max_print, threshold) : {BaseCC
     Print Coupled-Cluster Amplitudes from a wavefunction as lists of occupied MO indices.
 """
 
-from fanpy.tools import slater
-import numpy as np
-
 
 def print_excitation_operators(wfn, max_print=None, threshold=1e-8):
     """
@@ -91,6 +88,9 @@ def print_excitation_operators_indices(wfn, max_print=None, threshold=1e-8):
         Only print determinants with |param| greater than this value.
 
     """
+    from fanpy.tools import slater
+    import numpy as np
+
     n_spatial = wfn.nspatial
     excitation_ops = wfn.exops.keys()
     ci_params = wfn.params

@@ -1,22 +1,28 @@
-import re
 import numpy as np
-import functools
-from itertools import combinations, permutations, product, repeat
-from collections import Counter
 from fanpy.tools import slater
-from fanpy.tools import graphs
 from fanpy.wfn.cc.base import BaseCC
 from fanpy.wfn.base import BaseWavefunction
 
 
-
 class EmbeddedCC(BaseCC):
-    """Embedding of multiple subsystems.
+    """Embedding of multiple subsystems."""
 
-    """
-    def __init__(self, nelec_list, nspin_list, indices_list, cc_list, memory=None, ranks_list=None,
-                 exop_indices_list=None, inter_exops=None, refwfn_list=None, params_list=None,
-                 inter_params=None, exop_combinations=None, refresh_exops=None):
+    def __init__(
+        self,
+        nelec_list,
+        nspin_list,
+        indices_list,
+        cc_list,
+        memory=None,
+        ranks_list=None,
+        exop_indices_list=None,
+        inter_exops=None,
+        refwfn_list=None,
+        params_list=None,
+        inter_params=None,
+        exop_combinations=None,
+        refresh_exops=None,
+    ):
         """Initialize the wavefunction.
 
         Parameters
@@ -105,16 +111,21 @@ class EmbeddedCC(BaseCC):
         self.exops = {}
         counter = 0
         for exop_indices, nelec, nspin, ranks, refwfn_sub, CC, cc_params, system_ind in zip(
-                exop_indices_list, nelec_list, nspin_list, ranks_list, refwfn_list, cc_list,
-                params_list, range(len(nelec_list))
+            exop_indices_list,
+            nelec_list,
+            nspin_list,
+            ranks_list,
+            refwfn_list,
+            cc_list,
+            params_list,
+            range(len(nelec_list)),
         ):
             if nelec == 0:
                 continue
             if nspin == 0:
                 raise ValueError
             # cc's
-            cc_sub = CC(nelec, nspin, ranks=ranks, indices=exop_indices, refwfn=refwfn_sub,
-                        params=cc_params)
+            cc_sub = CC(nelec, nspin, ranks=ranks, indices=exop_indices, refwfn=refwfn_sub, params=cc_params)
             params.append(cc_sub.params)
             # FIXME: CHECK EXOPS
             cc_exops = {

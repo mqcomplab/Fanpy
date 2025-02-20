@@ -1,4 +1,5 @@
 """Rank-2 approximation to geminal wavefunction."""
+
 from fanpy.tools import math_tools, slater
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.wfn.geminal.base import BaseGeminal
@@ -131,9 +132,7 @@ class RankTwoApprox:
             params = full_to_rank2(template, rmsd=0.01)
 
         if isinstance(params, BaseGeminal):
-            raise NotImplementedError(
-                "Rank 2 Wavefunction cannot assign parameters using a BaseGeminal instance."
-            )
+            raise NotImplementedError("Rank 2 Wavefunction cannot assign parameters using a BaseGeminal instance.")
 
         self.params = params
         if __debug__:
@@ -174,17 +173,14 @@ class RankTwoApprox:
         col_inds = np.array(col_inds)
 
         if deriv is None:
-            return math_tools.permanent_borchardt(
-                self.lambdas[row_inds], self.epsilons[col_inds], self.zetas[col_inds]
-            )
+            return math_tools.permanent_borchardt(self.lambdas[row_inds], self.epsilons[col_inds], self.zetas[col_inds])
         # if differentiating along row (lambda)
         if __debug__:
             if not (isinstance(deriv, int) or np.issubdtype(type(deriv), np.integer)):
                 raise TypeError("deriv must be an integer.")
             if not 0 <= deriv < self.nparams:
                 raise ValueError(
-                    "deriv must be greater than or equal to zero and less than the number of "
-                    "parameters"
+                    "deriv must be greater than or equal to zero and less than the number of " "parameters"
                 )
         # FIXME: not the best way of evaluating
         if 0 <= deriv < self.npair:
@@ -194,14 +190,11 @@ class RankTwoApprox:
             for col_to_remove in col_inds:
                 col_inds_trunc = col_inds[col_inds != col_to_remove]
                 # this will never happen (but just in case)
-                if (
-                    row_inds_trunc.size == row_inds.size or col_inds_trunc.size == col_inds.size
-                ):  # pragma: no cover
+                if row_inds_trunc.size == row_inds.size or col_inds_trunc.size == col_inds.size:  # pragma: no cover
                     continue
                 # derivative of matrix element c_ij wrt lambda_i
                 der_cij_rowi = (
-                    -self.zetas[col_to_remove]
-                    / (self.lambdas[row_to_remove] - self.epsilons[col_to_remove]) ** 2
+                    -self.zetas[col_to_remove] / (self.lambdas[row_to_remove] - self.epsilons[col_to_remove]) ** 2
                 )
                 if row_inds_trunc.size == col_inds_trunc.size == 0:
                     val += der_cij_rowi
@@ -226,8 +219,7 @@ class RankTwoApprox:
             if self.ngem <= deriv < self.ngem + self.norbpair:
                 # derivative of matrix element c_ij wrt epsilon_j
                 der_cij_colj = (
-                    self.zetas[col_to_remove]
-                    / (self.lambdas[row_to_remove] - self.epsilons[col_to_remove]) ** 2
+                    self.zetas[col_to_remove] / (self.lambdas[row_to_remove] - self.epsilons[col_to_remove]) ** 2
                 )
             else:
                 # derivative of matrix element c_ij wrt zeta_j
@@ -449,8 +441,7 @@ def full_to_rank2(params, rmsd=0.1, method="least squares"):
     deviation = (np.sum((params - rank2_coeffs) ** 2) / params.size) ** (0.5)
     if np.isnan(deviation) or deviation > rmsd:
         raise ValueError(
-            "Rank-2 coefficient matrix has RMSD of {0} with the full-rank coefficient "
-            "matrix".format(deviation)
+            "Rank-2 coefficient matrix has RMSD of {0} with the full-rank coefficient " "matrix".format(deviation)
         )
 
     return rank2_params

@@ -1,4 +1,5 @@
 """Hard-coded determinant-ratio wavefunction."""
+
 from fanpy.tools import slater
 from fanpy.wfn.base import BaseWavefunction
 
@@ -63,9 +64,7 @@ class DeterminantRatio(BaseWavefunction):
 
     """
 
-    def __init__(
-        self, nelec, nspin, memory=None, numerator_mask=None, params=None, enable_cache=True
-    ):
+    def __init__(self, nelec, nspin, memory=None, numerator_mask=None, params=None, enable_cache=True):
         """Initialize the wavefunction.
 
         Parameters
@@ -116,13 +115,10 @@ class DeterminantRatio(BaseWavefunction):
             numerator_mask = np.array([True, False])
 
         if __debug__ and not (
-            isinstance(numerator_mask, np.ndarray)
-            and numerator_mask.dtype == bool
-            and numerator_mask.size > 0
+            isinstance(numerator_mask, np.ndarray) and numerator_mask.dtype == bool and numerator_mask.size > 0
         ):
             raise TypeError(
-                "Mask for the numerator must be given as a boolean numpy array with one or more "
-                "element."
+                "Mask for the numerator must be given as a boolean numpy array with one or more " "element."
             )
 
         self.numerator_mask = numerator_mask
@@ -212,10 +208,7 @@ class DeterminantRatio(BaseWavefunction):
             if not isinstance(index, int):
                 raise TypeError("index must be given as an integer.")
             if not 0 <= index < self.num_matrices:
-                raise ValueError(
-                    "index must be greater than or equal to zero and less than the number of "
-                    "matrices."
-                )
+                raise ValueError("index must be greater than or equal to zero and less than the number of " "matrices.")
 
         flat_matrix = self.params[index * self.matrix_size : (index + 1) * self.matrix_size]
         return flat_matrix.reshape(self.matrix_shape)
@@ -307,10 +300,7 @@ class DeterminantRatio(BaseWavefunction):
         """
         # NOTE: all of the rows are assumed to be selected when the columns are selected.
         determinants = np.array(
-            [
-                np.linalg.det(self.get_matrix(i)[:, self.get_columns(sd, i)])
-                for i in range(self.num_matrices)
-            ]
+            [np.linalg.det(self.get_matrix(i)[:, self.get_columns(sd, i)]) for i in range(self.num_matrices)]
         )
         numerator = np.prod(determinants[self.numerator_mask])
         denominator = np.prod(determinants[np.logical_not(self.numerator_mask)])
@@ -371,23 +361,13 @@ class DeterminantRatio(BaseWavefunction):
                     minor = np.linalg.det(matrix[rows[:, None], cols[None, :]])
                     deriv_determinant = sign_row * sign_col * minor
 
-                    index = (
-                        deriv_matrix * self.matrix_size
-                        + deriv_row * self.matrix_shape[1]
-                        + deriv_col
-                    )
+                    index = deriv_matrix * self.matrix_size + deriv_row * self.matrix_shape[1] + deriv_col
                     # if derivatized matrix is a numerator
                     if self.numerator_mask[deriv_matrix]:
                         output[index] = deriv_determinant * numerator / denominator
                     # if derivatized matrix is a denominator
                     else:
-                        output[index] = (
-                            numerator
-                            / denominator
-                            * (-1)
-                            * old_determinant ** (-2)
-                            * deriv_determinant
-                        )
+                        output[index] = numerator / denominator * (-1) * old_determinant ** (-2) * deriv_determinant
         return output
 
     def get_overlap(self, sd, deriv=None):
@@ -421,9 +401,7 @@ class DeterminantRatio(BaseWavefunction):
         if __debug__:
             if not slater.is_sd_compatible(sd):
                 raise TypeError("Slater determinant must be given as an integer.")
-            if deriv is not None and not (
-                isinstance(deriv, np.ndarray) and deriv.ndim == 1 and deriv.dtype == int
-            ):
+            if deriv is not None and not (isinstance(deriv, np.ndarray) and deriv.ndim == 1 and deriv.dtype == int):
                 raise TypeError("deriv must be given as a one dimensional numpy array of integers.")
 
         if slater.total_occ(sd) != self.nelec:

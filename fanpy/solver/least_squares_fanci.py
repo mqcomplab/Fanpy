@@ -1,4 +1,5 @@
 """Generic interface for least-squares minimization."""
+
 from warnings import warn
 
 import numpy as np
@@ -17,14 +18,27 @@ from scipy.linalg import svd, qr
 from scipy.sparse.linalg import lsmr
 
 from scipy.optimize._lsq.common import (
-    step_size_to_bound, find_active_constraints, in_bounds,
-    make_strictly_feasible, intersect_trust_region, solve_lsq_trust_region,
-    solve_trust_region_2d, minimize_quadratic_1d, build_quadratic_1d,
-    evaluate_quadratic, right_multiplied_operator, regularized_lsq_operator,
-    CL_scaling_vector, compute_grad, compute_jac_scale, check_termination,
-    update_tr_radius, scale_for_robust_loss_function, print_header_nonlinear,
-    print_iteration_nonlinear)
-
+    step_size_to_bound,
+    find_active_constraints,
+    in_bounds,
+    make_strictly_feasible,
+    intersect_trust_region,
+    solve_lsq_trust_region,
+    solve_trust_region_2d,
+    minimize_quadratic_1d,
+    build_quadratic_1d,
+    evaluate_quadratic,
+    right_multiplied_operator,
+    regularized_lsq_operator,
+    CL_scaling_vector,
+    compute_grad,
+    compute_jac_scale,
+    check_termination,
+    update_tr_radius,
+    scale_for_robust_loss_function,
+    print_header_nonlinear,
+    print_iteration_nonlinear,
+)
 
 
 TERMINATION_MESSAGES = {
@@ -33,7 +47,7 @@ TERMINATION_MESSAGES = {
     1: "`gtol` termination condition is satisfied.",
     2: "`ftol` termination condition is satisfied.",
     3: "`xtol` termination condition is satisfied.",
-    4: "Both `ftol` and `xtol` termination conditions are satisfied."
+    4: "Both `ftol` and `xtol` termination conditions are satisfied.",
 }
 
 
@@ -43,7 +57,7 @@ FROM_MINPACK_TO_COMMON = {
     2: 3,
     3: 4,
     4: 1,
-    5: 0
+    5: 0,
     # There are 6, 7, 8 for too small tolerance parameters,
     # but we guard against it by checking ftol, xtol, gtol beforehand.
 }
@@ -59,7 +73,7 @@ def call_minpack(fun, x0, jac, ftol, xtol, gtol, max_nfev, x_scale, diff_step):
 
     # Compute MINPACK's `diag`, which is inverse of our `x_scale` and
     # ``x_scale='jac'`` corresponds to ``diag=None``.
-    if isinstance(x_scale, str) and x_scale == 'jac':
+    if isinstance(x_scale, str) and x_scale == "jac":
         diag = None
     else:
         diag = 1 / x_scale
@@ -72,17 +86,15 @@ def call_minpack(fun, x0, jac, ftol, xtol, gtol, max_nfev, x_scale, diff_step):
         if max_nfev is None:
             # n squared to account for Jacobian evaluations.
             max_nfev = 100 * n * (n + 1)
-        x, info, status = _minpack._lmdif(
-            fun, x0, (), full_output, ftol, xtol, gtol,
-            max_nfev, epsfcn, factor, diag)
+        x, info, status = _minpack._lmdif(fun, x0, (), full_output, ftol, xtol, gtol, max_nfev, epsfcn, factor, diag)
     else:
         if max_nfev is None:
             max_nfev = 100 * n
         x, info, status = _minpack._lmder(
-            fun, jac, x0, (), full_output, col_deriv,
-            ftol, xtol, gtol, max_nfev, factor, diag)
+            fun, jac, x0, (), full_output, col_deriv, ftol, xtol, gtol, max_nfev, factor, diag
+        )
 
-    f = info['fvec']
+    f = info["fvec"]
 
     if callable(jac):
         J = jac(x)
@@ -93,15 +105,24 @@ def call_minpack(fun, x0, jac, ftol, xtol, gtol, max_nfev, x_scale, diff_step):
     g = J.T.dot(f)
     g_norm = norm(g, ord=np.inf)
 
-    nfev = info['nfev']
-    njev = info.get('njev', None)
+    nfev = info["nfev"]
+    njev = info.get("njev", None)
 
     status = FROM_MINPACK_TO_COMMON[status]
     active_mask = np.zeros_like(x0, dtype=int)
 
     return OptimizeResult(
-        x=x, cost=cost, fun=f, jac=J, grad=g, optimality=g_norm,
-        active_mask=active_mask, nfev=nfev, njev=njev, status=status)
+        x=x,
+        cost=cost,
+        fun=f,
+        jac=J,
+        grad=g,
+        optimality=g_norm,
+        active_mask=active_mask,
+        nfev=nfev,
+        njev=njev,
+        status=status,
+    )
 
 
 def prepare_bounds(bounds, n):
@@ -120,9 +141,10 @@ def check_tolerance(ftol, xtol, gtol, method):
         if tol is None:
             tol = 0
         elif tol < EPS:
-            warn("Setting `{}` below the machine epsilon ({:.2e}) effectively "
-                 "disables the corresponding termination condition."
-                 .format(name, EPS))
+            warn(
+                "Setting `{}` below the machine epsilon ({:.2e}) effectively "
+                "disables the corresponding termination condition.".format(name, EPS)
+            )
         return tol
 
     ftol = check(ftol, "ftol")
@@ -130,17 +152,15 @@ def check_tolerance(ftol, xtol, gtol, method):
     gtol = check(gtol, "gtol")
 
     if method == "lm" and (ftol < EPS or xtol < EPS or gtol < EPS):
-        raise ValueError("All tolerances must be higher than machine epsilon "
-                         "({:.2e}) for method 'lm'.".format(EPS))
+        raise ValueError("All tolerances must be higher than machine epsilon " "({:.2e}) for method 'lm'.".format(EPS))
     elif ftol < EPS and xtol < EPS and gtol < EPS:
-        raise ValueError("At least one of the tolerances must be higher than "
-                         "machine epsilon ({:.2e}).".format(EPS))
+        raise ValueError("At least one of the tolerances must be higher than " "machine epsilon ({:.2e}).".format(EPS))
 
     return ftol, xtol, gtol
 
 
 def check_x_scale(x_scale, x0):
-    if isinstance(x_scale, str) and x_scale == 'jac':
+    if isinstance(x_scale, str) and x_scale == "jac":
         return x_scale
 
     try:
@@ -150,8 +170,7 @@ def check_x_scale(x_scale, x0):
         valid = False
 
     if not valid:
-        raise ValueError("`x_scale` must be 'jac' or array_like with "
-                         "positive numbers.")
+        raise ValueError("`x_scale` must be 'jac' or array_like with " "positive numbers.")
 
     if x_scale.ndim == 0:
         x_scale = np.resize(x_scale, x0.shape)
@@ -181,13 +200,13 @@ def check_jac_sparsity(jac_sparsity, m, n):
 def huber(z, rho, cost_only):
     mask = z <= 1
     rho[0, mask] = z[mask]
-    rho[0, ~mask] = 2 * z[~mask]**0.5 - 1
+    rho[0, ~mask] = 2 * z[~mask] ** 0.5 - 1
     if cost_only:
         return
     rho[1, mask] = 1
-    rho[1, ~mask] = z[~mask]**-0.5
+    rho[1, ~mask] = z[~mask] ** -0.5
     rho[2, mask] = 0
-    rho[2, ~mask] = -0.5 * z[~mask]**-1.5
+    rho[2, ~mask] = -0.5 * z[~mask] ** -1.5
 
 
 def soft_l1(z, rho, cost_only):
@@ -217,12 +236,11 @@ def arctan(z, rho, cost_only):
     rho[2] = -2 * z / t**2
 
 
-IMPLEMENTED_LOSSES = dict(linear=None, huber=huber, soft_l1=soft_l1,
-                          cauchy=cauchy, arctan=arctan)
+IMPLEMENTED_LOSSES = dict(linear=None, huber=huber, soft_l1=soft_l1, cauchy=cauchy, arctan=arctan)
 
 
 def construct_loss_function(m, loss, f_scale):
-    if loss == 'linear':
+    if loss == "linear":
         return None
 
     if not callable(loss):
@@ -233,28 +251,47 @@ def construct_loss_function(m, loss, f_scale):
             z = (f / f_scale) ** 2
             loss(z, rho, cost_only=cost_only)
             if cost_only:
-                return 0.5 * f_scale ** 2 * np.sum(rho[0])
-            rho[0] *= f_scale ** 2
-            rho[2] /= f_scale ** 2
+                return 0.5 * f_scale**2 * np.sum(rho[0])
+            rho[0] *= f_scale**2
+            rho[2] /= f_scale**2
             return rho
+
     else:
+
         def loss_function(f, cost_only=False):
             z = (f / f_scale) ** 2
             rho = loss(z)
             if cost_only:
-                return 0.5 * f_scale ** 2 * np.sum(rho[0])
-            rho[0] *= f_scale ** 2
-            rho[2] /= f_scale ** 2
+                return 0.5 * f_scale**2 * np.sum(rho[0])
+            rho[0] *= f_scale**2
+            rho[2] /= f_scale**2
             return rho
 
     return loss_function
 
 
 def least_squares(
-        fun, x0, jac='2-point', bounds=(-np.inf, np.inf), method='trf',
-        ftol=1e-8, xtol=1e-8, gtol=1e-8, x_scale=1.0, loss='linear',
-        f_scale=1.0, diff_step=None, tr_solver=None, tr_options={},
-        jac_sparsity=None, max_nfev=None, verbose=0, vtol=0, args=(), kwargs={}):
+    fun,
+    x0,
+    jac="2-point",
+    bounds=(-np.inf, np.inf),
+    method="trf",
+    ftol=1e-8,
+    xtol=1e-8,
+    gtol=1e-8,
+    x_scale=1.0,
+    loss="linear",
+    f_scale=1.0,
+    diff_step=None,
+    tr_solver=None,
+    tr_options={},
+    jac_sparsity=None,
+    max_nfev=None,
+    verbose=0,
+    vtol=0,
+    args=(),
+    kwargs={},
+):
     """Solve a nonlinear least-squares problem with bounds on the variables.
 
     Given the residuals f(x) (an m-D real function of n real
@@ -771,21 +808,19 @@ def least_squares(
     (0.49999999999925893+0.49999999999925893j)
 
     """
-    if method not in ['trf', 'dogbox', 'lm']:
+    if method not in ["trf", "dogbox", "lm"]:
         raise ValueError("`method` must be 'trf', 'dogbox' or 'lm'.")
 
-    if jac not in ['2-point', '3-point', 'cs'] and not callable(jac):
-        raise ValueError("`jac` must be '2-point', '3-point', 'cs' or "
-                         "callable.")
+    if jac not in ["2-point", "3-point", "cs"] and not callable(jac):
+        raise ValueError("`jac` must be '2-point', '3-point', 'cs' or " "callable.")
 
-    if tr_solver not in [None, 'exact', 'lsmr']:
+    if tr_solver not in [None, "exact", "lsmr"]:
         raise ValueError("`tr_solver` must be None, 'exact' or 'lsmr'.")
 
     if loss not in IMPLEMENTED_LOSSES and not callable(loss):
-        raise ValueError("`loss` must be one of {0} or a callable."
-                         .format(IMPLEMENTED_LOSSES.keys()))
+        raise ValueError("`loss` must be one of {0} or a callable.".format(IMPLEMENTED_LOSSES.keys()))
 
-    if method == 'lm' and loss != 'linear':
+    if method == "lm" and loss != "linear":
         raise ValueError("method='lm' supports only 'linear' loss function.")
 
     if verbose not in [0, 1, 2]:
@@ -807,15 +842,14 @@ def least_squares(
 
     lb, ub = prepare_bounds(bounds, x0.shape[0])
 
-    if method == 'lm' and not np.all((lb == -np.inf) & (ub == np.inf)):
+    if method == "lm" and not np.all((lb == -np.inf) & (ub == np.inf)):
         raise ValueError("Method 'lm' doesn't support bounds.")
 
     if lb.shape != x0.shape or ub.shape != x0.shape:
         raise ValueError("Inconsistent shapes between bounds and `x0`.")
 
     if np.any(lb >= ub):
-        raise ValueError("Each lower bound must be strictly less than each "
-                         "upper bound.")
+        raise ValueError("Each lower bound must be strictly less than each " "upper bound.")
 
     if not in_bounds(x0, lb, ub):
         raise ValueError("`x0` is infeasible.")
@@ -827,14 +861,13 @@ def least_squares(
     def fun_wrapped(x):
         return np.atleast_1d(fun(x, *args, **kwargs))
 
-    if method == 'trf':
+    if method == "trf":
         x0 = make_strictly_feasible(x0, lb, ub)
 
     f0 = fun_wrapped(x0)
 
     if f0.ndim != 1:
-        raise ValueError("`fun` must return at most 1-d array_like. "
-                         "f0.shape: {0}".format(f0.shape))
+        raise ValueError("`fun` must return at most 1-d array_like. " "f0.shape: {0}".format(f0.shape))
 
     if not np.all(np.isfinite(f0)):
         raise ValueError("Residuals are not finite in the initial point.")
@@ -842,16 +875,16 @@ def least_squares(
     n = x0.size
     m = f0.size
 
-    if method == 'lm' and m < n:
-        raise ValueError("Method 'lm' doesn't work when the number of "
-                         "residuals is less than the number of variables.")
+    if method == "lm" and m < n:
+        raise ValueError(
+            "Method 'lm' doesn't work when the number of " "residuals is less than the number of variables."
+        )
 
     loss_function = construct_loss_function(m, loss, f_scale)
     if callable(loss):
         rho = loss_function(f0)
         if rho.shape != (3, m):
-            raise ValueError("The return value of `loss` callable has wrong "
-                             "shape.")
+            raise ValueError("The return value of `loss` callable has wrong " "shape.")
         initial_cost = 0.5 * np.sum(rho[0])
     elif loss_function is not None:
         initial_cost = loss_function(f0, cost_only=True)
@@ -868,6 +901,7 @@ def least_squares(
                 return jac(x, *args, **kwargs).tocsr()
 
         elif isinstance(J0, LinearOperator):
+
             def jac_wrapped(x, _=None):
                 return jac(x, *args, **kwargs)
 
@@ -878,27 +912,32 @@ def least_squares(
                 return np.atleast_2d(jac(x, *args, **kwargs))
 
     else:  # Estimate Jacobian by finite differences.
-        if method == 'lm':
+        if method == "lm":
             if jac_sparsity is not None:
-                raise ValueError("method='lm' does not support "
-                                 "`jac_sparsity`.")
+                raise ValueError("method='lm' does not support " "`jac_sparsity`.")
 
-            if jac != '2-point':
-                warn("jac='{0}' works equivalently to '2-point' "
-                     "for method='lm'.".format(jac))
+            if jac != "2-point":
+                warn("jac='{0}' works equivalently to '2-point' " "for method='lm'.".format(jac))
 
             J0 = jac_wrapped = None
         else:
-            if jac_sparsity is not None and tr_solver == 'exact':
-                raise ValueError("tr_solver='exact' is incompatible "
-                                 "with `jac_sparsity`.")
+            if jac_sparsity is not None and tr_solver == "exact":
+                raise ValueError("tr_solver='exact' is incompatible " "with `jac_sparsity`.")
 
             jac_sparsity = check_jac_sparsity(jac_sparsity, m, n)
 
             def jac_wrapped(x, f):
-                J = approx_derivative(fun, x, rel_step=diff_step, method=jac,
-                                      f0=f, bounds=bounds, args=args,
-                                      kwargs=kwargs, sparsity=jac_sparsity)
+                J = approx_derivative(
+                    fun,
+                    x,
+                    rel_step=diff_step,
+                    method=jac,
+                    f0=f,
+                    bounds=bounds,
+                    args=args,
+                    kwargs=kwargs,
+                    sparsity=jac_sparsity,
+                )
                 if J.ndim != 2:  # J is guaranteed not sparse.
                     J = np.atleast_2d(J)
 
@@ -909,34 +948,46 @@ def least_squares(
     if J0 is not None:
         if J0.shape != (m, n):
             raise ValueError(
-                "The return value of `jac` has wrong shape: expected {0}, "
-                "actual {1}.".format((m, n), J0.shape))
+                "The return value of `jac` has wrong shape: expected {0}, " "actual {1}.".format((m, n), J0.shape)
+            )
 
         if not isinstance(J0, np.ndarray):
-            if method == 'lm':
-                raise ValueError("method='lm' works only with dense "
-                                 "Jacobian matrices.")
+            if method == "lm":
+                raise ValueError("method='lm' works only with dense " "Jacobian matrices.")
 
-            if tr_solver == 'exact':
-                raise ValueError(
-                    "tr_solver='exact' works only with dense "
-                    "Jacobian matrices.")
+            if tr_solver == "exact":
+                raise ValueError("tr_solver='exact' works only with dense " "Jacobian matrices.")
 
-        jac_scale = isinstance(x_scale, str) and x_scale == 'jac'
+        jac_scale = isinstance(x_scale, str) and x_scale == "jac"
         if isinstance(J0, LinearOperator) and jac_scale:
-            raise ValueError("x_scale='jac' can't be used when `jac` "
-                             "returns LinearOperator.")
+            raise ValueError("x_scale='jac' can't be used when `jac` " "returns LinearOperator.")
 
         if tr_solver is None:
             if isinstance(J0, np.ndarray):
-                tr_solver = 'exact'
+                tr_solver = "exact"
             else:
-                tr_solver = 'lsmr'
+                tr_solver = "lsmr"
 
-    if method == 'trf':
-        result = trf(fun_wrapped, jac_wrapped, x0, f0, J0, lb, ub, ftol, xtol,
-                     gtol, max_nfev, x_scale, loss_function, tr_solver,
-                     tr_options.copy(), verbose, vtol=vtol)
+    if method == "trf":
+        result = trf(
+            fun_wrapped,
+            jac_wrapped,
+            x0,
+            f0,
+            J0,
+            lb,
+            ub,
+            ftol,
+            xtol,
+            gtol,
+            max_nfev,
+            x_scale,
+            loss_function,
+            tr_solver,
+            tr_options.copy(),
+            verbose,
+            vtol=vtol,
+        )
     else:
         raise ValueError("Only trf supported")
 
@@ -945,17 +996,12 @@ def least_squares(
 
     if verbose >= 1:
         print(result.message)
-        print("Function evaluations {0}, initial cost {1:.4e}, final cost "
-              "{2:.4e}, first-order optimality {3:.2e}."
-              .format(result.nfev, initial_cost, result.cost,
-                      result.optimality))
+        print(
+            "Function evaluations {0}, initial cost {1:.4e}, final cost "
+            "{2:.4e}, first-order optimality {3:.2e}.".format(result.nfev, initial_cost, result.cost, result.optimality)
+        )
 
     return result
-
-
-
-
-
 
 
 # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1057,20 +1103,67 @@ References
 """
 
 
-def trf(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev, x_scale,
-        loss_function, tr_solver, tr_options, verbose, vtol=0):
+def trf(
+    fun,
+    jac,
+    x0,
+    f0,
+    J0,
+    lb,
+    ub,
+    ftol,
+    xtol,
+    gtol,
+    max_nfev,
+    x_scale,
+    loss_function,
+    tr_solver,
+    tr_options,
+    verbose,
+    vtol=0,
+):
     # For efficiency, it makes sense to run the simplified version of the
     # algorithm when no bounds are imposed. We decided to write the two
     # separate functions. It violates the DRY principle, but the individual
     # functions are kept the most readable.
     if np.all(lb == -np.inf) and np.all(ub == np.inf):
         return trf_no_bounds(
-            fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev, x_scale,
-            loss_function, tr_solver, tr_options, verbose, vtol=vtol)
+            fun,
+            jac,
+            x0,
+            f0,
+            J0,
+            ftol,
+            xtol,
+            gtol,
+            max_nfev,
+            x_scale,
+            loss_function,
+            tr_solver,
+            tr_options,
+            verbose,
+            vtol=vtol,
+        )
     else:
         return trf_bounds(
-            fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev, x_scale,
-            loss_function, tr_solver, tr_options, verbose, vtol=vtol)
+            fun,
+            jac,
+            x0,
+            f0,
+            J0,
+            lb,
+            ub,
+            ftol,
+            xtol,
+            gtol,
+            max_nfev,
+            x_scale,
+            loss_function,
+            tr_solver,
+            tr_options,
+            verbose,
+            vtol=vtol,
+        )
 
 
 def select_step(x, J_h, diag_h, g_h, p, p_h, d, Delta, lb, ub, theta):
@@ -1114,8 +1207,7 @@ def select_step(x, J_h, diag_h, g_h, p, p_h, d, Delta, lb, ub, theta):
     # Check if reflection step is available.
     if r_stride_l <= r_stride_u:
         a, b, c = build_quadratic_1d(J_h, g_h, r_h, s0=p_h, diag=diag_h)
-        r_stride, r_value = minimize_quadratic_1d(
-            a, b, r_stride_l, r_stride_u, c=c)
+        r_stride, r_value = minimize_quadratic_1d(a, b, r_stride_l, r_stride_u, c=c)
         r_h *= r_stride
         r_h += p_h
         r = r_h * d
@@ -1150,8 +1242,25 @@ def select_step(x, J_h, diag_h, g_h, p, p_h, d, Delta, lb, ub, theta):
         return ag, ag_h, -ag_value
 
 
-def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
-               x_scale, loss_function, tr_solver, tr_options, verbose, vtol=0):
+def trf_bounds(
+    fun,
+    jac,
+    x0,
+    f0,
+    J0,
+    lb,
+    ub,
+    ftol,
+    xtol,
+    gtol,
+    max_nfev,
+    x_scale,
+    loss_function,
+    tr_solver,
+    tr_options,
+    verbose,
+    vtol=0,
+):
     x = x0.copy()
 
     f = f0
@@ -1171,7 +1280,7 @@ def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
 
     g = compute_grad(J, f)
 
-    jac_scale = isinstance(x_scale, str) and x_scale == 'jac'
+    jac_scale = isinstance(x_scale, str) and x_scale == "jac"
     if jac_scale:
         scale, scale_inv = compute_jac_scale(J)
     else:
@@ -1186,11 +1295,11 @@ def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
     g_norm = norm(g * v, ord=np.inf)
 
     f_augmented = np.zeros((m + n))
-    if tr_solver == 'exact':
+    if tr_solver == "exact":
         J_augmented = np.empty((m + n, n))
-    elif tr_solver == 'lsmr':
+    elif tr_solver == "lsmr":
         reg_term = 0.0
-        regularize = tr_options.pop('regularize', True)
+        regularize = tr_options.pop("regularize", True)
 
     if max_nfev is None:
         max_nfev = x0.size * 100
@@ -1214,11 +1323,12 @@ def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
 
         if cost < vtol:
             termination_status = 3
-            print("Terminating optimization because cost is less than threshold. It will say it terminated by xtol though")
+            print(
+                "Terminating optimization because cost is less than threshold. It will say it terminated by xtol though"
+            )
 
         if verbose == 2:
-            print_iteration_nonlinear(iteration, nfev, cost, actual_reduction,
-                                      step_norm, g_norm)
+            print_iteration_nonlinear(iteration, nfev, cost, actual_reduction, step_norm, g_norm)
 
         if termination_status is not None or nfev == max_nfev:
             break
@@ -1246,14 +1356,14 @@ def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
         g_h = d * g
 
         f_augmented[:m] = f
-        if tr_solver == 'exact':
+        if tr_solver == "exact":
             J_augmented[:m] = J * d
             J_h = J_augmented[:m]  # Memory view.
             J_augmented[m:] = np.diag(diag_h**0.5)
             U, s, V = svd(J_augmented, full_matrices=False)
             V = V.T
             uf = U.T.dot(f_augmented)
-        elif tr_solver == 'lsmr':
+        elif tr_solver == "lsmr":
             J_h = right_multiplied_operator(J, d)
 
             if regularize:
@@ -1262,10 +1372,10 @@ def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
                 ag_value = minimize_quadratic_1d(a, b, 0, to_tr)[1]
                 reg_term = -ag_value / Delta**2
 
-            lsmr_op = regularized_lsq_operator(J_h, (diag_h + reg_term)**0.5)
+            lsmr_op = regularized_lsq_operator(J_h, (diag_h + reg_term) ** 0.5)
             gn_h = lsmr(lsmr_op, f_augmented, **tr_options)[0]
             S = np.vstack((g_h, gn_h)).T
-            S, _ = qr(S, mode='economic')
+            S, _ = qr(S, mode="economic")
             JS = J_h.dot(S)  # LinearOperator does dot too.
             B_S = np.dot(JS.T, JS) + np.dot(S.T * diag_h, S)
             g_S = S.T.dot(g_h)
@@ -1275,16 +1385,14 @@ def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
 
         actual_reduction = -1
         while actual_reduction <= 0 and nfev < max_nfev:
-            if tr_solver == 'exact':
-                p_h, alpha, n_iter = solve_lsq_trust_region(
-                    n, m, uf, s, V, Delta, initial_alpha=alpha)
-            elif tr_solver == 'lsmr':
+            if tr_solver == "exact":
+                p_h, alpha, n_iter = solve_lsq_trust_region(n, m, uf, s, V, Delta, initial_alpha=alpha)
+            elif tr_solver == "lsmr":
                 p_S, _ = solve_trust_region_2d(B_S, g_S, Delta)
                 p_h = S.dot(p_S)
 
             p = d * p_h  # Trust-region solution in the original space.
-            step, step_h, predicted_reduction = select_step(
-                x, J_h, diag_h, g_h, p, p_h, d, Delta, lb, ub, theta)
+            step, step_h, predicted_reduction = select_step(x, J_h, diag_h, g_h, p, p_h, d, Delta, lb, ub, theta)
 
             x_new = make_strictly_feasible(x + step, lb, ub, rstep=0)
             f_new = fun(x_new)
@@ -1303,12 +1411,11 @@ def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
                 cost_new = 0.5 * np.dot(f_new, f_new)
             actual_reduction = cost - cost_new
             Delta_new, ratio = update_tr_radius(
-                Delta, actual_reduction, predicted_reduction,
-                step_h_norm, step_h_norm > 0.95 * Delta)
+                Delta, actual_reduction, predicted_reduction, step_h_norm, step_h_norm > 0.95 * Delta
+            )
 
             step_norm = norm(step)
-            termination_status = check_termination(
-                actual_reduction, cost, step_norm, norm(x), ratio, ftol, xtol)
+            termination_status = check_termination(actual_reduction, cost, step_norm, norm(x), ratio, ftol, xtol)
             if termination_status is not None:
                 break
 
@@ -1345,13 +1452,22 @@ def trf_bounds(fun, jac, x0, f0, J0, lb, ub, ftol, xtol, gtol, max_nfev,
 
     active_mask = find_active_constraints(x, lb, ub, rtol=xtol)
     return OptimizeResult(
-        x=x, cost=cost, fun=f_true, jac=J, grad=g, optimality=g_norm,
-        active_mask=active_mask, nfev=nfev, njev=njev,
-        status=termination_status)
+        x=x,
+        cost=cost,
+        fun=f_true,
+        jac=J,
+        grad=g,
+        optimality=g_norm,
+        active_mask=active_mask,
+        nfev=nfev,
+        njev=njev,
+        status=termination_status,
+    )
 
 
-def trf_no_bounds(fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev,
-                  x_scale, loss_function, tr_solver, tr_options, verbose, vtol=0):
+def trf_no_bounds(
+    fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev, x_scale, loss_function, tr_solver, tr_options, verbose, vtol=0
+):
     x = x0.copy()
 
     f = f0
@@ -1371,7 +1487,7 @@ def trf_no_bounds(fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev,
 
     g = compute_grad(J, f)
 
-    jac_scale = isinstance(x_scale, str) and x_scale == 'jac'
+    jac_scale = isinstance(x_scale, str) and x_scale == "jac"
     if jac_scale:
         scale, scale_inv = compute_jac_scale(J)
     else:
@@ -1381,10 +1497,10 @@ def trf_no_bounds(fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev,
     if Delta == 0:
         Delta = 1.0
 
-    if tr_solver == 'lsmr':
+    if tr_solver == "lsmr":
         reg_term = 0
-        damp = tr_options.pop('damp', 0.0)
-        regularize = tr_options.pop('regularize', True)
+        damp = tr_options.pop("damp", 0.0)
+        regularize = tr_options.pop("regularize", True)
 
     if max_nfev is None:
         max_nfev = x0.size * 100
@@ -1412,8 +1528,7 @@ def trf_no_bounds(fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev,
             )
 
         if verbose == 2:
-            print_iteration_nonlinear(iteration, nfev, cost, actual_reduction,
-                                      step_norm, g_norm)
+            print_iteration_nonlinear(iteration, nfev, cost, actual_reduction, step_norm, g_norm)
 
         if termination_status is not None or nfev == max_nfev:
             break
@@ -1421,12 +1536,12 @@ def trf_no_bounds(fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev,
         d = scale
         g_h = d * g
 
-        if tr_solver == 'exact':
+        if tr_solver == "exact":
             J_h = J * d
             U, s, V = svd(J_h, full_matrices=False)
             V = V.T
             uf = U.T.dot(f)
-        elif tr_solver == 'lsmr':
+        elif tr_solver == "lsmr":
             J_h = right_multiplied_operator(J, d)
 
             if regularize:
@@ -1435,20 +1550,19 @@ def trf_no_bounds(fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev,
                 ag_value = minimize_quadratic_1d(a, b, 0, to_tr)[1]
                 reg_term = -ag_value / Delta**2
 
-            damp_full = (damp**2 + reg_term)**0.5
+            damp_full = (damp**2 + reg_term) ** 0.5
             gn_h = lsmr(J_h, f, damp=damp_full, **tr_options)[0]
             S = np.vstack((g_h, gn_h)).T
-            S, _ = qr(S, mode='economic')
+            S, _ = qr(S, mode="economic")
             JS = J_h.dot(S)
             B_S = np.dot(JS.T, JS)
             g_S = S.T.dot(g_h)
 
         actual_reduction = -1
         while actual_reduction <= 0 and nfev < max_nfev:
-            if tr_solver == 'exact':
-                step_h, alpha, n_iter = solve_lsq_trust_region(
-                    n, m, uf, s, V, Delta, initial_alpha=alpha)
-            elif tr_solver == 'lsmr':
+            if tr_solver == "exact":
+                step_h, alpha, n_iter = solve_lsq_trust_region(n, m, uf, s, V, Delta, initial_alpha=alpha)
+            elif tr_solver == "lsmr":
                 p_S, _ = solve_trust_region_2d(B_S, g_S, Delta)
                 step_h = S.dot(p_S)
 
@@ -1472,12 +1586,11 @@ def trf_no_bounds(fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev,
             actual_reduction = cost - cost_new
 
             Delta_new, ratio = update_tr_radius(
-                Delta, actual_reduction, predicted_reduction,
-                step_h_norm, step_h_norm > 0.95 * Delta)
+                Delta, actual_reduction, predicted_reduction, step_h_norm, step_h_norm > 0.95 * Delta
+            )
 
             step_norm = norm(step)
-            termination_status = check_termination(
-                actual_reduction, cost, step_norm, norm(x), ratio, ftol, xtol)
+            termination_status = check_termination(actual_reduction, cost, step_norm, norm(x), ratio, ftol, xtol)
             if termination_status is not None:
                 break
 
@@ -1514,6 +1627,14 @@ def trf_no_bounds(fun, jac, x0, f0, J0, ftol, xtol, gtol, max_nfev,
 
     active_mask = np.zeros_like(x)
     return OptimizeResult(
-        x=x, cost=cost, fun=f_true, jac=J, grad=g, optimality=g_norm,
-        active_mask=active_mask, nfev=nfev, njev=njev,
-        status=termination_status)
+        x=x,
+        cost=cost,
+        fun=f_true,
+        jac=J,
+        grad=g,
+        optimality=g_norm,
+        active_mask=active_mask,
+        nfev=nfev,
+        njev=njev,
+        status=termination_status,
+    )
