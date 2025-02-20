@@ -4,7 +4,7 @@ Functions
 ---------
 satisfies_conditions(sd, nspatial, spin, seniority, hierarchy)
     Checks to see if Slater determinant has the desired spin and seniority
-sd_list(nspatial, nelec, num_limit=None, exc_orders=None, spin=None, seniority=None)
+sd_list(nspatial, nelec, num_limit=None, exc_orders=None, spin=None, seniority=None, hierarchy=False)
     Generates a list of Slater determinants with the specified excitations from ground state, spin,
     and seniority
 
@@ -54,7 +54,7 @@ def satisfies_conditions(sd, nspatial, spin, seniority, hierarchy):
     return condition
 
 
-def sd_list(nelec, nspin, num_limit=None, exc_orders=None, spin=None, seniority=None, hierarchy=None):
+def sd_list(nelec, nspin, num_limit=None, exc_orders=None, spin=None, seniority=None, hierarchy=False):
     r"""Return a list of Slater determinants.
 
     Parameters
@@ -79,6 +79,8 @@ def sd_list(nelec, nspin, num_limit=None, exc_orders=None, spin=None, seniority=
     seniority : {int, None}
         Maximum number of unpaired electrons.
         Default is no seniority restritions.
+    hierarchy : bool
+        Applies specific conditions to hierarchy-based wavefunctions.
 
     Returns
     -------

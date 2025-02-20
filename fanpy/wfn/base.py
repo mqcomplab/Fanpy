@@ -277,6 +277,18 @@ class BaseWavefunction:
                     0.01j * scale * (np.random.rand(*self.params.shape).astype(complex) - 0.5)
                 )
 
+    def import_params(self, guess):
+        """Transfers parameters from a guess wavefunction to a target wavefunction, ensuring compatibility with the wavefunction base.
+
+        Parameters
+        ----------
+        guess : BaseWavefunction
+            The wavefunction object providing the guess parameters.
+
+        """
+        raise NotImplementedError("Importing parameters from other wavefunctions has not been implemented.")
+
+
     def save_params(self, filename):
         """Save parameters associated with the wavefunction.
 
