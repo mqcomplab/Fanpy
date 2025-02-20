@@ -187,6 +187,7 @@ def generate_unordered_partition(collection, bin_size_num):
     ----------
     collection : list
         List of elements that will be partitioned.
+        This should be an ordered list to ensure a correct number of partitions and correct ordering of the bins. 
     bin_size_num : list of 2-tuple of int
         List of tuples that describe the size and the number of the bins.
         First element of the tuple is the size of the bin.
