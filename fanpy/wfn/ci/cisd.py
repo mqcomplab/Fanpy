@@ -1,4 +1,5 @@
 """CI Singles and Doubles Wavefunction."""
+
 from fanpy.tools.sd_list import sd_list
 from fanpy.wfn.ci.base import CIWavefunction
 

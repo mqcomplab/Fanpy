@@ -12,6 +12,7 @@ int_partition_recursive(coins, num_coin_types, total)
     Generates the combination of coins that results in the given total.
 
 """
+
 from fanpy.tools.slater import sign_perm
 
 import numpy as np
@@ -60,14 +61,10 @@ def generate_complete_pmatch(indices, sign=1):
             for i in reversed(range(n // 2 - 1)):
                 # replace ith pair in the scheme with last pair
                 yield (
-                    scheme[:i]
-                    + ((scheme[i][0], indices[-2]), (scheme[i][1], indices[-1]))
-                    + scheme[i + 1 :]
+                    scheme[:i] + ((scheme[i][0], indices[-2]), (scheme[i][1], indices[-1])) + scheme[i + 1 :]
                 ), -inner_sign
                 yield (
-                    scheme[:i]
-                    + ((scheme[i][0], indices[-1]), (scheme[i][1], indices[-2]))
-                    + scheme[i + 1 :]
+                    scheme[:i] + ((scheme[i][0], indices[-1]), (scheme[i][1], indices[-2])) + scheme[i + 1 :]
                 ), inner_sign
 
 
@@ -116,9 +113,7 @@ def generate_biclique_pmatch(indices_one, indices_two, ordered_set=None, is_decr
         yield tuple(), sign
     elif len(indices_one) != len(indices_two):
         yield tuple(), sign
-    elif len(set(indices_one).symmetric_difference(set(indices_two))) < len(
-        indices_one + indices_two
-    ):
+    elif len(set(indices_one).symmetric_difference(set(indices_two))) < len(indices_one + indices_two):
         yield tuple(), sign
     else:
         # for new_indices in it.permutations(indices_two):
@@ -297,9 +292,7 @@ def int_partition_recursive(coins, num_coin_types, total):
         return
 
     # include last coin
-    for partition in int_partition_recursive(
-        coins, num_coin_types, total - coins[num_coin_types - 1]
-    ):
+    for partition in int_partition_recursive(coins, num_coin_types, total - coins[num_coin_types - 1]):
         yield [coins[num_coin_types - 1]] + partition
     # exclude last coin
     yield from int_partition_recursive(coins, num_coin_types - 1, total)

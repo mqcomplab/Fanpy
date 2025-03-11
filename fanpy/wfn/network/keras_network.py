@@ -1,4 +1,5 @@
 """Wavefunction using Keras NN."""
+
 import fanpy.tools.slater as slater
 from fanpy.tools.sd_list import sd_list
 from fanpy.wfn.base import BaseWavefunction
@@ -121,9 +122,7 @@ class KerasNetwork(BaseWavefunction):
                     )
                 )
             model.add(
-                keras.layers.core.Dense(
-                    1, activation=keras.activations.relu, input_dim=self.nspin, use_bias=False
-                )
+                keras.layers.core.Dense(1, activation=keras.activations.relu, input_dim=self.nspin, use_bias=False)
             )
 
         if __debug__:
@@ -131,18 +130,15 @@ class KerasNetwork(BaseWavefunction):
                 raise TypeError("Given model must be an instance of keras.engine.network.Network.")
             if len(model.inputs) != 1:
                 raise ValueError(
-                    "Given model must only have one set of inputs (for the occupations of "
-                    "the Slater determinant)."
+                    "Given model must only have one set of inputs (for the occupations of " "the Slater determinant)."
                 )
             if model.inputs[0].shape[1] != self.nspin:
                 raise ValueError(
-                    "Given model must have exactly the same number of input nodes as the "
-                    "number of spin orbitals."
+                    "Given model must have exactly the same number of input nodes as the " "number of spin orbitals."
                 )
             if len(model.outputs) != 1:
                 raise ValueError(
-                    "Given model must only have one set of outputs (for the overlap of "
-                    "the Slater determinant)."
+                    "Given model must only have one set of outputs (for the overlap of " "the Slater determinant)."
                 )
             if model.outputs[0].shape[1] != 1:
                 raise ValueError("Given model must have exactly one output.")
@@ -206,9 +202,7 @@ class KerasNetwork(BaseWavefunction):
             params += np.eye(*layer.weights[0].shape).flatten().tolist()
         # solve for last layer
         num_hidden_orbs = int(self.model.layers[-1].weights[0].shape[0])
-        hidden_sds = [
-            slater.occ_indices(sd) for sd in sd_list(self.nelec, num_hidden_orbs, exc_orders=[1, 2])
-        ]
+        hidden_sds = [slater.occ_indices(sd) for sd in sd_list(self.nelec, num_hidden_orbs, exc_orders=[1, 2])]
         if __debug__ and len(hidden_sds) < num_hidden_orbs:  # pragma: no cover
             raise ValueError(
                 "Cannot generate initial guess for Keras network because the final "

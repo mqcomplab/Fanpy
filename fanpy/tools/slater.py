@@ -74,6 +74,7 @@ sign_swap(sd, pos_current, pos_future) : int
     Return the signature of moving a creation operator to a specific position.
 
 """
+
 # pylint: disable=C0103,C0302
 import itertools as it
 
@@ -395,15 +396,10 @@ def ground(nocc, norbs):
     """
     if __debug__:
         if nocc > norbs:
-            raise ValueError(
-                "Number of occupied spin-orbitals must be less than the total number of"
-                " spin-orbitals"
-            )
+            raise ValueError("Number of occupied spin-orbitals must be less than the total number of" " spin-orbitals")
         if norbs % 2 != 0:
             raise ValueError("Total number of spin-orbitals must be even")
-    return int("0b" + "1" * (nocc // 2 + nocc % 2), 2) + int(
-        "0b" + "1" * (nocc // 2) + "0" * (norbs // 2), 2
-    )
+    return int("0b" + "1" * (nocc // 2 + nocc % 2), 2) + int("0b" + "1" * (nocc // 2) + "0" * (norbs // 2), 2)
 
 
 def shared_sd(sd1, sd2):
@@ -911,10 +907,7 @@ def sign_excite(sd, annihilators, creators):
     sign = 1
     for i in annihilators:
         if __debug__ and not occ(sd, i):
-            raise ValueError(
-                "Given Slater determinant cannot be excited using the given creators "
-                "and annihilators."
-            )
+            raise ValueError("Given Slater determinant cannot be excited using the given creators " "and annihilators.")
         # move creator i in the Slater determinant to the front (cancelling out the annihilator)
         sign *= sign_swap(sd, i, 0)
         sd = annihilate(sd, i)
@@ -922,10 +915,7 @@ def sign_excite(sd, annihilators, creators):
     for i in creators:
         sd = create(sd, i)
         if __debug__ and sd is None:
-            raise ValueError(
-                "Given Slater determinant cannot be excited using the given creators "
-                "and annihilators."
-            )
+            raise ValueError("Given Slater determinant cannot be excited using the given creators " "and annihilators.")
         # move creator i from the first poisition to its position
         sign *= sign_swap(sd, i, 0)
 

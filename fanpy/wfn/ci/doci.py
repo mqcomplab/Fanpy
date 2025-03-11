@@ -1,4 +1,5 @@
 """DOCI wavefunction."""
+
 from fanpy.wfn.ci.base import CIWavefunction
 
 

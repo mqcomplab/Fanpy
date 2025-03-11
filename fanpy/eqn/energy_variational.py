@@ -1,4 +1,5 @@
 """Variational energy that corresponds to the Schrodinger equation."""
+
 from fanpy.eqn.energy_twoside import EnergyTwoSideProjection
 from fanpy.tools import sd_list
 
@@ -183,7 +184,5 @@ class EnergyVariational(EnergyTwoSideProjection):
 
         """
         if pspace is None:
-            pspace = sd_list.sd_list(
-                self.wfn.nelec, self.wfn.nspin, spin=self.wfn.spin, seniority=self.wfn.seniority
-            )
+            pspace = sd_list.sd_list(self.wfn.nelec, self.wfn.nspin, spin=self.wfn.spin, seniority=self.wfn.seniority)
         super().assign_pspaces(pspace, pspace, pspace)

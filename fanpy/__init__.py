@@ -1,1 +1,1 @@
-"""Module for creating wavefunctions and Hamiltonians and optimizing ."""
+"""Module for creating wavefunctions and Hamiltonians and optimizing."""

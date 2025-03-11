@@ -1,4 +1,5 @@
 """Coupled Cluster Singles with seniority 0 Doubles."""
+
 from fanpy.tools import slater
 from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
@@ -97,9 +98,20 @@ class CCSDsen0(PCCD):
         to the given indices to be created.
 
     """
+
     # FIXME: NOT TESTED
-    def __init__(self, nelec, nspin, memory=None, ranks=None, indices=None,
-                 refwfn=None, params=None, exop_combinations=None, refresh_exops=None):
+    def __init__(
+        self,
+        nelec,
+        nspin,
+        memory=None,
+        ranks=None,
+        indices=None,
+        refwfn=None,
+        params=None,
+        exop_combinations=None,
+        refresh_exops=None,
+    ):
         """Initialize the wavefunction.
 
         Parameters
@@ -133,8 +145,15 @@ class CCSDsen0(PCCD):
             annihilation to the creation operators.
 
         """
-        super().__init__(nelec, nspin, memory=memory, refwfn=refwfn, params=params,
-                         exop_combinations=exop_combinations, refresh_exops=refresh_exops)
+        super().__init__(
+            nelec,
+            nspin,
+            memory=memory,
+            refwfn=refwfn,
+            params=params,
+            exop_combinations=exop_combinations,
+            refresh_exops=refresh_exops,
+        )
         self.assign_ranks(ranks=ranks)
         self.assign_exops(indices=indices)
 
@@ -154,10 +173,10 @@ class CCSDsen0(PCCD):
 
         """
         if ranks is not None:
-            raise ValueError('Only the default, rank = [1, 2], is allowed')
+            raise ValueError("Only the default, rank = [1, 2], is allowed")
         # FIXME: MOVE SOMEWHERE ELSE
         if self.nelec <= 1:
-            raise ValueError('Only wavefunctions with more than 1 electron can be considered')
+            raise ValueError("Only wavefunctions with more than 1 electron can be considered")
         self.ranks = [1, 2]
 
     def assign_exops(self, indices=None):
@@ -185,8 +204,10 @@ class CCSDsen0(PCCD):
 
         """
         if indices is not None:
-            raise TypeError('Only the excitation operators constructed by default from '
-                            'the given reference Slater determinant are allowed')
+            raise TypeError(
+                "Only the excitation operators constructed by default from "
+                "the given reference Slater determinant are allowed"
+            )
         else:
             exops = {}
             counter = 0
@@ -201,10 +222,9 @@ class CCSDsen0(PCCD):
                     counter += 1
 
             # Seniority 0 doubles
-            for occ_alpha in ex_from[:len(ex_from) // 2]:
-                for virt_alpha in ex_to[:len(ex_to) // 2]:
-                    exop = [occ_alpha, occ_alpha + self.nspatial,
-                            virt_alpha, virt_alpha + self.nspatial]
+            for occ_alpha in ex_from[: len(ex_from) // 2]:
+                for virt_alpha in ex_to[: len(ex_to) // 2]:
+                    exop = [occ_alpha, occ_alpha + self.nspatial, virt_alpha, virt_alpha + self.nspatial]
                     exops[tuple(exop)] = counter
                     counter += 1
             self.exops = exops

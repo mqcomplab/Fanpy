@@ -35,8 +35,6 @@ make_natural_orbitals(wfn, ham) : {CIWavefunction, BaseHamiltonian}
     Create Natural Orbitals from a given CIWavefunction.
 """
 
-import numpy as np
-import scipy
 
 def compute_natural_orbitals(wfn, mo_coeff=None):
     """Compute natural orbitals (NOs) and occupation numbers from the 1-RDM in the molecular orbital (MO) basis.
@@ -57,12 +55,15 @@ def compute_natural_orbitals(wfn, mo_coeff=None):
         Natural orbitals for beta spin.
 
     """
+    import numpy as np
+    import scipy
+
     # Compute 1-RDMs for the given CI wavefunction
     rdm1 = wfn.compute_1rdm()
 
     # Splitting 1-RDMs in \gamma(\alpha, \alpha) and \gamma(\beta, \beta)
-    rdm1_alpha = rdm1[:wfn.nspatial, :wfn.nspatial]
-    rdm1_beta = rdm1[wfn.nspatial:, wfn.nspatial:]
+    rdm1_alpha = rdm1[: wfn.nspatial, : wfn.nspatial]
+    rdm1_beta = rdm1[wfn.nspatial :, wfn.nspatial :]
 
     # Perform eigendecomposition of the 1-RDM
     occ_alpha, natural_orbitals_alpha = scipy.linalg.eigh(rdm1_alpha)
@@ -87,10 +88,11 @@ def compute_natural_orbitals(wfn, mo_coeff=None):
 
     # Concatenate spin natural orbitals
     natural_orbitals = np.zeros((wfn.nspatial, wfn.nspin))
-    natural_orbitals[:, :wfn.nspatial] = natural_orbitals_alpha
-    natural_orbitals[:, wfn.nspatial:] = natural_orbitals_beta
+    natural_orbitals[:, : wfn.nspatial] = natural_orbitals_alpha
+    natural_orbitals[:, wfn.nspatial :] = natural_orbitals_beta
 
     return occ_numbers, natural_orbitals
+
 
 def save_natural_orbitals(filename, wfn, mol, mo_coeff):
     """Save natural orbitals (NOs) at the atomic orbital (AO) basis in the Molden file format.
@@ -115,10 +117,10 @@ def save_natural_orbitals(filename, wfn, mol, mo_coeff):
 
     occ_numbers, natural_orbitals = compute_natural_orbitals(wfn, mo_coeff=mo_coeff)
 
-    if not filename.endswith('.molden'):
-        filename += '.molden'
+    if not filename.endswith(".molden"):
+        filename += ".molden"
 
-    with open(filename, 'w') as file:
+    with open(filename, "w") as file:
         molden.header(mol, file)
         molden.orbital_coeff(mol, file, natural_orbitals, occ=occ_numbers, ene=occ_numbers)
         print("Molden file {:} sucessfully exported.".format(filename))

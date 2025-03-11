@@ -53,10 +53,7 @@ class EnergyConstraint(EnergyOneSideProjection):
 
         # if calculated energy is lower than the reference, bring down reference energy
         if energy_diff <= 0:
-            print(
-                "Energy lower than reference. Adjusting reference energy: {}"
-                "".format(self.ref_energy)
-            )
+            print("Energy lower than reference. Adjusting reference energy: {}" "".format(self.ref_energy))
             self.ref_energy += self.base * energy_diff
             return energy_diff
 
@@ -64,9 +61,7 @@ class EnergyConstraint(EnergyOneSideProjection):
         if len(self.energy_diff_history) > self.queue_size:
             self.energy_diff_history.popleft()
 
-        if len(self.energy_diff_history) != self.queue_size or any(
-            i <= 0 for i in self.energy_diff_history
-        ):
+        if len(self.energy_diff_history) != self.queue_size or any(i <= 0 for i in self.energy_diff_history):
             return energy_diff
 
         energy_diff_order = np.log(self.energy_diff_history) / np.log(self.base)

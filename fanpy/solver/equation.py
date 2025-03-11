@@ -1,4 +1,5 @@
 """Solvers for single equations."""
+
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.eqn.energy_oneside import EnergyOneSideProjection
 from fanpy.eqn.energy_twoside import EnergyTwoSideProjection
@@ -87,9 +88,7 @@ def cma(objective, **kwargs):
 
     if isinstance(objective, LeastSquaresEquations):
         output["energy"] = objective.energy.params
-    elif isinstance(  # pragma: no branch
-        objective, (EnergyOneSideProjection, EnergyTwoSideProjection)
-    ):
+    elif isinstance(objective, (EnergyOneSideProjection, EnergyTwoSideProjection)):  # pragma: no branch
         output["energy"] = results[1]
 
     if output["success"]:  # pragma: no branch
@@ -191,9 +190,7 @@ def minimize(objective, use_gradient=True, **kwargs):
     output["function"] = output["internal"].fun
     if isinstance(objective, LeastSquaresEquations):
         output["energy"] = objective.energy.params
-    elif isinstance(  # pragma: no branch
-        objective, (EnergyOneSideProjection, EnergyTwoSideProjection)
-    ):
+    elif isinstance(objective, (EnergyOneSideProjection, EnergyTwoSideProjection)):  # pragma: no branch
         output["energy"] = output["function"]
 
     return output

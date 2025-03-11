@@ -1,4 +1,5 @@
 """Antisymmetric Product of Rank-2 (APr2G) Geminals wavefunction."""
+
 from fanpy.wfn.geminal.apig import APIG
 from fanpy.wfn.geminal.rank2_approx import RankTwoApprox
 

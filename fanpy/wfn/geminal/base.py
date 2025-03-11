@@ -1,4 +1,5 @@
 """Base class for Geminal wavefunctions."""
+
 import abc
 
 from fanpy.tools import math_tools, slater
@@ -114,9 +115,7 @@ class BaseGeminal(BaseWavefunction):
 
     """
 
-    def __init__(
-        self, nelec, nspin, memory=None, ngem=None, orbpairs=None, params=None, enable_cache=True
-    ):
+    def __init__(self, nelec, nspin, memory=None, ngem=None, orbpairs=None, params=None, enable_cache=True):
         """Initialize the wavefunction.
 
         Parameters
@@ -274,9 +273,7 @@ class BaseGeminal(BaseWavefunction):
             if orbpair[0] > orbpair[1]:
                 orbpair = orbpair[::-1]
             if __debug__ and orbpair in dict_orbpair_ind:
-                raise ValueError(
-                    "The given orbital pairs have multiple entries of {0}.".format(orbpair)
-                )
+                raise ValueError("The given orbital pairs have multiple entries of {0}.".format(orbpair))
             dict_orbpair_ind[orbpair] = i
 
         self.dict_orbpair_ind = dict_orbpair_ind
@@ -310,17 +307,11 @@ class BaseGeminal(BaseWavefunction):
             other = params
             if __debug__:
                 if self.nelec != other.nelec:
-                    raise ValueError(
-                        "The number of electrons in the two wavefunctions must be the same."
-                    )
+                    raise ValueError("The number of electrons in the two wavefunctions must be the same.")
                 if self.nspin != other.nspin:
-                    raise ValueError(
-                        "The number of spin orbitals in the two wavefunctions must be the same."
-                    )
+                    raise ValueError("The number of spin orbitals in the two wavefunctions must be the same.")
                 if self.ngem != other.ngem:
-                    raise ValueError(
-                        "The number of geminals in the two wavefunctions must be the same."
-                    )
+                    raise ValueError("The number of geminals in the two wavefunctions must be the same.")
             params = np.zeros((self.ngem, self.norbpair))
             for ind, orbpair in other.dict_ind_orbpair.items():
                 try:
@@ -360,9 +351,7 @@ class BaseGeminal(BaseWavefunction):
         try:
             return self.dict_orbpair_ind[orbpair]
         except (KeyError, TypeError):
-            raise ValueError(
-                "Given orbital pair, {0}, is not included in the wavefunction.".format(orbpair)
-            )
+            raise ValueError("Given orbital pair, {0}, is not included in the wavefunction.".format(orbpair))
 
     def get_orbpair(self, col_ind):
         """Get the orbital pair that corresponds to the given column index.
@@ -387,9 +376,7 @@ class BaseGeminal(BaseWavefunction):
         try:
             return self.dict_ind_orbpair[col_ind]
         except (KeyError, TypeError):
-            raise ValueError(
-                "Given column index, {0}, is not used in the " "wavefunction".format(col_ind)
-            )
+            raise ValueError("Given column index, {0}, is not used in the " "wavefunction".format(col_ind))
 
     def compute_permanent(self, col_inds, row_inds=None, deriv=None):
         """Compute the permanent of the matrix that corresponds to the given orbital pairs.
@@ -543,9 +530,7 @@ class BaseGeminal(BaseWavefunction):
         if __debug__:
             if not slater.is_sd_compatible(sd):
                 raise TypeError("Slater determinant must be given as an integer.")
-            if deriv is not None and not (
-                isinstance(deriv, np.ndarray) and deriv.ndim == 1 and deriv.dtype == int
-            ):
+            if deriv is not None and not (isinstance(deriv, np.ndarray) and deriv.ndim == 1 and deriv.dtype == int):
                 raise TypeError("deriv must be given as a one dimensional numpy array of integers.")
 
         # if no derivatization

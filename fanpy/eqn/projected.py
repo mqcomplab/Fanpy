@@ -1,4 +1,5 @@
 """Schrodinger equation as a system of equations."""
+
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.eqn.constraints.norm import NormConstraint
 from fanpy.eqn.utils import ParamContainer
@@ -309,10 +310,7 @@ class ProjectedSchrodinger(BaseSchrodinger):
 
         if __debug__ and not (
             isinstance(pspace, (list, tuple))
-            and all(
-                slater.is_sd_compatible(state) or isinstance(state, CIWavefunction)
-                for state in pspace
-            )
+            and all(slater.is_sd_compatible(state) or isinstance(state, CIWavefunction) for state in pspace)
         ):
             raise TypeError(
                 "Projection space must be given as a list/tuple of Slater determinants or "
@@ -348,10 +346,7 @@ class ProjectedSchrodinger(BaseSchrodinger):
 
         if __debug__ and not (
             isinstance(refwfn, (CIWavefunction))
-            or (
-                isinstance(refwfn, (list, tuple))
-                and all(slater.is_sd_compatible(sd) for sd in refwfn)
-            )
+            or (isinstance(refwfn, (list, tuple)) and all(slater.is_sd_compatible(sd) for sd in refwfn))
         ):
             raise TypeError(
                 "Reference wavefunction must be given as a Slater determinant, a list/tuple of"
@@ -380,11 +375,7 @@ class ProjectedSchrodinger(BaseSchrodinger):
 
         """
         if constraints is None:
-            constraints = [
-                NormConstraint(
-                    self.wfn, refwfn=self.refwfn, param_selection=self.indices_component_params
-                )
-            ]
+            constraints = [NormConstraint(self.wfn, refwfn=self.refwfn, param_selection=self.indices_component_params)]
         elif isinstance(constraints, BaseSchrodinger):
             constraints = [constraints]
 
@@ -398,12 +389,9 @@ class ProjectedSchrodinger(BaseSchrodinger):
                     "BaseSchrodinger instances."
                 )
             if not all(
-                constraint.indices_component_params == self.indices_component_params
-                for constraint in constraints
+                constraint.indices_component_params == self.indices_component_params for constraint in constraints
             ):
-                raise ValueError(
-                    "Constraint must have the same active parameters as the objective."
-                )
+                raise ValueError("Constraint must have the same active parameters as the objective.")
 
         self.constraints = constraints
 
@@ -489,16 +477,16 @@ class ProjectedSchrodinger(BaseSchrodinger):
         # objective
         obj = np.empty(self.num_eqns)
         # <SD|H|Psi> - E<SD|Psi> == 0
-        obj[: self.nproj] = np.array(
-            [integrate_sd_wfn(i) for i in self.pspace]
-        ) - energy * np.array([get_overlap(i) for i in self.pspace])
+        obj[: self.nproj] = np.array([integrate_sd_wfn(i) for i in self.pspace]) - energy * np.array(
+            [get_overlap(i) for i in self.pspace]
+        )
         # Add constraints
         if self.nproj < self.num_eqns:
             obj[self.nproj :] = np.hstack([cons.objective(params) for cons in self.constraints])
         # weigh equations
         obj *= self.eqn_weights
 
-        residuals = obj ** 2
+        residuals = obj**2
         cost = np.sum(residuals)
         cost_constraints = np.sum(residuals[self.nproj :])
         if self.step_print:
@@ -516,7 +504,9 @@ class ProjectedSchrodinger(BaseSchrodinger):
         else:
             return obj
 
-    def jacobian(self, params, return_d_energy=False, assign=False, normalize=False, save=True):  # pylint: disable=R0915
+    def jacobian(
+        self, params, return_d_energy=False, assign=False, normalize=False, save=True
+    ):  # pylint: disable=R0915
         r"""Return the Jacobian of the projected Schrodinger equation evaluated at the given params.
 
         If :math:`(f_1(\vec{x}), f_2(\vec{x}), \dots)` is the objective function, the Jacobian is
@@ -616,9 +606,7 @@ class ProjectedSchrodinger(BaseSchrodinger):
         jac = np.empty((self.num_eqns, params.size))
         jac[: self.nproj, :] = np.array([integrate_sd_wfn(i, True) for i in pspace])
         jac[: self.nproj, :] -= energy * np.array([get_overlap(i, True) for i in pspace])
-        jac[: self.nproj, :] -= d_energy[np.newaxis, :] * np.array(
-            [[get_overlap(i)] for i in pspace]
-        )
+        jac[: self.nproj, :] -= d_energy[np.newaxis, :] * np.array([[get_overlap(i)] for i in pspace])
         # Add constraints
         if self.nproj < self.num_eqns:
             jac[self.nproj :] = np.vstack([cons.gradient(params) for cons in self.constraints])

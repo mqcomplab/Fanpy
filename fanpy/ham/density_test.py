@@ -1,4 +1,5 @@
 """Functions for obtaining the density matrices."""
+
 from fanpy.tools import sd_list, slater
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.wfn.ci.base import CIWavefunction
@@ -70,9 +71,7 @@ def integrate_sd_wfn(sd, wfn, indices, deriv=None):
 # FIXME: add threshold value below which the contribution from the Slater determinant is discarded
 #        (useful for CIWavefunction and other wavefunctions where we can sort by the contribution of
 #        each Slater determinant)
-def get_density_matrix(
-    wfn, refwfn=None, order=1, deriv=None, notation="physicist", orbtype="restricted"
-):
+def get_density_matrix(wfn, refwfn=None, order=1, deriv=None, notation="physicist", orbtype="restricted"):
     r"""Return the density matrix of the given order.
 
     .. math::
@@ -144,15 +143,11 @@ def get_density_matrix(
     """
     # pylint: disable=W0613,R0912
     if not isinstance(wfn, BaseWavefunction):
-        raise TypeError(
-            "Given wavefunction is not an instance of BaseWavefunction (or its " "child)."
-        )
+        raise TypeError("Given wavefunction is not an instance of BaseWavefunction (or its " "child).")
 
     # check refwfn (copied from EnergyOneSideProjection.assign_refwfn)
     if refwfn is None:
-        refwfn = tuple(
-            sd_list.sd_list(wfn.nelec, wfn.nspatial, spin=wfn.spin, seniority=wfn.seniority)
-        )
+        refwfn = tuple(sd_list.sd_list(wfn.nelec, wfn.nspatial, spin=wfn.spin, seniority=wfn.seniority))
     if slater.is_sd_compatible(refwfn):
         pass
     elif isinstance(refwfn, (list, tuple)):
@@ -171,15 +166,13 @@ def get_density_matrix(
                     )
             else:
                 raise TypeError(
-                    "Projection space (for the reference wavefunction) must only "
-                    "contain Slater determinants."
+                    "Projection space (for the reference wavefunction) must only " "contain Slater determinants."
                 )
         refwfn = tuple(refwfn)
     elif isinstance(refwfn, CIWavefunction):
         if refwfn.nelec != wfn.nelec:
             raise ValueError(
-                "Given reference wavefunction does not have the same number of "
-                "electrons as the given wavefunction."
+                "Given reference wavefunction does not have the same number of " "electrons as the given wavefunction."
             )
         if refwfn.nspin != wfn.nspin:
             raise ValueError(
@@ -197,6 +190,4 @@ def get_density_matrix(
         raise ValueError("The notation can only be one of 'chemist' and 'physicist'.")
 
     if orbtype not in ["restricted", "unrestricted", "generalized"]:
-        raise ValueError(
-            "The orbital type must be one of 'restricted', 'unrestricted', and " "'generalized'."
-        )
+        raise ValueError("The orbital type must be one of 'restricted', 'unrestricted', and " "'generalized'.")

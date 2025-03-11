@@ -1,1 +1,1 @@
-"""Module for analysis tools."""
+"""Fanpy Module for analysis tools."""

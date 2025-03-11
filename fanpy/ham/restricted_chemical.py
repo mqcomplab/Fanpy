@@ -1,14 +1,16 @@
 r"""Hamiltonian used to describe a chemical system expressed wrt restricted orbitals."""
+
 import itertools as it
 
-from fanpy.ham.generalized_chemical import GeneralizedMolecularHamiltonian
 from fanpy.tools import slater
+from fanpy.ham.generalized_chemical import GeneralizedMolecularHamiltonian
 from fanpy.wfn.composite.lincomb import LinearCombinationWavefunction
 from fanpy.wfn.composite.product import ProductWavefunction
 
 import numpy as np
 
 from scipy.special import comb
+
 # pylint: disable=C0302
 
 
@@ -165,9 +167,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
         # two sd's are different by single excitation
         elif diff_order == 1:
-            one_electron, coulomb, exchange = self._integrate_sd_sd_one(
-                diff_sd1, diff_sd2, shared_alpha, shared_beta
-            )
+            one_electron, coulomb, exchange = self._integrate_sd_sd_one(diff_sd1, diff_sd2, shared_alpha, shared_beta)
 
         # two sd's are different by double excitation
         else:
@@ -300,9 +300,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         sign = slater.sign_excite(sd1, diff_sd1, reversed(diff_sd2))
 
         # check deriv
-        if __debug__ and not (
-            isinstance(deriv, np.ndarray) and np.all(deriv >= 0) and np.all(deriv < self.nparams)
-        ):
+        if __debug__ and not (isinstance(deriv, np.ndarray) and np.all(deriv >= 0) and np.all(deriv < self.nparams)):
             raise ValueError(
                 "Derivative indices must be given as a numpy array of integers greater than or "
                 "equal to zero and less than the number of parameters, nspatial * (nspatial-1) / 2"
@@ -320,9 +318,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
             # two sd's are different by single excitation
             elif diff_order == 1:
-                output[i] = self._integrate_sd_sd_deriv_one(
-                    diff_sd1, diff_sd2, x, y, shared_alpha, shared_beta
-                )
+                output[i] = self._integrate_sd_sd_deriv_one(diff_sd1, diff_sd2, x, y, shared_alpha, shared_beta)
 
             # two sd's are different by double excitation
             else:
@@ -352,20 +348,12 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
         if shared_alpha.size != 0:
             one_electron += np.sum(self.one_int[shared_alpha, shared_alpha])
-            coulomb += np.sum(
-                np.triu(self._cached_two_int_ijij[shared_alpha[:, None], shared_alpha], k=1)
-            )
-            exchange -= np.sum(
-                np.triu(self._cached_two_int_ijji[shared_alpha[:, None], shared_alpha], k=1)
-            )
+            coulomb += np.sum(np.triu(self._cached_two_int_ijij[shared_alpha[:, None], shared_alpha], k=1))
+            exchange -= np.sum(np.triu(self._cached_two_int_ijji[shared_alpha[:, None], shared_alpha], k=1))
         if shared_beta.size != 0:
             one_electron += np.sum(self.one_int[shared_beta, shared_beta])
-            coulomb += np.sum(
-                np.triu(self._cached_two_int_ijij[shared_beta[:, None], shared_beta], k=1)
-            )
-            exchange -= np.sum(
-                np.triu(self._cached_two_int_ijji[shared_beta[:, None], shared_beta], k=1)
-            )
+            coulomb += np.sum(np.triu(self._cached_two_int_ijij[shared_beta[:, None], shared_beta], k=1))
+            exchange -= np.sum(np.triu(self._cached_two_int_ijji[shared_beta[:, None], shared_beta], k=1))
         if shared_alpha.size != 0 and shared_beta.size != 0:
             coulomb += np.sum(self._cached_two_int_ijij[shared_alpha[:, None], shared_beta])
 
@@ -503,46 +491,30 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             if shared_beta.size != 0:
                 coulomb -= 2 * np.sum(np.real(self.two_int[x, shared_beta, y, shared_beta]))
             if shared_alpha_no_x.size != 0:
-                coulomb -= 2 * np.sum(
-                    np.real(self.two_int[x, shared_alpha_no_x, y, shared_alpha_no_x])
-                )
-                exchange += 2 * np.sum(
-                    np.real(self.two_int[x, shared_alpha_no_x, shared_alpha_no_x, y])
-                )
+                coulomb -= 2 * np.sum(np.real(self.two_int[x, shared_alpha_no_x, y, shared_alpha_no_x]))
+                exchange += 2 * np.sum(np.real(self.two_int[x, shared_alpha_no_x, shared_alpha_no_x, y]))
         if x in shared_beta:
             one_electron -= 2 * np.real(self.one_int[x, y])
             if shared_alpha.size != 0:
                 coulomb -= 2 * np.sum(np.real(self.two_int[shared_alpha, x, shared_alpha, y]))
             if shared_beta_no_x.size != 0:
-                coulomb -= 2 * np.sum(
-                    np.real(self.two_int[x, shared_beta_no_x, y, shared_beta_no_x])
-                )
-                exchange += 2 * np.sum(
-                    np.real(self.two_int[x, shared_beta_no_x, shared_beta_no_x, y])
-                )
+                coulomb -= 2 * np.sum(np.real(self.two_int[x, shared_beta_no_x, y, shared_beta_no_x]))
+                exchange += 2 * np.sum(np.real(self.two_int[x, shared_beta_no_x, shared_beta_no_x, y]))
 
         if y in shared_alpha:
             one_electron += 2 * np.real(self.one_int[x, y])
             if shared_beta.size != 0:
                 coulomb += 2 * np.sum(np.real(self.two_int[x, shared_beta, y, shared_beta]))
             if shared_alpha_no_y.size != 0:
-                coulomb += 2 * np.sum(
-                    np.real(self.two_int[x, shared_alpha_no_y, y, shared_alpha_no_y])
-                )
-                exchange -= 2 * np.sum(
-                    np.real(self.two_int[x, shared_alpha_no_y, shared_alpha_no_y, y])
-                )
+                coulomb += 2 * np.sum(np.real(self.two_int[x, shared_alpha_no_y, y, shared_alpha_no_y]))
+                exchange -= 2 * np.sum(np.real(self.two_int[x, shared_alpha_no_y, shared_alpha_no_y, y]))
         if y in shared_beta:
             one_electron += 2 * np.real(self.one_int[x, y])
             if shared_alpha.size != 0:
                 coulomb += 2 * np.sum(np.real(self.two_int[shared_alpha, x, shared_alpha, y]))
             if shared_beta_no_y.size != 0:
-                coulomb += 2 * np.sum(
-                    np.real(self.two_int[x, shared_beta_no_y, y, shared_beta_no_y])
-                )
-                exchange -= 2 * np.sum(
-                    np.real(self.two_int[x, shared_beta_no_y, shared_beta_no_y, y])
-                )
+                coulomb += 2 * np.sum(np.real(self.two_int[x, shared_beta_no_y, y, shared_beta_no_y]))
+                exchange -= 2 * np.sum(np.real(self.two_int[x, shared_beta_no_y, shared_beta_no_y, y]))
 
         return one_electron, coulomb, exchange
 
@@ -605,58 +577,34 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             # spin of a, b = alpha
             if spin_b == 0:
                 if shared_beta_no_ab.size != 0:
-                    coulomb -= np.sum(
-                        self.two_int[y, shared_beta_no_ab, spatial_b, shared_beta_no_ab]
-                    )
+                    coulomb -= np.sum(self.two_int[y, shared_beta_no_ab, spatial_b, shared_beta_no_ab])
                 if shared_alpha_no_ab.size != 0:
-                    coulomb -= np.sum(
-                        self.two_int[y, shared_alpha_no_ab, spatial_b, shared_alpha_no_ab]
-                    )
-                    exchange += np.sum(
-                        self.two_int[y, shared_alpha_no_ab, shared_alpha_no_ab, spatial_b]
-                    )
+                    coulomb -= np.sum(self.two_int[y, shared_alpha_no_ab, spatial_b, shared_alpha_no_ab])
+                    exchange += np.sum(self.two_int[y, shared_alpha_no_ab, shared_alpha_no_ab, spatial_b])
             # spin of a, b = beta
             else:
                 if shared_alpha_no_ab.size != 0:
-                    coulomb -= np.sum(
-                        self.two_int[shared_alpha_no_ab, y, shared_alpha_no_ab, spatial_b]
-                    )
+                    coulomb -= np.sum(self.two_int[shared_alpha_no_ab, y, shared_alpha_no_ab, spatial_b])
                 if shared_beta_no_ab.size != 0:
-                    coulomb -= np.sum(
-                        self.two_int[y, shared_beta_no_ab, spatial_b, shared_beta_no_ab]
-                    )
-                    exchange += np.sum(
-                        self.two_int[y, shared_beta_no_ab, shared_beta_no_ab, spatial_b]
-                    )
+                    coulomb -= np.sum(self.two_int[y, shared_beta_no_ab, spatial_b, shared_beta_no_ab])
+                    exchange += np.sum(self.two_int[y, shared_beta_no_ab, shared_beta_no_ab, spatial_b])
         # selected (spin orbital) x = b
         elif x == spatial_b and spin_a == spin_b:
             one_electron -= self.one_int[spatial_a, y]
             # spin of a, b = alpha
             if spin_a == 0:
                 if shared_beta_no_ab.size != 0:
-                    coulomb -= np.sum(
-                        self.two_int[spatial_a, shared_beta_no_ab, y, shared_beta_no_ab]
-                    )
+                    coulomb -= np.sum(self.two_int[spatial_a, shared_beta_no_ab, y, shared_beta_no_ab])
                 if shared_alpha_no_ab.size != 0:
-                    coulomb -= np.sum(
-                        self.two_int[spatial_a, shared_alpha_no_ab, y, shared_alpha_no_ab]
-                    )
-                    exchange += np.sum(
-                        self.two_int[spatial_a, shared_alpha_no_ab, shared_alpha_no_ab, y]
-                    )
+                    coulomb -= np.sum(self.two_int[spatial_a, shared_alpha_no_ab, y, shared_alpha_no_ab])
+                    exchange += np.sum(self.two_int[spatial_a, shared_alpha_no_ab, shared_alpha_no_ab, y])
             # spin of a, b = beta
             else:
                 if shared_alpha_no_ab.size != 0:
-                    coulomb -= np.sum(
-                        self.two_int[shared_alpha_no_ab, spatial_a, shared_alpha_no_ab, y]
-                    )
+                    coulomb -= np.sum(self.two_int[shared_alpha_no_ab, spatial_a, shared_alpha_no_ab, y])
                 if shared_beta_no_ab.size != 0:
-                    coulomb -= np.sum(
-                        self.two_int[spatial_a, shared_beta_no_ab, y, shared_beta_no_ab]
-                    )
-                    exchange += np.sum(
-                        self.two_int[spatial_a, shared_beta_no_ab, shared_beta_no_ab, y]
-                    )
+                    coulomb -= np.sum(self.two_int[spatial_a, shared_beta_no_ab, y, shared_beta_no_ab])
+                    exchange += np.sum(self.two_int[spatial_a, shared_beta_no_ab, shared_beta_no_ab, y])
         # non selected (spin orbital) x, spin of a, b = 0
         if spin_a == spin_b == 0:
             if x in shared_alpha:
@@ -684,58 +632,34 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             # spin of a, b = alpha
             if spin_b == 0:
                 if shared_beta_no_ab.size != 0:
-                    coulomb += np.sum(
-                        self.two_int[x, shared_beta_no_ab, spatial_b, shared_beta_no_ab]
-                    )
+                    coulomb += np.sum(self.two_int[x, shared_beta_no_ab, spatial_b, shared_beta_no_ab])
                 if shared_alpha_no_ab.size != 0:
-                    coulomb += np.sum(
-                        self.two_int[x, shared_alpha_no_ab, spatial_b, shared_alpha_no_ab]
-                    )
-                    exchange -= np.sum(
-                        self.two_int[x, shared_alpha_no_ab, shared_alpha_no_ab, spatial_b]
-                    )
+                    coulomb += np.sum(self.two_int[x, shared_alpha_no_ab, spatial_b, shared_alpha_no_ab])
+                    exchange -= np.sum(self.two_int[x, shared_alpha_no_ab, shared_alpha_no_ab, spatial_b])
             # spin of a, b = beta
             else:
                 if shared_alpha_no_ab.size != 0:
-                    coulomb += np.sum(
-                        self.two_int[shared_alpha_no_ab, x, shared_alpha_no_ab, spatial_b]
-                    )
+                    coulomb += np.sum(self.two_int[shared_alpha_no_ab, x, shared_alpha_no_ab, spatial_b])
                 if shared_beta_no_ab.size != 0:
-                    coulomb += np.sum(
-                        self.two_int[x, shared_beta_no_ab, spatial_b, shared_beta_no_ab]
-                    )
-                    exchange -= np.sum(
-                        self.two_int[x, shared_beta_no_ab, shared_beta_no_ab, spatial_b]
-                    )
+                    coulomb += np.sum(self.two_int[x, shared_beta_no_ab, spatial_b, shared_beta_no_ab])
+                    exchange -= np.sum(self.two_int[x, shared_beta_no_ab, shared_beta_no_ab, spatial_b])
         # selected (spin orbital) x = b
         elif y == spatial_b and spin_a == spin_b:
             one_electron += self.one_int[spatial_a, x]
             # spin of a, b = alpha
             if spin_a == 0:
                 if shared_beta_no_ab.size != 0:
-                    coulomb += np.sum(
-                        self.two_int[spatial_a, shared_beta_no_ab, x, shared_beta_no_ab]
-                    )
+                    coulomb += np.sum(self.two_int[spatial_a, shared_beta_no_ab, x, shared_beta_no_ab])
                 if shared_alpha_no_ab.size != 0:
-                    coulomb += np.sum(
-                        self.two_int[spatial_a, shared_alpha_no_ab, x, shared_alpha_no_ab]
-                    )
-                    exchange -= np.sum(
-                        self.two_int[spatial_a, shared_alpha_no_ab, shared_alpha_no_ab, x]
-                    )
+                    coulomb += np.sum(self.two_int[spatial_a, shared_alpha_no_ab, x, shared_alpha_no_ab])
+                    exchange -= np.sum(self.two_int[spatial_a, shared_alpha_no_ab, shared_alpha_no_ab, x])
             # spin of a, b = beta
             else:
                 if shared_alpha_no_ab.size != 0:
-                    coulomb += np.sum(
-                        self.two_int[shared_alpha_no_ab, spatial_a, shared_alpha_no_ab, x]
-                    )
+                    coulomb += np.sum(self.two_int[shared_alpha_no_ab, spatial_a, shared_alpha_no_ab, x])
                 if shared_beta_no_ab.size != 0:
-                    coulomb += np.sum(
-                        self.two_int[spatial_a, shared_beta_no_ab, x, shared_beta_no_ab]
-                    )
-                    exchange -= np.sum(
-                        self.two_int[spatial_a, shared_beta_no_ab, shared_beta_no_ab, x]
-                    )
+                    coulomb += np.sum(self.two_int[spatial_a, shared_beta_no_ab, x, shared_beta_no_ab])
+                    exchange -= np.sum(self.two_int[spatial_a, shared_beta_no_ab, shared_beta_no_ab, x])
         # non selected (spin orbital) x, spin of a, b = 0
         if spin_a == spin_b == 0:
             if y in shared_alpha:
@@ -789,12 +713,8 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
         a, b = diff_sd1
         c, d = diff_sd2
-        (spatial_a, spatial_b, spatial_c, spatial_d) = map(
-            lambda i: slater.spatial_index(i, nspatial), [a, b, c, d]
-        )
-        spin_a, spin_b, spin_c, spin_d = map(
-            lambda i: int(not slater.is_alpha(i, nspatial)), [a, b, c, d]
-        )
+        (spatial_a, spatial_b, spatial_c, spatial_d) = map(lambda i: slater.spatial_index(i, nspatial), [a, b, c, d])
+        spin_a, spin_b, spin_c, spin_d = map(lambda i: int(not slater.is_alpha(i, nspatial)), [a, b, c, d])
 
         if x == spatial_a:
             if spin_a == spin_c == spin_b == spin_d == 0:
@@ -1357,9 +1277,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         )
 
         triu_indices = np.triu_indices(nspatial, k=1)
-        return np.array(
-            [one_electron_a[triu_indices], coulomb_a[triu_indices], exchange_a[triu_indices]]
-        )[:, :, None]
+        return np.array([one_electron_a[triu_indices], coulomb_a[triu_indices], exchange_a[triu_indices]])[:, :, None]
 
     def _integrate_sd_sds_deriv_zero_beta(self, occ_alpha, occ_beta, vir_beta):
         """Return the derivative wrt beta parameters of the integrals of the given SD with itself.
@@ -1478,9 +1396,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         )
 
         triu_indices = np.triu_indices(nspatial, k=1)
-        return np.array(
-            [one_electron_b[triu_indices], coulomb_b[triu_indices], exchange_b[triu_indices]]
-        )[:, :, None]
+        return np.array([one_electron_b[triu_indices], coulomb_b[triu_indices], exchange_b[triu_indices]])[:, :, None]
 
     def _integrate_sd_sds_deriv_one_aa(self, occ_alpha, occ_beta, vir_alpha):
         """Return (alpha) derivative of integrals an SD with its (alpha) single excitations.
@@ -2424,9 +2340,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             ]
         )
 
-    def _integrate_sd_sds_deriv_two_aaa(
-        self, occ_alpha, occ_beta, vir_alpha
-    ):  # pylint: disable=W0613
+    def _integrate_sd_sds_deriv_two_aaa(self, occ_alpha, occ_beta, vir_alpha):  # pylint: disable=W0613
         """Return (alpha) derivatives of integrals of an SD and its (alpha) double excitations.
 
         Paramters
@@ -2894,9 +2808,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         triu_rows, triu_cols = np.triu_indices(nspatial, k=1)
         return sign_ab[None, :] * coulomb_ba[triu_rows, triu_cols, :, :].reshape(triu_rows.size, -1)
 
-    def _integrate_sd_sds_deriv_two_bbb(
-        self, occ_alpha, occ_beta, vir_beta
-    ):  # pylint: disable=W0613
+    def _integrate_sd_sds_deriv_two_bbb(self, occ_alpha, occ_beta, vir_beta):  # pylint: disable=W0613
         """Return (beta) derivatives of integrals of an SD and its (beta) double excitations.
 
         Paramters
@@ -3218,11 +3130,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
                     "parameters, but not both."
                 )
             if ham_deriv is not None:
-                if not (
-                    isinstance(ham_deriv, np.ndarray)
-                    and ham_deriv.ndim == 1
-                    and ham_deriv.dtype == int
-                ):
+                if not (isinstance(ham_deriv, np.ndarray) and ham_deriv.ndim == 1 and ham_deriv.dtype == int):
                     raise TypeError(
                         "Derivative indices for the Hamiltonian parameters must be given as a "
                         "one-dimensional numpy array of integers."
@@ -3244,6 +3152,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         vir_beta = vir_indices[vir_indices >= nspatial]
 
         if self.nspin <= 64:
+
             def fromiter(iterator, dtype, ydim, count):
                 return np.fromiter(it.chain.from_iterable(iterator), dtype, count=int(count)).reshape(-1, ydim)
 
@@ -3259,33 +3168,33 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             vir_one_beta = fromiter(it.combinations(vir_beta.tolist(), 1), int, 1, count=len(vir_beta))
             vir_one_beta = np.left_shift(1, vir_one_beta[:, 0])
 
-            occ_two_aa = fromiter(it.combinations(occ_alpha.tolist(), 2),
-                                        int, ydim=2, count=2*comb(len(occ_alpha), 2))
+            occ_two_aa = fromiter(
+                it.combinations(occ_alpha.tolist(), 2), int, ydim=2, count=2 * comb(len(occ_alpha), 2)
+            )
             occ_two_aa = np.left_shift(1, occ_two_aa)
             occ_two_aa = np.bitwise_or(occ_two_aa[:, 0], occ_two_aa[:, 1])
 
-            occ_two_ab = fromiter(it.product(occ_alpha.tolist(), occ_beta.tolist()),
-                                        int, 2, count=2*len(occ_alpha) * len(occ_beta))
+            occ_two_ab = fromiter(
+                it.product(occ_alpha.tolist(), occ_beta.tolist()), int, 2, count=2 * len(occ_alpha) * len(occ_beta)
+            )
             occ_two_ab = np.left_shift(1, occ_two_ab)
             occ_two_ab = np.bitwise_or(occ_two_ab[:, 0], occ_two_ab[:, 1])
 
-            occ_two_bb = fromiter(it.combinations(occ_beta.tolist(), 2),
-                                        int, 2, count=2*comb(len(occ_beta), 2))
+            occ_two_bb = fromiter(it.combinations(occ_beta.tolist(), 2), int, 2, count=2 * comb(len(occ_beta), 2))
             occ_two_bb = np.left_shift(1, occ_two_bb)
             occ_two_bb = np.bitwise_or(occ_two_bb[:, 0], occ_two_bb[:, 1])
 
-            vir_two_aa = fromiter(it.combinations(vir_alpha.tolist(), 2),
-                                        int, 2, count=2*comb(len(vir_alpha), 2))
+            vir_two_aa = fromiter(it.combinations(vir_alpha.tolist(), 2), int, 2, count=2 * comb(len(vir_alpha), 2))
             vir_two_aa = np.left_shift(1, vir_two_aa)
             vir_two_aa = np.bitwise_or(vir_two_aa[:, 0], vir_two_aa[:, 1])
 
-            vir_two_ab = fromiter(it.product(vir_alpha.tolist(), vir_beta.tolist()),
-                                        int, 2, count=2*len(vir_alpha) * len(vir_beta))
+            vir_two_ab = fromiter(
+                it.product(vir_alpha.tolist(), vir_beta.tolist()), int, 2, count=2 * len(vir_alpha) * len(vir_beta)
+            )
             vir_two_ab = np.left_shift(1, vir_two_ab)
             vir_two_ab = np.bitwise_or(vir_two_ab[:, 0], vir_two_ab[:, 1])
 
-            vir_two_bb = fromiter(it.combinations(vir_beta.tolist(), 2),
-                                        int, 2, count=2*comb(len(vir_beta), 2))
+            vir_two_bb = fromiter(it.combinations(vir_beta.tolist(), 2), int, 2, count=2 * comb(len(vir_beta), 2))
             vir_two_bb = np.left_shift(1, vir_two_bb)
             vir_two_bb = np.bitwise_or(vir_two_bb[:, 0], vir_two_bb[:, 1])
 
@@ -3308,36 +3217,35 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             overlaps_one_alpha = np.array(
                 [
                     wfn.get_overlap(sd_exc, deriv=wfn_deriv)
-                    for sd_exc in np.ravel(np.bitwise_or(np.bitwise_xor(sd, occ_one_alpha)[:, None],
-                                                            vir_one_alpha[None, :]))
+                    for sd_exc in np.ravel(
+                        np.bitwise_or(np.bitwise_xor(sd, occ_one_alpha)[:, None], vir_one_alpha[None, :])
+                    )
                 ]
             ).reshape(*shape)
             overlaps_one_beta = np.array(
                 [
                     wfn.get_overlap(sd_exc, deriv=wfn_deriv)
-                    for sd_exc in np.ravel(np.bitwise_or(np.bitwise_xor(sd, occ_one_beta)[:, None],
-                                                            vir_one_beta[None, :]))
+                    for sd_exc in np.ravel(
+                        np.bitwise_or(np.bitwise_xor(sd, occ_one_beta)[:, None], vir_one_beta[None, :])
+                    )
                 ]
             ).reshape(*shape)
             overlaps_two_aa = np.array(
                 [
                     wfn.get_overlap(sd_exc, deriv=wfn_deriv)
-                    for sd_exc in np.ravel(np.bitwise_or(np.bitwise_xor(sd, occ_two_aa)[:, None],
-                                                            vir_two_aa[None, :]))
+                    for sd_exc in np.ravel(np.bitwise_or(np.bitwise_xor(sd, occ_two_aa)[:, None], vir_two_aa[None, :]))
                 ]
             ).reshape(*shape)
             overlaps_two_ab = np.array(
                 [
                     wfn.get_overlap(sd_exc, deriv=wfn_deriv)
-                    for sd_exc in np.ravel(np.bitwise_or(np.bitwise_xor(sd, occ_two_ab)[:, None],
-                                                            vir_two_ab[None, :]))
+                    for sd_exc in np.ravel(np.bitwise_or(np.bitwise_xor(sd, occ_two_ab)[:, None], vir_two_ab[None, :]))
                 ]
             ).reshape(*shape)
             overlaps_two_bb = np.array(
                 [
                     wfn.get_overlap(sd_exc, deriv=wfn_deriv)
-                    for sd_exc in np.ravel(np.bitwise_or(np.bitwise_xor(sd, occ_two_bb)[:, None],
-                                                            vir_two_bb[None, :]))
+                    for sd_exc in np.ravel(np.bitwise_or(np.bitwise_xor(sd, occ_two_bb)[:, None], vir_two_bb[None, :]))
                 ]
             ).reshape(*shape)
         else:
@@ -3419,9 +3327,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
         if occ_alpha.size > 1 and vir_alpha.size > 1:
             if ham_deriv is not None:
-                integrals_two_aaa = self._integrate_sd_sds_deriv_two_aaa(
-                    occ_alpha, occ_beta, vir_alpha
-                )
+                integrals_two_aaa = self._integrate_sd_sds_deriv_two_aaa(occ_alpha, occ_beta, vir_alpha)
                 output[1:, :] += np.sum(integrals_two_aaa * overlaps_two_aa, axis=2)[:, ham_deriv]
             else:
                 integrals_two_aa = self._integrate_sd_sds_two_aa(occ_alpha, occ_beta, vir_alpha)
@@ -3432,18 +3338,12 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         # FIXME: hardcode slater determinant structure
         if occ_alpha.size > 0 and occ_beta.size > 0 and vir_alpha.size > 0 and vir_beta.size > 0:
             if ham_deriv is not None:
-                integrals_two_aab = self._integrate_sd_sds_deriv_two_aab(
-                    occ_alpha, occ_beta, vir_alpha, vir_beta
-                )
+                integrals_two_aab = self._integrate_sd_sds_deriv_two_aab(occ_alpha, occ_beta, vir_alpha, vir_beta)
                 output[1, :] += np.sum(integrals_two_aab * overlaps_two_ab, axis=1)[ham_deriv]
-                integrals_two_bab = self._integrate_sd_sds_deriv_two_bab(
-                    occ_alpha, occ_beta, vir_alpha, vir_beta
-                )
+                integrals_two_bab = self._integrate_sd_sds_deriv_two_bab(occ_alpha, occ_beta, vir_alpha, vir_beta)
                 output[1, :] += np.sum(integrals_two_bab * overlaps_two_ab, axis=1)[ham_deriv]
             else:
-                integrals_two_ab = self._integrate_sd_sds_two_ab(
-                    occ_alpha, occ_beta, vir_alpha, vir_beta
-                )
+                integrals_two_ab = self._integrate_sd_sds_two_ab(occ_alpha, occ_beta, vir_alpha, vir_beta)
                 if wfn_deriv is not None:
                     integrals_two_ab = np.expand_dims(integrals_two_ab, 1)
                 output[1] += np.sum(integrals_two_ab * overlaps_two_ab, axis=0)
@@ -3451,9 +3351,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         # FIXME: hardcode slater determinant structure
         if occ_beta.size > 1 and vir_beta.size > 1:
             if ham_deriv is not None:
-                integrals_two_bbb = self._integrate_sd_sds_deriv_two_bbb(
-                    occ_alpha, occ_beta, vir_beta
-                )
+                integrals_two_bbb = self._integrate_sd_sds_deriv_two_bbb(occ_alpha, occ_beta, vir_beta)
                 output[1:, :] += np.sum(integrals_two_bbb * overlaps_two_bb, axis=2)[:, ham_deriv]
             else:
                 integrals_two_bb = self._integrate_sd_sds_two_bb(occ_alpha, occ_beta, vir_beta)
