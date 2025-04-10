@@ -1,6 +1,6 @@
 """
-    Legacy version of FanCI objective class.
-    Based of the original class from FanCI code.
+Legacy version of FanCI objective class.
+Based of the original class from FanCI code.
 """
 
 from fanpy.tools import slater
@@ -730,7 +730,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("gtol", 1.0e-8)
             opt_kwargs.setdefault("max_nfev", 1000 * self.nactive)
             opt_kwargs.setdefault("verbose", 2)
-            self._step_print = False
             # opt_kwargs.setdefault("callback", self.print)
             if self.objective_type != "projected":
                 raise ValueError("objective_type must be projected")
@@ -741,7 +740,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("method", "hybr")
             opt_kwargs.setdefault("options", {})
             opt_kwargs["options"].setdefault("xtol", 1.0e-9)
-            self._step_print = False
             opt_kwargs.setdefault("callback", self.print)
         elif mode == "cma":
             optimizer = cma.fmin
@@ -751,7 +749,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs["options"].setdefault("timeout", np.inf)
             opt_kwargs["options"].setdefault("tolfun", 1e-11)
             opt_kwargs["options"].setdefault("verb_log", 0)
-            self._step_print = False
             if self.objective_type != "energy":
                 raise ValueError("objective_type must be energy")
         elif mode == "bfgs":
@@ -761,7 +758,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs["method"] = "bfgs"
             opt_kwargs.setdefault("options", {"gtol": 1e-8})
             # opt_kwargs["options"]['schrodinger'] = objective
-            self._step_print = False
             opt_kwargs.setdefault("callback", self.print)
         elif mode == "trustregion":
             raise NotImplementedError
