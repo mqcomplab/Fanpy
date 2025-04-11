@@ -335,7 +335,9 @@ class ProjectedSchrodingerPyCI(FanCI):
                 y[i] = self.fanpy_wfn.get_overlap(sd)
         return y
 
-    def compute_overlap_deriv(self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[0, -1]) -> np.ndarray:
+    def compute_overlap_deriv(
+        self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[None, None]
+    ) -> np.ndarray:
         """
         Compute the FanCI overlap derivative matrix.
 
