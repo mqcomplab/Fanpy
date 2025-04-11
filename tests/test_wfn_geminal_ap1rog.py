@@ -84,6 +84,7 @@ def test_ap1rog_get_overlap():
     """Test AP1roG.get_overlap."""
     test = skip_init(AP1roG)
     test.assign_nelec(4)
+    test.default_val = 0
     test.assign_nspin(10)
     test.assign_memory()
     test.assign_ngem(2)
