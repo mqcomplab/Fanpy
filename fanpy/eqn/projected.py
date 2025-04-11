@@ -152,6 +152,7 @@ class ProjectedSchrodinger(BaseSchrodinger):
         step_save=True,
         tmpfile="",
         pspace=None,
+        pspace_exc_orders=None,
         refwfn=None,
         eqn_weights=None,
         energy_type="compute",
@@ -193,6 +194,9 @@ class ProjectedSchrodinger(BaseSchrodinger):
         pspace : {tuple/list of int, tuple/list of CIWavefunction, None}
             States onto which the Schrodinger equation is projected.
             By default, the largest space is used.
+        pspace_exc_orders : list/tuple of int
+            Excitation orders of the Slater determinants that will be used in the projection space.
+            By default, if the pspace was not assigned, the first and second-order excitation is used.
         refwfn : {tuple/list of int, CIWavefunction, None}
             State with respect to which the energy and the norm are computed.
             If a list/tuple of Slater determinants are given, then the reference state is the given
@@ -300,12 +304,15 @@ class ProjectedSchrodinger(BaseSchrodinger):
 
         """
         if pspace is None:
+            if self.pspace_exc_orders is None:
+                self.pspace_exc_orders = [1, 2]
+
             pspace = sd_list.sd_list(
                 self.wfn.nelec,
                 self.wfn.nspin,
                 spin=self.wfn.spin,
                 seniority=self.wfn.seniority,
-                exc_orders=[1, 2],
+                exc_orders=self.pspace_exc_orders,
             )
 
         if __debug__ and not (
