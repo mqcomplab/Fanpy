@@ -1182,13 +1182,18 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
             component.assign_params(new_params)
 
         # Shape of y is (no. determinants, no. active parameters excluding energy)
-        y = np.zeros(
-            (occs_array.shape[0], self.nactive - self.mask[-1]),
-            dtype=pyci.c_double,
-        )
+        if (s_chunk is None) and (f_chunk is None):
+            y = np.zeros(
+                (occs_array.shape[0], self.nactive - self.mask[-1]),
+                dtype=pyci.c_double,
+            )
 
-        # Select parameters according to selected chunks
-        y = y[s_chunk:f_chunk]
+        else:
+            # Select parameters according to selected chunks
+            y = np.zeros(
+                (f_chunk - s_chunk, self.nactive - self.mask[-1]),
+                dtype=pyci.c_double,
+            )
 
         # Compute derivatives of overlaps
         deriv_indices = self.param_selection[self.fanpy_wfn]
