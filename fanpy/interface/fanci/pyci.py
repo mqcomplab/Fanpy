@@ -1,6 +1,6 @@
 """
-    Legacy version of FanCI objective class.
-    Based of the original class from FanCI code.
+Legacy version of FanCI objective class.
+Based of the original class from FanCI code.
 """
 
 from fanpy.tools import slater
@@ -335,7 +335,9 @@ class ProjectedSchrodingerPyCI(FanCI):
                 y[i] = self.fanpy_wfn.get_overlap(sd)
         return y
 
-    def compute_overlap_deriv(self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[0, -1]) -> np.ndarray:
+    def compute_overlap_deriv(
+        self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[None, None]
+    ) -> np.ndarray:
         """
         Compute the FanCI overlap derivative matrix.
 
@@ -396,13 +398,18 @@ class ProjectedSchrodingerPyCI(FanCI):
             component.assign_params(new_params)
 
         # Shape of y is (no. determinants, no. active parameters excluding energy)
-        y = np.zeros(
-            (occs_array.shape[0], self.nactive - self.mask[-1]),
-            dtype=pyci.c_double,
-        )
+        if (s_chunk is None) and (f_chunk is None):
+            y = np.zeros(
+                (occs_array.shape[0], self.nactive - self.mask[-1]),
+                dtype=pyci.c_double,
+            )
 
-        # Select parameters according to selected chunks
-        y = y[s_chunk:f_chunk]
+        else:
+            # Select parameters according to selected chunks
+            y = np.zeros(
+                (f_chunk - s_chunk, self.nactive - self.mask[-1]),
+                dtype=pyci.c_double,
+            )
 
         # Compute derivatives of overlaps
         deriv_indices = self.param_selection[self.fanpy_wfn]
@@ -730,7 +737,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("gtol", 1.0e-8)
             opt_kwargs.setdefault("max_nfev", 1000 * self.nactive)
             opt_kwargs.setdefault("verbose", 2)
-            self._step_print = False
             # opt_kwargs.setdefault("callback", self.print)
             if self.objective_type != "projected":
                 raise ValueError("objective_type must be projected")
@@ -741,7 +747,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("method", "hybr")
             opt_kwargs.setdefault("options", {})
             opt_kwargs["options"].setdefault("xtol", 1.0e-9)
-            self._step_print = False
             opt_kwargs.setdefault("callback", self.print)
         elif mode == "cma":
             optimizer = cma.fmin
@@ -751,7 +756,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs["options"].setdefault("timeout", np.inf)
             opt_kwargs["options"].setdefault("tolfun", 1e-11)
             opt_kwargs["options"].setdefault("verb_log", 0)
-            self._step_print = False
             if self.objective_type != "energy":
                 raise ValueError("objective_type must be energy")
         elif mode == "bfgs":
@@ -761,7 +765,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs["method"] = "bfgs"
             opt_kwargs.setdefault("options", {"gtol": 1e-8})
             # opt_kwargs["options"]['schrodinger'] = objective
-            self._step_print = False
             opt_kwargs.setdefault("callback", self.print)
         elif mode == "trustregion":
             raise NotImplementedError
