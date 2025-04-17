@@ -290,7 +290,7 @@ def permanent_borchardt(lambdas, epsilons, zetas, etas=None):
     for indices in combinations(range(num_col), num_row):
         indices = np.array(indices)
         submatrix = cauchy_matrix[:, indices]
-        perm_zetas = np.product(zetas[indices])
+        perm_zetas = np.prod(zetas[indices])
         perm_cauchy += np.linalg.det(submatrix**2) / np.linalg.det(submatrix) * perm_zetas
 
     perm_etas = np.prod(etas)
