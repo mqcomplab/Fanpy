@@ -1,8 +1,6 @@
 from fanpy.eqn.projected import ProjectedSchrodinger
-from fanpy.tools.sd_list import sd_list
 
 import numpy as np
-from scipy.special import comb
 from typing import Any
 
 # Log Levels
@@ -124,36 +122,6 @@ class PYCI:
         else:
             self.fill = "excitation"
             self.pspace_wfn = pyci.fullci_wfn(self.pyci_ham.nbasis, self.fanpy_wfn.nelec - self.nocc, self.nocc)
-
-        # Check if the number of projections is valid for PyCI
-        if self.fanpy_objective.pspace_exc_orders is None:
-            if self.fill == "seniority":
-                max_pyci_nproj = int(comb(self.fanpy_wfn.nspin // 2, self.fanpy_wfn.nelec // 2))
-
-            elif self.fill == "excitation":
-                max_pyci_nproj = int(
-                    comb(self.fanpy_wfn.nspin // 2, self.fanpy_wfn.nelec - self.fanpy_wfn.nelec // 2)
-                    * comb(self.fanpy_wfn.nspin // 2, self.fanpy_wfn.nelec // 2)
-                )
-
-        else:
-            max_pyci_nproj = len(
-                sd_list(
-                    self.fanpy_wfn.nelec,
-                    self.fanpy_wfn.nspin,
-                    spin=0,
-                    seniority=self.seniority,
-                    exc_orders=self.fanpy_objective.pspace_exc_orders,
-                )
-            )
-
-        if self.nproj > max_pyci_nproj:
-            print(
-                f"WARNING: Invalid number of projections ({self.nproj} > {max_pyci_nproj}). "
-                f"PyCI only supports projections with Sz = 0.\n"
-                f"Reassigning 'nproj' to {max_pyci_nproj}..."
-            )
-            self.nproj = max_pyci_nproj
 
         self.build_pyci_objective(legacy=legacy_fanci)
 
