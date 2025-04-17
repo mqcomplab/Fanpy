@@ -151,7 +151,7 @@ class PYCI:
             print(
                 f"WARNING: Invalid number of projections ({self.nproj} > {max_pyci_nproj}). "
                 f"PyCI only supports projections with Sz = 0.\n"
-                f"Reassigning 'nproj' to {max_pyci_nproj}..."
+                f"Reassigning 'nproj' to {max_pyci_nproj} in PyCI interface..."
             )
             self.nproj = max_pyci_nproj
 
