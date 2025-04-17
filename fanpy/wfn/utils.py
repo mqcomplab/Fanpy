@@ -200,10 +200,9 @@ def convert_to_fanci(
     new_wfn : FanCI
 
     """
+    from fanpy.interface.fanci.legacy import ProjectedSchrodingerLegacyFanCI as FanCI
     from typing import Any, Tuple, Union
     import pyci
-    from fanci.fanci import FanCI
-    from fanci.alias import Alias
 
     class GeneratedFanCI(FanCI):
         """Generated FanCI wavefunction class from the fanpy wavefunction.
@@ -270,9 +269,7 @@ def convert_to_fanci(
 
             """
             if not isinstance(ham, pyci.hamiltonian):
-                raise TypeError(
-                    f"Invalid `ham` type `{type(ham)}`; must be `pyci.hamiltonian`"
-                )
+                raise TypeError(f"Invalid `ham` type `{type(ham)}`; must be `pyci.hamiltonian`")
 
             # Save sub-class -specific attributes
             self._fanpy_wfn = fanpy_wfn
@@ -336,9 +333,7 @@ def convert_to_fanci(
                 **kwargs,
             )
 
-        def compute_overlap(
-            self, x: np.ndarray, occs_array: Union[np.ndarray, str]
-        ) -> np.ndarray:
+        def compute_overlap(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
             r"""
             Compute the FanCI overlap vector.
 
@@ -404,7 +399,7 @@ def convert_to_fanci(
             return y
 
         def compute_overlap_deriv(
-            self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx = [0, -1]
+            self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[None, None]
         ) -> np.ndarray:
             r"""
             Compute the FanCI overlap derivative matrix.
@@ -486,9 +481,7 @@ def convert_to_fanci(
                     inds_component = self.indices_component_params[wfn]
                     if inds_component.size > 0:
                         inds_objective = self.indices_objective_params[wfn]
-                        y[:, inds_objective] = self._fanpy_wfn.get_overlaps(
-                            sds, (wfn, inds_component)
-                        )
+                        y[:, inds_objective] = self._fanpy_wfn.get_overlaps(sds, (wfn, inds_component))
             elif hasattr(self._fanpy_wfn, "get_overlaps"):
                 y += self._fanpy_wfn.get_overlaps(sds, deriv=deriv_indices)
             else:
@@ -518,18 +511,10 @@ def convert_to_fanci(
                 output = super().compute_objective(x)
                 self.print_queue["Electronic Energy"] = x[-1]
                 self.print_queue["Cost"] = np.sum(output[: self._nproj] ** 2)
-                self.print_queue["Cost from constraints"] = np.sum(
-                    output[self._nproj :] ** 2
-                )
+                self.print_queue["Cost from constraints"] = np.sum(output[self._nproj :] ** 2)
                 if self.step_print:
-                    print(
-                        "(Mid Optimization) Electronic Energy: {}".format(
-                            self.print_queue["Electronic Energy"]
-                        )
-                    )
-                    print(
-                        "(Mid Optimization) Cost: {}".format(self.print_queue["Cost"])
-                    )
+                    print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
+                    print("(Mid Optimization) Cost: {}".format(self.print_queue["Cost"]))
                     if self.constraints:
                         print(
                             "(Mid Optimization) Cost from constraints: {}".format(
@@ -557,11 +542,7 @@ def convert_to_fanci(
                 output /= np.sum(ovlp[: self._nproj] ** 2)
                 self.print_queue["Electronic Energy"] = output
                 if self.step_print:
-                    print(
-                        "(Mid Optimization) Electronic Energy: {}".format(
-                            self.print_queue["Electronic Energy"]
-                        )
-                    )
+                    print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
 
             if self.step_save:
                 self.save_params()
@@ -590,16 +571,12 @@ def convert_to_fanci(
                 self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
                 if self.step_print:
                     print(
-                        "(Mid Optimization) Norm of the Jacobian: {}".format(
-                            self.print_queue["Norm of the Jacobian"]
-                        )
+                        "(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"])
                     )
             else:
                 # NOTE: ignores energy and constraints
                 # Allocate Jacobian matrix (in transpose memory order)
-                output = np.zeros(
-                    (self._nproj, self._nactive), order="F", dtype=pyci.c_double
-                )
+                output = np.zeros((self._nproj, self._nactive), order="F", dtype=pyci.c_double)
                 integrals = np.zeros(self._nproj, dtype=pyci.c_double)
 
                 # Compute Jacobian:
@@ -628,9 +605,7 @@ def convert_to_fanci(
                 d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
 
                 # Iterate over remaining columns of Jacobian and d_ovlp
-                for output_col, d_ovlp_col in zip(
-                    output.transpose(), d_ovlp.transpose()
-                ):
+                for output_col, d_ovlp_col in zip(output.transpose(), d_ovlp.transpose()):
                     #
                     # Compute each column of the Jacobian:
                     #
@@ -643,17 +618,10 @@ def convert_to_fanci(
                     output_col *= overlaps[: self._nproj]
                     output_col += d_ovlp_col[: self._nproj] * integrals
                     output_col *= norm
-                    output_col -= (
-                        2
-                        * energy_integral
-                        * overlaps[: self._nproj]
-                        * d_ovlp_col[: self._nproj]
-                    )
+                    output_col -= 2 * energy_integral * overlaps[: self._nproj] * d_ovlp_col[: self._nproj]
                     output_col /= norm**2
                 output = np.sum(output, axis=0)
-                self.print_queue["Norm of the gradient of the energy"] = np.linalg.norm(
-                    output
-                )
+                self.print_queue["Norm of the gradient of the energy"] = np.linalg.norm(output)
                 if self.step_print:
                     print(
                         "(Mid Optimization) Norm of the gradient of the energy: {}".format(
@@ -677,10 +645,7 @@ def convert_to_fanci(
             """
             if self.tmpfile != "":
                 root, ext = os.path.splitext(self.tmpfile)
-                names = [
-                    type(component).__name__
-                    for component in self.indices_component_params
-                ]
+                names = [type(component).__name__ for component in self.indices_component_params]
                 names_totalcount = {name: names.count(name) for name in set(names)}
                 names_count = {name: 0 for name in set(names)}
 
@@ -731,12 +696,7 @@ def convert_to_fanci(
             np.ndarray([1, 3, 5, 7])
 
             """
-            return np.hstack(
-                [
-                    comp.params.ravel()[inds]
-                    for comp, inds in self.indices_component_params.items()
-                ]
-            )
+            return np.hstack([comp.params.ravel()[inds] for comp, inds in self.indices_component_params.items()])
 
         def make_norm_constraint(self):
             def f(x: np.ndarray) -> float:
@@ -765,7 +725,7 @@ def convert_to_fanci(
 
                     # Compute the partial contribution to y
                     y[: self._nactive - self._mask[-1]] += np.einsum(
-                        'i,ij->j', 2 * ovlp[s_chunk:f_chunk], d_ovlp_chunk, optimize='greedy'
+                        "i,ij->j", 2 * ovlp[s_chunk:f_chunk], d_ovlp_chunk, optimize="greedy"
                     )
 
                 return y
@@ -1000,7 +960,7 @@ def convert_to_fanci(
 
         def calculate_overlap_deriv_chunks(self):
 
-            tensor_mem = self._nactive * 8/1e6
+            tensor_mem = self._nactive * 8 / 1e6
             avail_mem = (self.max_memory - current_memory()) * 0.9
 
             chunk_size = max(1, math.floor(avail_mem / tensor_mem))
