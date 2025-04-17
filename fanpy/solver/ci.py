@@ -64,7 +64,7 @@ def brute(wfn, ham, save_file=""):
     ci_matrix = np.zeros((wfn.nsd, wfn.nsd))
     for i, sd1 in enumerate(wfn.sds):
         for j, sd2 in enumerate(wfn.sds[i:]):
-            ci_matrix[i, i + j] += ham.integrate_sd_sd(sd1, sd2)
+            ci_matrix[i, i + j] += ham.integrate_sd_sd(sd1, sd2).item()
     # ci_matrix += ci_matrix.T - np.diag(np.diag(ci_matrix))
 
     eigval, eigvec = scipy.linalg.eigh(ci_matrix, lower=False, overwrite_a=True, turbo=False, type=1)
