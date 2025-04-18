@@ -134,7 +134,10 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
         vir_spatial_indices = slater.vir_indices(sd_spatial, nspatial)
 
         coeff = wfn.get_overlap(sd, deriv=wfn_deriv)
-        integral = coeff * self.integrate_sd_sd(sd, sd, deriv=ham_deriv, components=components)
+        if components:
+            integral = coeff * self.integrate_sd_sd_decomposed(sd, sd, deriv=ham_deriv)
+        else:
+            integral = coeff * self.integrate_sd_sd(sd, sd, deriv=ham_deriv)
         for i in occ_spatial_indices:
             for a in vir_spatial_indices:  # pylint: disable=C0103
                 sd_m = slater.excite(
@@ -145,11 +148,14 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
                     slater.spin_index(a, nspatial, "alpha"),
                 )
                 coeff = wfn.get_overlap(sd_m, deriv=wfn_deriv)
-                integral += coeff * self.integrate_sd_sd(sd, sd_m, deriv=ham_deriv, components=components)
+                if components:
+                    integral += coeff * self.integrate_sd_sd_decomposed(sd, sd_m, deriv=ham_deriv)
+                else:
+                    integral += coeff * self.integrate_sd_sd(sd, sd_m, deriv=ham_deriv)
 
         return integral
 
-    def integrate_sd_sd(self, sd1, sd2, deriv=None, components=False):  # pylint: disable=R0911
+    def integrate_sd_sd_decomposed(self, sd1, sd2, deriv=None):  # pylint: disable=R0911
         r"""Integrate the Hamiltonian with against two Slater determinants.
 
         .. math::
@@ -168,21 +174,14 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
             Seniority-zero Slater Determinant.
         sd2 : int
             Seniority-zero Slater Determinant.
-        deriv : {int, None}
-            Index of the Hamiltonian parameter against which the integral is derivatized.
+        deriv : np.ndarray
+            Indices of the Hamiltonian parameter against which the integral is derivatized.
             Default is no derivatization.
-        components : {bool, False}
-            Option for separating the integrals into the one electron, coulomb, and exchange
-            components.
-            Default adds the three components together.
 
         Returns
         -------
-        integral : {float, np.ndarray(3,)}
-            Values of the integrals.
-            If `components` is False, then the value of the integral is returned.
-            If `components` is True, then the value of the one electron, coulomb, and exchange
-            components are returned.
+        integral : {np.ndarray(3,)}
+            Array containing the values of the one electron, coulomb, and exchange components.
 
         Raises
         ------
@@ -207,9 +206,7 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
 
         # if the Slater determinants are not seniority zero
         if not slater.get_seniority(sd1, nspatial) == slater.get_seniority(sd2, nspatial) == 0:
-            if components:
-                return 0.0, 0.0, 0.0
-            return 0.0
+            return 0.0, 0.0, 0.0
 
         sd1_spatial = slater.split_spin(sd1, nspatial)[0]
         sd2_spatial = slater.split_spin(sd2, nspatial)[0]
@@ -218,16 +215,12 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
 
         # if two Slater determinants do not have the same number of electrons
         if len(diff_sd1) != len(diff_sd2):
-            if components:
-                return 0.0, 0.0, 0.0
-            return 0.0
+            return 0.0, 0.0, 0.0
 
         diff_order = len(diff_sd1)
         # if two Slater determinants are greater than double (spatial orbital) excitation away
         if diff_order > 1:
-            if components:
-                return 0.0, 0.0, 0.0
-            return 0.0
+            return 0.0, 0.0, 0.0
 
         sign = 1
 
@@ -247,6 +240,44 @@ class SeniorityZeroHamiltonian(RestrictedMolecularHamiltonian):
 
             coulomb = self.two_int[spatial_a, spatial_a, spatial_b, spatial_b]
 
-        if components:
-            return sign * np.array([one_electron, coulomb, exchange])
-        return sign * (one_electron + coulomb + exchange)
+        return sign * np.array([one_electron, coulomb, exchange])
+
+    def integrate_sd_sd(self, sd1, sd2, deriv=None):  # pylint: disable=R0911
+        r"""Integrate the Hamiltonian with against two Slater determinants.
+
+        .. math::
+
+            H_{\mathbf{m}\mathbf{n}} =
+            \left< \mathbf{m} \middle| \hat{H} \middle| \mathbf{n} \right>
+
+        In the first summation involving :math:`h_{ij}`, only the terms where :math:`\mathbf{m}` and
+        :math:`\mathbf{n}` are the same will contribute to the integral. In the second summation
+        involving :math:`g_{ijkl}`, only the terms where :math:`\mathbf{m}` and :math:`\mathbf{n}`
+        are different by at most single pair-wise excitation will contribute to the integral.
+
+        Parameters
+        ----------
+        sd1 : int
+            Seniority-zero Slater Determinant.
+        sd2 : int
+            Seniority-zero Slater Determinant.
+        deriv : np.ndarray
+            Indices of the Hamiltonian parameter against which the integral is derivatized.
+            Default is no derivatization.
+
+        Returns
+        -------
+        integral : {np.ndarray(3,)}
+            Array containing the values of the one electron, coulomb, and exchange components.
+
+        Raises
+        ------
+        TypeError
+            If Slater determinant is not an integer.
+        NotImplementedError
+            If `deriv` is not `None`.
+
+        """
+        decomposed_integral = self.integrate_sd_sd_decomposed(sd1, sd2, deriv=deriv)
+
+        return np.sum(decomposed_integral, axis=0)
