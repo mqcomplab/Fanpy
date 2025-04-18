@@ -204,7 +204,8 @@ def test_integrate_sd_sd_deriv_fdiff_h2_sto6g():
                 finite_diff = (
                     np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative, axis=1)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
@@ -237,7 +238,8 @@ def test_integrate_sd_sd_deriv_fdiff_h4_sto6g_slow():
                 finite_diff = (
                     np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative, axis=1)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
@@ -274,13 +276,14 @@ def test_integrate_sd_sd_deriv_fdiff_random():
                     np.array(test_ham2.integrate_sd_sd_decomposed(sd1, sd2))
                     - np.array(test_ham.integrate_sd_sd_decomposed(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative, axis=1)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
                 finite_diff = (
                     np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
                 derivative = np.sum(derivative, axis=1)
                 assert np.allclose(finite_diff, derivative, atol=60 * epsilon)
 
@@ -316,7 +319,8 @@ def test_integrate_sd_sd_deriv_fdiff_random_small():
                 finite_diff = (
                     np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative, axis=1)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
