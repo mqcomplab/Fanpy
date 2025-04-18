@@ -292,7 +292,7 @@ class GeneralizedMolecularHamiltonian(BaseGeneralizedHamiltonian):
         """
         decomposed_integral = self.integrate_sd_sd_decomposed(sd1, sd2, deriv=deriv)
 
-        if deriv:
+        if deriv is not None:
             integral = np.sum(decomposed_integral, axis=1)
         else:
             integral = np.sum(decomposed_integral)
