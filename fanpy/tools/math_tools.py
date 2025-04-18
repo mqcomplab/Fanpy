@@ -19,6 +19,7 @@ permanent_borchardt(matrix)
 from itertools import combinations, permutations
 
 import numpy as np
+import math
 
 from scipy.linalg import expm
 from scipy.special import comb
@@ -181,7 +182,7 @@ def permanent_ryser(matrix):
             matrix = matrix.transpose()
             nrow, ncol = ncol, nrow
         matrix = np.pad(matrix, ((0, ncol - nrow), (0, 0)), mode="constant", constant_values=((0, 1.0), (0, 0)))
-        factor /= np.math.factorial(ncol - nrow)
+        factor /= math.factorial(ncol - nrow)
 
     # Initialize rowsum array.
     rowsums = np.zeros(ncol, dtype=matrix.dtype)
@@ -289,7 +290,7 @@ def permanent_borchardt(lambdas, epsilons, zetas, etas=None):
     for indices in combinations(range(num_col), num_row):
         indices = np.array(indices)
         submatrix = cauchy_matrix[:, indices]
-        perm_zetas = np.product(zetas[indices])
+        perm_zetas = np.prod(zetas[indices])
         perm_cauchy += np.linalg.det(submatrix**2) / np.linalg.det(submatrix) * perm_zetas
 
     perm_etas = np.prod(etas)

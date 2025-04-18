@@ -1,17 +1,19 @@
 """Utility function for constructing Hamiltonian instances."""
+
 import itertools as it
+import numpy as np
 
 from fanpy.ham.base import BaseHamiltonian
 from fanpy.tools import slater
 
 
-def ham_factory(integrate_sd_sd, integrals, nspin, orders=(1, 2), integrate_sd_wfn=None):
+def ham_factory(integrate_sd_sd_decomposed, integrals, nspin, orders=(1, 2), integrate_sd_wfn=None):
     r"""Return the instance of the Hamiltonian class with the given integrals.
 
     Parameters
     ----------
-    integrate_sd_sd(sd1, sd2, integrals) : function
-        Function that returns the integral
+    integrate_sd_sd_decomposed(sd1, sd2, integrals) : function
+        Function that returns the integrals components
         :math:`\left< \mathbf{m}_1 \middle| \hat{H} \middle| \mathbf{m}_2 \right>` from the given
         Slater determinants and the basis set representation of the Hamiltonian.
         `sd1` and `sd2` are integers whose bitstring describes the occupation of the Slater
@@ -140,6 +142,33 @@ def ham_factory(integrate_sd_sd, integrals, nspin, orders=(1, 2), integrate_sd_w
                 return integral
             return integrate_sd_wfn(self, sd, wfn, wfn_deriv=wfn_deriv)
 
+        def integrate_sd_sd_decomposed(self, sd1, sd2):
+            r"""Integrate the Hamiltonian with against two Slater determinants.
+
+            .. math::
+
+                H_{ij} = \left< \Phi_i \middle| \hat{H} \middle| \Phi_j \right>
+
+            where :math:`\hat{H}` is the Hamiltonian operator, and :math:`\Phi_i` and :math:`\Phi_j`
+            are Slater determinants.
+
+            Parameters
+            ----------
+            sd1 : int
+                Slater Determinant against which the Hamiltonian is integrated.
+            sd2 : int
+                Slater Determinant against which the Hamiltonian is integrated.
+
+            Returns
+            -------
+            integral : {float, np.ndarray}
+                If `components` is False, then the value of the integral is returned.
+                If `components` is True, then the value of the one electron, coulomb, and exchange
+                components are returned.
+
+            """
+            return integrate_sd_sd_decomposed(sd1, sd2, self.integrals)
+
         def integrate_sd_sd(self, sd1, sd2):
             r"""Integrate the Hamiltonian with against two Slater determinants.
 
@@ -165,6 +194,8 @@ def ham_factory(integrate_sd_sd, integrals, nspin, orders=(1, 2), integrate_sd_w
                 components are returned.
 
             """
-            return integrate_sd_sd(sd1, sd2, self.integrals)
+            decomposed_integral = self.integrate_sd_sd_decomposed(sd1, sd2)
+
+            return np.sum(decomposed_integral)
 
     return GeneratedHamiltonian(integrals, nspin)

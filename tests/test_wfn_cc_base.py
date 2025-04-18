@@ -1,4 +1,5 @@
 """Test fanpy.wavefunction.cc.cc_wavefunction."""
+
 import itertools as it
 import numdifftools as nd
 
@@ -14,6 +15,7 @@ from fanpy.wfn.cc.base import BaseCC
 
 class TempBaseCC(BaseCC):
     """CC wavefunction that skips initialization."""
+
     def __init__(self):
         self._cache_fns = {}
         self.exop_combinations = {}
@@ -61,13 +63,29 @@ def test_assign_exops():
     test.assign_ranks()
     test.assign_exops()
     exops = [
-        [0, 1], [0, 2], [0, 3], [1, 0], [1, 2], [1, 3], [2, 0], [2, 1], [2, 3], [3, 0], [3, 1],
-        [3, 2], [0, 1, 2, 3], [0, 2, 1, 3], [0, 3, 1, 2], [1, 2, 0, 3], [1, 3, 0, 2], [2, 3, 0, 1],
+        [0, 1],
+        [0, 2],
+        [0, 3],
+        [1, 0],
+        [1, 2],
+        [1, 3],
+        [2, 0],
+        [2, 1],
+        [2, 3],
+        [3, 0],
+        [3, 1],
+        [3, 2],
+        [0, 1, 2, 3],
+        [0, 2, 1, 3],
+        [0, 3, 1, 2],
+        [1, 2, 0, 3],
+        [1, 3, 0, 2],
+        [2, 3, 0, 1],
     ]
-    assert test.exops == {tuple(exop) : ind for ind, exop in enumerate(exops)}
+    assert test.exops == {tuple(exop): ind for ind, exop in enumerate(exops)}
     test.assign_exops([[0, 2], [1, 3]])
     exops = [[0, 1], [0, 3], [2, 1], [2, 3], [0, 2, 1, 3]]
-    assert test.exops == {tuple(exop) : ind for ind, exop in enumerate(exops)}
+    assert test.exops == {tuple(exop): ind for ind, exop in enumerate(exops)}
 
 
 def test_assign_refwfn():
@@ -200,9 +218,9 @@ def test_product_amplitudes_multi():
 
     indices = np.array([[0, 1, 2, -1]])
     answer = np.zeros(18)
-    answer[0] = - 2 * 3
-    answer[1] = - 1 * 3
-    answer[2] = - 1 * 2
+    answer[0] = -2 * 3
+    answer[1] = -1 * 3
+    answer[2] = -1 * 2
     assert np.allclose(test.product_amplitudes_multi({3: indices}, True), answer)
 
     indices = np.array([[0, 1, 2, 1], [3, 4, 5, -1]])
@@ -241,10 +259,14 @@ def test_product_amplitudes_multi():
 
 def test_olp_deriv():
     """Test BaseCC._olp_deriv."""
-    test = BaseCC(4, 10, )
+    test = BaseCC(
+        4,
+        10,
+    )
     test.assign_params(np.random.rand(test.nparams))
     test.assign_refwfn(slater.ground(4, 10))
     for sd in np.random.choice(sd_list(4, 10), 5):
+
         def func(x):
             test.assign_params(x)
             return test._olp(sd)
@@ -268,7 +290,7 @@ def test_get_overlap():
     # FIXME: WRONG NUMBERS
     # assert test.get_overlap(0b1010) == 1*4 + 2*3 + 5
     # assert test.get_overlap(0b1010, 4) == 1*4 + 2*3
-    assert test.get_overlap(0b1010) == 1*9 - 3*8 - 14
+    assert test.get_overlap(0b1010) == 1 * 9 - 3 * 8 - 14
     assert np.allclose(
         test.get_overlap(0b1010, True),
         np.array([9, 0, -8, 0, 0, 0, 0, -3, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0]),
@@ -279,7 +301,7 @@ def check_sign(occ_indices, exops):
     sd = slater.create(0, *occ_indices)
     sign = 1
     for exop in exops:
-        sign *= slater.sign_excite(sd, exop[:len(exop) // 2], exop[len(exop) // 2:])
+        sign *= slater.sign_excite(sd, exop[: len(exop) // 2], exop[len(exop) // 2 :])
         sd = slater.excite(sd, *exop)
     return sign
 
@@ -298,15 +320,15 @@ def test_generate_possible_exops():
     sign = check_sign([0, 2], [[0, 1], [2, 3]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 2, 1, 3)][2][0],
-        [test.get_ind((0, 1)), test.get_ind((2, 3)), sign if sign == 1 else 255]
+        [test.get_ind((0, 1)), test.get_ind((2, 3)), sign if sign == 1 else 0],
     )
     assert np.allclose(
         test.exop_combinations[(0, 2, 1, 3)][2][1],
-        [test.get_ind((0, 3)), test.get_ind((2, 1)), check_sign([0, 2], [[0, 3], [2, 1]]) / base_sign]
+        [test.get_ind((0, 3)), test.get_ind((2, 1)), check_sign([0, 2], [[0, 3], [2, 1]]) / base_sign],
     )
     assert np.allclose(
         test.exop_combinations[(0, 2, 1, 3)][1][0],
-        [test.get_ind((0, 2, 1, 3)), check_sign([0, 2], [[0, 2, 1, 3]]) / base_sign]
+        [test.get_ind((0, 2, 1, 3)), check_sign([0, 2], [[0, 2, 1, 3]]) / base_sign],
     )
 
     test = TempBaseCC()
@@ -321,12 +343,11 @@ def test_generate_possible_exops():
     sign = check_sign([0, 1, 2], [[2, 5], [0, 1, 4, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 2, 4, 5, 6)][2][0],
-        [test.get_ind((2, 5)), test.get_ind((0, 1, 4, 6)), sign if sign == 1 else 255],
+        [test.get_ind((2, 5)), test.get_ind((0, 1, 4, 6)), sign if sign == 1 else 0],
     )
     assert np.allclose(
         test.exop_combinations[(0, 1, 2, 4, 5, 6)][2][1],
-        [test.get_ind((2, 6)), test.get_ind((0, 1, 4, 5)),
-         check_sign([0, 1, 2], [[2, 6], [0, 1, 4, 5]]) / base_sign],
+        [test.get_ind((2, 6)), test.get_ind((0, 1, 4, 5)), check_sign([0, 1, 2], [[2, 6], [0, 1, 4, 5]]) / base_sign],
     )
     assert np.allclose(
         test.exop_combinations[(0, 1, 2, 4, 5, 6)][1][0],
@@ -344,6 +365,10 @@ def test_generate_possible_exops():
     base_sign = slater.sign_excite(0b00000111, [0, 1, 2], [4, 5, 6])
     assert np.allclose(
         test.exop_combinations[(0, 1, 2, 4, 5, 6)][3][0],
-        [test.get_ind((0, 4)), test.get_ind((1, 6)), test.get_ind((2, 5)),
-         check_sign([0, 1, 2], [[2, 5], [0, 4], [1, 6]]) / base_sign],
+        [
+            test.get_ind((0, 4)),
+            test.get_ind((1, 6)),
+            test.get_ind((2, 5)),
+            check_sign([0, 1, 2], [[2, 5], [0, 4], [1, 6]]) / base_sign,
+        ],
     )

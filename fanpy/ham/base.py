@@ -158,18 +158,24 @@ class BaseHamiltonian:
         vir_indices = slater.vir_indices(sd, self.nspin)
 
         coeff = wfn.get_overlap(sd, deriv=wfn_deriv)
-        integral = coeff * self.integrate_sd_sd(sd, sd, deriv=ham_deriv, components=components)
+        if components:
+            integral = coeff * self.integrate_sd_sd_decomposed(sd, sd, deriv=ham_deriv)
+        else:
+            integral = coeff * self.integrate_sd_sd(sd, sd, deriv=ham_deriv)
         for order in orders:
             for annihilators in it.combinations(occ_indices, order):
                 for creators in it.combinations(vir_indices, order):
                     sd_m = slater.excite(sd, *annihilators, *creators)
                     coeff = wfn.get_overlap(sd_m, deriv=wfn_deriv)
-                    integral += coeff * self.integrate_sd_sd(sd, sd_m, deriv=ham_deriv, components=components)
+                    if components:
+                        integral += coeff * self.integrate_sd_sd_decomposed(sd, sd_m, deriv=ham_deriv)
+                    else:
+                        integral += coeff * self.integrate_sd_sd(sd, sd_m, deriv=ham_deriv)
 
         return integral
 
     @abc.abstractmethod
-    def integrate_sd_sd(self, sd1, sd2, deriv=False, components=False):
+    def integrate_sd_sd_decomposed(self, sd1, sd2, deriv=False):
         r"""Integrate the Hamiltonian with against two Slater determinants.
 
         .. math::
@@ -188,16 +194,38 @@ class BaseHamiltonian:
         deriv : np.ndarray
             Indices of the Hamiltonian parameter against which the integral is derivatized.
             Default is no derivatization.
-        components : {bool, False}
-            Option for separating the integrals into the one electron, coulomb, and exchange
-            components.
-            Default adds the three components together.
 
         Returns
         -------
-        integral : {float, np.ndarray}
-            If `components` is False, then the value of the integral is returned.
-            If `components` is True, then the value of the one electron, coulomb, and exchange
-            components are returned.
+        integral : {np.ndarray}
+            Array containing the values of the one electron, coulomb, and exchange components.
+
+        """
+
+    @abc.abstractmethod
+    def integrate_sd_sd(self, sd1, sd2, deriv=False):
+        r"""Integrate the Hamiltonian with against two Slater determinants.
+
+        .. math::
+
+            H_{ij} = \left< \Phi_i \middle| \hat{H} \middle| \Phi_j \right>
+
+        where :math:`\hat{H}` is the Hamiltonian operator, and :math:`\Phi_i` and :math:`\Phi_j` are
+        Slater determinants.
+
+        Parameters
+        ----------
+        sd1 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        sd2 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        deriv : np.ndarray
+            Indices of the Hamiltonian parameter against which the integral is derivatized.
+            Default is no derivatization.
+
+        Returns
+        -------
+        integral : float
+            Value of the integral.
 
         """
