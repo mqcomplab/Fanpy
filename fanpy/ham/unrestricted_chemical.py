@@ -328,12 +328,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         """
         decomposed_integral = self.integrate_sd_sd_decomposed(sd1, sd2, deriv=deriv)
 
-        if deriv is not None:
-            integral = np.sum(decomposed_integral, axis=1)
-        else:
-            integral = np.sum(decomposed_integral)
-
-        return integral
+        return np.sum(decomposed_integral)
 
     def _integrate_sd_sd_zero(self, shared_alpha, shared_beta):
         """Return integrals of the given Slater determinant with itself.
