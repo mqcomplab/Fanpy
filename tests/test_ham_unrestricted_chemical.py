@@ -272,9 +272,8 @@ def test_integrate_sd_sd_deriv():
         test_ham._integrate_sd_sd_deriv(0b0101, 0b0101, -1)
     with pytest.raises(ValueError):
         test_ham._integrate_sd_sd_deriv(0b0101, 0b0101, 2)
-    assert np.allclose(test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0]), components=True), 0)
-    assert np.allclose(test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0]), components=False), 0)
-    assert np.allclose(test_ham._integrate_sd_sd_deriv(0b000111, 0b111000, np.array([0]), components=True), 0)
+    assert np.allclose(test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0])), 0)
+    assert np.allclose(test_ham._integrate_sd_sd_deriv(0b000111, 0b111000, np.array([0])), 0)
 
     with pytest.raises(TypeError):
         test_ham._integrate_sd_sd_deriv(0b110001, "1", np.array([0]))
