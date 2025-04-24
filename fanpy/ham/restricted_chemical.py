@@ -614,7 +614,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         spin_a, spin_b = map(lambda i: int(not slater.is_alpha(i, nspatial)), [a, b])
 
         if spin_a == 0 and spin_b == 0:
-            shared_alpha_no_ab = shared_alpha[~np.in1d(shared_alpha, [a, b])]
+            shared_alpha_no_ab = shared_alpha[~np.isin(shared_alpha, [a, b])]
             shared_beta_no_ab = shared_beta
         elif spin_a == 0 and spin_b == 1:
             shared_alpha_no_ab = shared_alpha[shared_alpha != a]
@@ -624,7 +624,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             shared_beta_no_ab = shared_beta[shared_beta != a]
         else:
             shared_alpha_no_ab = shared_alpha
-            shared_beta_no_ab = shared_beta[~np.in1d(shared_beta, [a, b])]
+            shared_beta_no_ab = shared_beta[~np.isin(shared_beta, [a, b])]
 
         # selected (spin orbital) x = a
         if x == spatial_a and spin_a == spin_b:
