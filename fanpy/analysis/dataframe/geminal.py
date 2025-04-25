@@ -92,7 +92,12 @@ class DataFrameGeminal(DataFrameFanpy):
         self._index_view = self.metadata["index_view"]
 
         self.dataframe = self.dataframe.reset_index()
-        self.dataframe = self.dataframe.set_index(["geminal", "pair"])
+        if self.metadata["index_view"] == "geminals":
+            self.dataframe = self.dataframe.set_index(["geminal", "pair"])
+        elif self.metadata["index_view"] == "determinants":
+            self.dataframe = self.dataframe.set_index(["geminal", "determinants"])
+        elif self.metadata["index_view"] == "formatted determinants":
+            self.dataframe = self.dataframe.set_index(["geminal", "formatted determinants"])
 
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
         """Add column to dataframe containing excitation operators and Geminal parameters.
