@@ -155,7 +155,6 @@ class DataFrameGeminal(DataFrameFanpy):
             wfn_orbital_pairs = self.index.get_level_values("pair")
 
             # Prepare the list to store Slater Determinants
-            geminals = []
             sds = []
 
             for geminal, orbital_pair in zip(wfn_geminals, wfn_orbital_pairs):
@@ -176,33 +175,30 @@ class DataFrameGeminal(DataFrameFanpy):
                 # Add Slater Determinant and parameter to the list
                 wfn_pair = int("".join(wfn_pair[::-1]), 2)
 
-                geminals.append(geminal)
                 sds.append(wfn_pair)
 
             # Update index notation of the DataFrame
-            self.dataframe.index = MultiIndex.from_arrays([geminals, sds], names=["geminal", "pair"])
+            self.dataframe.index = MultiIndex.from_arrays([wfn_geminals, sds], names=["geminal", "determinants"])
 
             # Update index_view flag
             self._index_view = "determinants"
 
         elif self.index_view == "formatted determinants":
             wfn_geminals = self.index.get_level_values("geminal")
-            wfn_formatted_sds_pairs = self.index.get_level_values("pair")
+            wfn_formatted_sds = self.index.get_level_values("formatted determinants")
 
             # Prepare the list to store Slater Determinants
-            geminals = []
             sds = []
 
-            for geminal, formatted_sd_pair in zip(wfn_geminals, wfn_formatted_sds_pairs):
+            for formatted_sd_pair in wfn_formatted_sds:
 
                 sd_alpha, sd_beta = formatted_sd_pair.split()
                 sd_pair = int(sd_beta[::-1] + sd_alpha[::-1], 2)
 
-                geminals.append(geminal)
                 sds.append(sd_pair)
 
             # Update index notation of the DataFrame
-            self.dataframe.index = MultiIndex.from_arrays([geminals, sds], names=["geminal", "pair"])
+            self.dataframe.index = MultiIndex.from_arrays([wfn_geminals, sds], names=["geminal", "determinants"])
 
             # Update index_view flag
             self._index_view = "determinants"
@@ -217,13 +213,12 @@ class DataFrameGeminal(DataFrameFanpy):
 
         if self.index_view == "determinants":
             wfn_geminals = self.index.get_level_values("geminal")
-            wfn_sds_pairs = self.index.get_level_values("pair")
+            wfn_sds = self.index.get_level_values("determinants")
 
             # Prepare the list to store formatted Slater Determinants
-            geminals = []
             formatted_sds = []
 
-            for geminal, sd_pair in zip(wfn_geminals, wfn_sds_pairs):
+            for sd_pair in wfn_sds:
 
                 formatted_sd = " ".join(
                     [
@@ -232,11 +227,12 @@ class DataFrameGeminal(DataFrameFanpy):
                     ]
                 )
 
-                geminals.append(geminal)
                 formatted_sds.append(formatted_sd)
 
             # Update index notation of the DataFrame
-            self.dataframe.index = MultiIndex.from_arrays([geminals, formatted_sds], names=["geminal", "pair"])
+            self.dataframe.index = MultiIndex.from_arrays(
+                [wfn_geminals, formatted_sds], names=["geminal", "formatted determinants"]
+            )
 
             # Update index_view flag
             self._index_view = "formatted determinants"
@@ -254,7 +250,6 @@ class DataFrameGeminal(DataFrameFanpy):
             wfn_sds_pairs = self.index.get_level_values("pair")
 
             # Prepare the list to store formatted Slater Determinants
-            geminals = []
             operators = []
 
             for geminal, sd_pair in zip(wfn_geminals, wfn_sds_pairs):
@@ -272,11 +267,10 @@ class DataFrameGeminal(DataFrameFanpy):
                 else:
                     operator = " ".join(map(str, slater.occ_indices(sd_pair)))
 
-                geminals.append(geminal)
                 operators.append(operator)
 
             # Update index notation of the DataFrame
-            self.dataframe.index = MultiIndex.from_arrays([geminals, operators], names=["geminal", "pair"])
+            self.dataframe.index = MultiIndex.from_arrays([wfn_geminals, operators], names=["geminal", "pair"])
 
             # Update index_view flag
             self._index_view = "geminals"
