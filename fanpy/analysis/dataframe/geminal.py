@@ -91,6 +91,9 @@ class DataFrameGeminal(DataFrameFanpy):
         self.wfn_ref_sd = self.metadata["wfn_ref_sd"]
         self._index_view = self.metadata["index_view"]
 
+        self.dataframe = self.dataframe.reset_index()
+        self.dataframe = self.dataframe.set_index(["geminal", "pair"])
+
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
         """Add column to dataframe containing excitation operators and Geminal parameters.
 
