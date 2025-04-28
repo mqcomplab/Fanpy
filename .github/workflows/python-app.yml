@@ -36,8 +36,8 @@ jobs:
           cd ..
           git clone https://github.com/theochem/pyci.git && cd pyci
           make
-          python3 -m pip install .
-          cd ../fanpy
+          python -m pip install .
+          cd ../Fanpy
       - name: Run tests with pytest
         run: |
           pip install pytest pytest-cov
