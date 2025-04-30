@@ -17,7 +17,7 @@ def test_embeddingcc_init():
                                     (1, 0): 4, (1, 1): 5, (1, 2): 6, (1, 3): 7}
     assert test.ranks == [1, 2]
     assert test.refwfn == 0b00110011
-    assert test.refwfn_list == [0b0011, 0b0011]
+    assert test.refwfn_list == [0b0101, 0b0101]
     assert test.exops == {(0, 1): 0, (0, 3): 1, (2, 1): 2, (2, 3): 3, (0, 2, 1, 3): 4,
                           (4, 5): 5, (4, 7): 6, (6, 5): 7, (6, 7): 8, (4, 6, 5, 7): 9}
     assert np.allclose(test.params, np.zeros(test.nparams))
