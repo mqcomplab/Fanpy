@@ -90,6 +90,11 @@ class DataFrameCI(DataFrameFanpy):
         # Add the new column while ensuring alignment
         self.dataframe[wfn_label] = param_series.reindex(self.index)
 
+        # Check if the Dataframe metadata is empty
+        if self.wfn_nspatial is None:
+            self.wfn_nspatial = wfn.nspatial
+            print(f"DataFrame metadata imported from {wfn_label}.")
+
     def set_formatted_sds_as_index(self):
         """Convert DataFrame index to the human-readable format of occupied (1) and unoccupied (0) MOs."""
 

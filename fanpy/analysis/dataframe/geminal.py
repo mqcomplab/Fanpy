@@ -115,7 +115,7 @@ class DataFrameGeminal(DataFrameFanpy):
         wfn_params = wfn.params
         wfn_ngem = wfn.ngem
 
-        if hasattr(wfn, "ref_sd") and (wfn.ref_sd == None):
+        if hasattr(wfn, "ref_sd") and (wfn.ref_sd is None):
             self.wfn_ref_sd = wfn.ref_sd
 
         # Convert operators from tuple to strings
@@ -151,6 +151,15 @@ class DataFrameGeminal(DataFrameFanpy):
 
         # Add the new column while ensuring alignment
         self.dataframe[wfn_label] = param_series.reindex(self.index)
+
+        # Check if the Dataframe metadata is empty
+        if (self.wfn_nspatial is None) or (self.wfn_nspin is None):
+            self.wfn_nspatial = wfn.nspatial
+            self.wfn_nspin = wfn.nspin
+
+            if (self.wfn_ref_sd is None) and (hasattr(wfn, "ref_sd") and (wfn.ref_sd is not None)):
+                self.wfn_ref_sd = wfn.ref_sd
+            print(f"DataFrame metadata imported from {wfn_label}.")
 
     def set_sds_as_index(self):
         """Convert DataFrame index to the default format of binary numbers which represents pairs in Fanpy convention."""
