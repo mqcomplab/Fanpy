@@ -125,13 +125,24 @@ class DataFrameCC(DataFrameFanpy):
             for operator in operators:
                 excitation_wfn = list(format(self.wfn_reference, f"0{2*self.wfn_nspatial}b")[::-1])
                 excitation_op = list(map(int, operator.split()))
+                creation_op = excitation_op[: len(excitation_op) // 2]
+                annihilation_op = excitation_op[len(excitation_op) // 2 :]
 
-                for index in excitation_op:
-                    # Change to '1' if occupied, '0' if unoccupied
+                for index in creation_op:
                     if excitation_wfn[index] == "1":
-                        excitation_wfn[index] = "0"  # Annihilation (occupied orbital)
-                    elif excitation_wfn[index] == "0":
-                        excitation_wfn[index] = "1"  # Creation (unoccupied orbital)
+                        excitation_wfn[index] = "0"
+                    else:
+                        raise ValueError(
+                            "Invalid excitation operator. Creation operator cannot be applied to an occupied orbital."
+                        )
+
+                for index in annihilation_op:
+                    if excitation_wfn[index] == "0":
+                        excitation_wfn[index] = "1"
+                    else:
+                        raise ValueError(
+                            "Invalid excitation operator. Annihilation operator cannot be applied to an unoccupied orbital."
+                        )
 
                 # Add the formatted excitation operator and parameter to the list
                 excitation_wfn = int("".join(excitation_wfn[::-1]), 2)
@@ -202,8 +213,6 @@ class DataFrameCC(DataFrameFanpy):
     def set_operators_as_index(self):
         """Convert DataFrame index to coupled cluster operator indices."""
 
-        from fanpy.tools import slater
-
         if self.index_view == "formatted determinants":
             self.set_sds_as_index()
 
@@ -211,9 +220,20 @@ class DataFrameCC(DataFrameFanpy):
             if self.wfn_reference is None:
                 raise ValueError("Wavefunction information is not available. Index format cannot be changed.")
 
-            sds_index = self.index
+            sds = self.index
 
-            operators = [" ".join(map(str, slater.occ_indices(self.wfn_reference ^ sd))) for sd in sds_index]
+            operators = []
+            for sd in sds:
+                # Create lists of bits, from least significant to most significant
+                ref_occs = [(self.wfn_reference >> i) & 1 for i in range(self.wfn_nspatial * 2)]
+                sd_occs = [(sd >> i) & 1 for i in range(self.wfn_nspatial * 2)]
+
+                # Get the positions
+                creation = [i for i in range(self.wfn_nspatial * 2) if ref_occs[i] == 0 and sd_occs[i] == 1]
+                annihilation = [i for i in range(self.wfn_nspatial * 2) if ref_occs[i] == 1 and sd_occs[i] == 0]
+
+                operator = " ".join(map(str, [*annihilation, *creation]))
+                operators.append(operator)
 
             # Update index notation of the DataFrame
             self.dataframe.index = operators

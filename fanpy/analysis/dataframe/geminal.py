@@ -281,7 +281,7 @@ class DataFrameGeminal(DataFrameFanpy):
 
         if self.index_view == "determinants":
             wfn_geminals = self.index.get_level_values("geminal")
-            wfn_sds_pairs = self.index.get_level_values("pair")
+            wfn_sds_pairs = self.index.get_level_values("determinants")
 
             # Prepare the list to store formatted Slater Determinants
             operators = []
