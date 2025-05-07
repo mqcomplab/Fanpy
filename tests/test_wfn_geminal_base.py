@@ -384,7 +384,6 @@ def test_gem_get_overlap():
     test.assign_memory()
     test.assign_orbpairs()
     test.assign_ngem(3)
-    test.default_val = 0 # we need this here, because we skip the init for BaseGeminal, where default value is set. 
     test._cache_fns = {}
     test.enable_cache()
     test.assign_params(np.arange(45, dtype=float).reshape(3, 15))
