@@ -14,7 +14,7 @@ class DataFrameFanpy:
         else:
             self.dataframe = pd.DataFrame({wfn_label: wfn_params}, index=wfn_index)
 
-        self.metadata = None
+        self._metadata = None
 
     def __getattr__(self, attr):
         """Delegate attribute access to the underlying DataFrame."""
@@ -74,7 +74,7 @@ class DataFrameFanpy:
 
         # Save metadata
         with open(metadata_filename, "w") as f:
-            json.dump(self.metadata, f)
+            json.dump(self._metadata, f)
 
     def read_csv(self, filename, **kwargs):
         """Import dataframe from a CSV file and a metadata JSON files."""
@@ -93,7 +93,7 @@ class DataFrameFanpy:
 
         # Import metadata from JSON file
         with open(metadata_filename) as f:
-            self.metadata = json.load(f)
+            self._metadata = json.load(f)
 
     @abc.abstractmethod
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
