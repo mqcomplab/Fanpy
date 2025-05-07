@@ -54,6 +54,17 @@ def check_sign(occ_indices, exops):
         sd = slater.excite(sd, *exop)
     return sign
 
+def scale_sign(sgn):
+    """Convert sign to 1 or -1.
+    
+    Args:
+        sgn (int): Sign of the excitation in exop_comb (-1 is stored as 0).
+    
+    Returns:
+        int: 1 or -1.
+    """
+
+    return sgn * 2 - 1
 
 def test_generate_possible_exops():
     """Test StandardCC.generate_possible_exops."""
@@ -67,31 +78,31 @@ def test_generate_possible_exops():
     test.params = np.random.rand(4)
     test.generate_possible_exops([0, 2], [1, 3])
     assert np.allclose(
-        test.exop_combinations[(0, 2, 1, 3)][0][0], [test.get_ind((0, 1)), test.get_ind((2, 3))]
+        test.exop_combinations[(0, 2, 1, 3)][2][0][0:2], [test.get_ind((0, 1)), test.get_ind((2, 3))]
     )
     assert np.allclose(
-        test.exop_combinations[(0, 2, 1, 3)][1][0], [test.get_ind((0, 3)), test.get_ind((2, 1))]
+        test.exop_combinations[(0, 2, 1, 3)][2][1][0:2], [test.get_ind((0, 3)), test.get_ind((2, 1))]
     )
-    base_sign = slater.sign_excite(0b0101, [0, 2], [1, 3])
-    assert base_sign * test.exop_combinations[(0, 2, 1, 3)][0][1] == check_sign([0, 2], [[0, 1], [2, 3]])
-    assert base_sign * test.exop_combinations[(0, 2, 1, 3)][1][1] == check_sign([0, 2], [[0, 3], [2, 1]])
+    base_sign = slater.sign_excite(0b0101, [0, 2], [1, 3]) # base sign of excitation
+    assert  base_sign * scale_sign(test.exop_combinations[(0, 2, 1, 3)][2][0][-1] ) == check_sign([0, 2], [[0, 1], [2, 3]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 2, 1, 3)][2][1][-1] ) == check_sign([0, 2], [[0, 3], [2, 1]])
 
     test.assign_ranks([1, 2])
     test.assign_exops()
     test.generate_possible_exops([0, 2], [1, 3])
     assert np.allclose(
-        test.exop_combinations[(0, 2, 1, 3)][0][0], [test.get_ind((0, 1)), test.get_ind((2, 3))]
+        test.exop_combinations[(0, 2, 1, 3)][2][0][0:2], [test.get_ind((0, 1)), test.get_ind((2, 3))]
     )
     assert np.allclose(
-        test.exop_combinations[(0, 2, 1, 3)][1][0], [test.get_ind((0, 3)), test.get_ind((2, 1))]
+        test.exop_combinations[(0, 2, 1, 3)][2][1][0:2], [test.get_ind((0, 3)), test.get_ind((2, 1))]
     )
     assert np.allclose(
-        test.exop_combinations[(0, 2, 1, 3)][2][0], [test.get_ind((0, 2, 1, 3))]
+        test.exop_combinations[(0, 2, 1, 3)][1][0][0:1], [test.get_ind((0, 2, 1, 3))]
     )
     base_sign = slater.sign_excite(0b0101, [0, 2], [1, 3])
-    assert base_sign * test.exop_combinations[(0, 2, 1, 3)][0][1] == check_sign([0, 2], [[0, 1], [2, 3]])
-    assert base_sign * test.exop_combinations[(0, 2, 1, 3)][1][1] == check_sign([0, 2], [[0, 3], [2, 1]])
-    assert base_sign * test.exop_combinations[(0, 2, 1, 3)][2][1] == check_sign([0, 2], [[0, 2, 1, 3]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 2, 1, 3)][2][0][-1]) == check_sign([0, 2], [[0, 1], [2, 3]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 2, 1, 3)][2][1][-1]) == check_sign([0, 2], [[0, 3], [2, 1]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 2, 1, 3)][1][0][-1]) == check_sign([0, 2], [[0, 2, 1, 3]])
 
     test = TempStandardCC()
     test.assign_nelec(4)
@@ -100,61 +111,56 @@ def test_generate_possible_exops():
     test.assign_ranks([1])
     test.assign_exops()
     test.refresh_exops = None
+    test.params = np.random.rand(8)
     test.generate_possible_exops([0, 1], [2, 3])
     assert np.allclose(
-        test.exop_combinations[(0, 1, 2, 3)][0][0], [test.get_ind((0, 2)), test.get_ind((1, 3))]
+        test.exop_combinations[(0, 1, 2, 3)][2][0][0:2], [test.get_ind((0, 2)), test.get_ind((1, 3))]
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 2, 3)][1][0], [test.get_ind((0, 3)), test.get_ind((1, 2))]
+        test.exop_combinations[(0, 1, 2, 3)][2][1][0:2], [test.get_ind((0, 3)), test.get_ind((1, 2))]
     )
     base_sign = slater.sign_excite(0b0011, [0, 1], [2, 3])
-    assert base_sign * test.exop_combinations[(0, 1, 2, 3)][0][1] == check_sign([0, 1], [[0, 2], [1, 3]])
-    assert base_sign * test.exop_combinations[(0, 1, 2, 3)][1][1] == check_sign([0, 1], [[0, 3], [1, 2]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 2, 3)][2][0][-1]) == check_sign([0, 1], [[0, 2], [1, 3]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 2, 3)][2][1][-1]) == check_sign([0, 1], [[0, 3], [1, 2]])
 
     test.generate_possible_exops([0, 1, 4], [2, 3, 6])
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][0][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0][0:3],
         (test.get_ind((0, 2)), test.get_ind((1, 3)), test.get_ind((4, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][1][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1][0:3],
             (test.get_ind((0, 2)), test.get_ind((1, 6)), test.get_ind((4, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][2][0:3],
             (test.get_ind((0, 3)), test.get_ind((1, 2)), test.get_ind((4, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][3][0:3],
             (test.get_ind((0, 3)), test.get_ind((1, 6)), test.get_ind((4, 2))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][4][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][4][0:3],
             (test.get_ind((0, 6)), test.get_ind((1, 2)), test.get_ind((4, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][5][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][5][0:3],
             (test.get_ind((0, 6)), test.get_ind((1, 3)), test.get_ind((4, 2))),
     )
     base_sign = slater.sign_excite(0b10011, [0, 1, 4], [2, 3, 6])
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][0][1] == check_sign([0, 1, 4],
-        ((0, 2), (1, 3), (4, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][1][1] == check_sign([0, 1, 4],
-            ((0, 2), (1, 6), (4, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1] == check_sign([0, 1, 4],
-            ((0, 3), (1, 2), (4, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1] == check_sign([0, 1, 4],
-            ((0, 3), (1, 6), (4, 2)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][4][1] == check_sign([0, 1, 4],
-            ((0, 6), (1, 2), (4, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][5][1] == check_sign([0, 1, 4],
-            ((0, 6), (1, 3), (4, 2)),
-                                                                                      )
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0][-1]) == check_sign([0, 1, 4],
+        ((0, 2), (1, 3), (4, 6)))
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1][-1]) == check_sign([0, 1, 4],
+            ((0, 2), (1, 6), (4, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][2][-1]) == check_sign([0, 1, 4],
+            ((0, 3), (1, 2), (4, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][3][-1]) == check_sign([0, 1, 4],
+            ((0, 3), (1, 6), (4, 2)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][4][-1]) == check_sign([0, 1, 4],
+            ((0, 6), (1, 2), (4, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][5][-1]) == check_sign([0, 1, 4],
+            ((0, 6), (1, 3), (4, 2)),)
 
     test = TempStandardCC()
     test.assign_nelec(4)
@@ -163,128 +169,114 @@ def test_generate_possible_exops():
     test.assign_ranks([1, 2])
     test.assign_exops()
     test.refresh_exops = None
+    test.params = np.random.rand(8)
     test.generate_possible_exops([0, 1], [2, 3])
     assert np.allclose(
-        test.exop_combinations[(0, 1, 2, 3)][0][0], [test.get_ind((0, 2)), test.get_ind((1, 3))]
+        test.exop_combinations[(0, 1, 2, 3)][2][0][0:2], [test.get_ind((0, 2)), test.get_ind((1, 3))]
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 2, 3)][1][0], [test.get_ind((0, 3)), test.get_ind((1, 2))]
+        test.exop_combinations[(0, 1, 2, 3)][2][1][0:2], [test.get_ind((0, 3)), test.get_ind((1, 2))]
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 2, 3)][2][0], [test.get_ind((0, 1, 2, 3))]
+        test.exop_combinations[(0, 1, 2, 3)][1][0][0:1], [test.get_ind((0, 1, 2, 3))]
     )
     base_sign = slater.sign_excite(0b0011, [0, 1], [2, 3])
-    assert base_sign * test.exop_combinations[(0, 1, 2, 3)][0][1] == check_sign([0, 1], [[0, 2], [1, 3]])
-    assert base_sign * test.exop_combinations[(0, 1, 2, 3)][1][1] == check_sign([0, 1], [[0, 3], [1, 2]])
-    assert base_sign * test.exop_combinations[(0, 1, 2, 3)][2][1] == check_sign([0, 1], [[0, 1, 2, 3]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 2, 3)][2][0][-1]) == check_sign([0, 1], [[0, 2], [1, 3]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 2, 3)][2][1][-1]) == check_sign([0, 1], [[0, 3], [1, 2]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 2, 3)][1][0][-1]) == check_sign([0, 1], [[0, 1, 2, 3]])
 
     test.generate_possible_exops([0, 1, 4], [2, 3, 6])
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][0][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0][0:3],
         (test.get_ind((0, 2)), test.get_ind((1, 3)), test.get_ind((4, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][1][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1][0:3],
             (test.get_ind((0, 2)), test.get_ind((1, 6)), test.get_ind((4, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][2][0:3],
             (test.get_ind((0, 3)), test.get_ind((1, 2)), test.get_ind((4, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][3][0:3],
             (test.get_ind((0, 3)), test.get_ind((1, 6)), test.get_ind((4, 2))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][4][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][4][0:3],
             (test.get_ind((0, 6)), test.get_ind((1, 2)), test.get_ind((4, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][5][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][5][0:3],
             (test.get_ind((0, 6)), test.get_ind((1, 3)), test.get_ind((4, 2))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][6][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0][0:2],
             (test.get_ind((0, 2)), test.get_ind((1, 4, 3, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][7][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1][0:2],
         (test.get_ind((0, 3)), test.get_ind((1, 4, 2, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][8][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][2][0:2],
         (test.get_ind((0, 6)), test.get_ind((1, 4, 2, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][9][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][3][0:2],
         (test.get_ind((1, 2)), test.get_ind((0, 4, 3, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][10][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][4][0:2],
         (test.get_ind((1, 3)), test.get_ind((0, 4, 2, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][11][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][5][0:2],
         (test.get_ind((1, 6)), test.get_ind((0, 4, 2, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][12][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][6][0:2],
         (test.get_ind((4, 2)), test.get_ind((0, 1, 3, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][13][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][7][0:2],
         (test.get_ind((4, 3)), test.get_ind((0, 1, 2, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][14][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][8][0:2],
         (test.get_ind((4, 6)), test.get_ind((0, 1, 2, 3))),
     )
     base_sign = slater.sign_excite(0b10011, [0, 1, 4], [2, 3, 6])
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][0][1] == check_sign([0, 1, 4],
-        ((0, 2), (1, 3), (4, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][1][1] == check_sign([0, 1, 4],
-            ((0, 2), (1, 6), (4, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1] == check_sign([0, 1, 4],
-            ((0, 3), (1, 2), (4, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1] == check_sign([0, 1, 4],
-            ((0, 3), (1, 6), (4, 2)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][4][1] == check_sign([0, 1, 4],
-            ((0, 6), (1, 2), (4, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][5][1] == check_sign([0, 1, 4],
-            ((0, 6), (1, 3), (4, 2)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][6][1] == check_sign([0, 1, 4],
-            ((0, 2), (1, 4, 3, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][7][1] == check_sign([0, 1, 4],
-            ((0, 3), (1, 4, 2, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][8][1] == check_sign([0, 1, 4],
-            ((0, 6), (1, 4, 2, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][9][1] == check_sign([0, 1, 4],
-            ((1, 2), (0, 4, 3, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][10][1] == check_sign([0, 1, 4],
-            ((1, 3), (0, 4, 2, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][11][1] == check_sign([0, 1, 4],
-            ((1, 6), (0, 4, 2, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][12][1] == check_sign([0, 1, 4],
-            ((4, 2), (0, 1, 3, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][13][1] == check_sign([0, 1, 4],
-            ((4, 3), (0, 1, 2, 6)),
-                                                                                       )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][14][1] == check_sign([0, 1, 4],
-            ((4, 6), (0, 1, 2, 3)),
-                                                                                       )
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0][-1]) == check_sign([0, 1, 4],
+        ((0, 2), (1, 3), (4, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1][-1]) == check_sign([0, 1, 4],
+            ((0, 2), (1, 6), (4, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][2][-1]) == check_sign([0, 1, 4],
+            ((0, 3), (1, 2), (4, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][3][-1]) == check_sign([0, 1, 4],
+            ((0, 3), (1, 6), (4, 2)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][4][-1]) == check_sign([0, 1, 4],
+            ((0, 6), (1, 2), (4, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][5][-1]) == check_sign([0, 1, 4],
+            ((0, 6), (1, 3), (4, 2)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0][-1]) == check_sign([0, 1, 4],
+            ((0, 2), (1, 4, 3, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1][-1]) == check_sign([0, 1, 4],
+            ((0, 3), (1, 4, 2, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][2][-1]) == check_sign([0, 1, 4],
+            ((0, 6), (1, 4, 2, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][3][-1]) == check_sign([0, 1, 4],
+            ((1, 2), (0, 4, 3, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][4][-1]) == check_sign([0, 1, 4],
+            ((1, 3), (0, 4, 2, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][5][-1]) == check_sign([0, 1, 4],
+            ((1, 6), (0, 4, 2, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][6][-1]) == check_sign([0, 1, 4],
+            ((4, 2), (0, 1, 3, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][7][-1]) == check_sign([0, 1, 4],
+            ((4, 3), (0, 1, 2, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][8][-1]) == check_sign([0, 1, 4],
+            ((4, 6), (0, 1, 2, 3)),)
 
     test = TempStandardCC()
     test.assign_nelec(4)
@@ -292,133 +284,118 @@ def test_generate_possible_exops():
     test.assign_refwfn(0b00110011)
     test.assign_ranks([1, 2, 3])
     test.assign_exops()
+    test.assign_params(np.random.rand(68))
     test.refresh_exops = None
     test.generate_possible_exops([0, 1], [2, 3])
     assert np.allclose(
-        test.exop_combinations[(0, 1, 2, 3)][0][0], [test.get_ind((0, 2)), test.get_ind((1, 3))]
+        test.exop_combinations[(0, 1, 2, 3)][2][0][0:2], [test.get_ind((0, 2)), test.get_ind((1, 3))]
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 2, 3)][1][0], [test.get_ind((0, 3)), test.get_ind((1, 2))]
+        test.exop_combinations[(0, 1, 2, 3)][2][1][0:2], [test.get_ind((0, 3)), test.get_ind((1, 2))]
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 2, 3)][2][0], [test.get_ind((0, 1, 2, 3))]
+        test.exop_combinations[(0, 1, 2, 3)][1][0][0:1], [test.get_ind((0, 1, 2, 3))]
     )
     base_sign = slater.sign_excite(0b0011, [0, 1], [2, 3])
-    assert base_sign * test.exop_combinations[(0, 1, 2, 3)][0][1] == check_sign([0, 1], [[0, 2], [1, 3]])
-    assert base_sign * test.exop_combinations[(0, 1, 2, 3)][1][1] == check_sign([0, 1], [[0, 3], [1, 2]])
-    assert base_sign * test.exop_combinations[(0, 1, 2, 3)][2][1] == check_sign([0, 1], [[0, 1, 2, 3]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 2, 3)][2][0][-1]) == check_sign([0, 1], [[0, 2], [1, 3]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 2, 3)][2][1][-1]) == check_sign([0, 1], [[0, 3], [1, 2]])
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 2, 3)][1][0][-1]) == check_sign([0, 1], [[0, 1, 2, 3]])
 
     test.generate_possible_exops([0, 1, 4], [2, 3, 6])
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][0][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0][0:3],
         (test.get_ind((0, 2)), test.get_ind((1, 3)), test.get_ind((4, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][1][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1][0:3],
             (test.get_ind((0, 2)), test.get_ind((1, 6)), test.get_ind((4, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][2][0:3],
             (test.get_ind((0, 3)), test.get_ind((1, 2)), test.get_ind((4, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][3][0:3],
             (test.get_ind((0, 3)), test.get_ind((1, 6)), test.get_ind((4, 2))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][4][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][4][0:3],
             (test.get_ind((0, 6)), test.get_ind((1, 2)), test.get_ind((4, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][5][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][5][0:3],
             (test.get_ind((0, 6)), test.get_ind((1, 3)), test.get_ind((4, 2))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][6][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0][0:2],
             (test.get_ind((0, 2)), test.get_ind((1, 4, 3, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][7][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1][0:2],
         (test.get_ind((0, 3)), test.get_ind((1, 4, 2, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][8][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][2][0:2],
         (test.get_ind((0, 6)), test.get_ind((1, 4, 2, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][9][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][3][0:2],
         (test.get_ind((1, 2)), test.get_ind((0, 4, 3, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][10][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][4][0:2],
         (test.get_ind((1, 3)), test.get_ind((0, 4, 2, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][11][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][5][0:2],
         (test.get_ind((1, 6)), test.get_ind((0, 4, 2, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][12][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][6][0:2],
         (test.get_ind((4, 2)), test.get_ind((0, 1, 3, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][13][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][7][0:2],
         (test.get_ind((4, 3)), test.get_ind((0, 1, 2, 6))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][14][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][8][0:2],
         (test.get_ind((4, 6)), test.get_ind((0, 1, 2, 3))),
     )
     assert np.allclose(
-        test.exop_combinations[(0, 1, 4, 2, 3, 6)][15][0],
+        test.exop_combinations[(0, 1, 4, 2, 3, 6)][1][0][0],
         (test.get_ind((0, 1, 4, 2, 3, 6)), ),
     )
     base_sign = slater.sign_excite(0b10011, [0, 1, 4], [2, 3, 6])
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][0][1] == check_sign([0, 1, 4],
-        ((0, 2), (1, 3), (4, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][1][1] == check_sign([0, 1, 4],
-            ((0, 2), (1, 6), (4, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1] == check_sign([0, 1, 4],
-            ((0, 3), (1, 2), (4, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1] == check_sign([0, 1, 4],
-            ((0, 3), (1, 6), (4, 2)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][4][1] == check_sign([0, 1, 4],
-            ((0, 6), (1, 2), (4, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][5][1] == check_sign([0, 1, 4],
-            ((0, 6), (1, 3), (4, 2)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][6][1] == check_sign([0, 1, 4],
-            ((0, 2), (1, 4, 3, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][7][1] == check_sign([0, 1, 4],
-            ((0, 3), (1, 4, 2, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][8][1] == check_sign([0, 1, 4],
-            ((0, 6), (1, 4, 2, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][9][1] == check_sign([0, 1, 4],
-            ((1, 2), (0, 4, 3, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][10][1] == check_sign([0, 1, 4],
-            ((1, 3), (0, 4, 2, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][11][1] == check_sign([0, 1, 4],
-            ((1, 6), (0, 4, 2, 3)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][12][1] == check_sign([0, 1, 4],
-            ((4, 2), (0, 1, 3, 6)),
-                                                                                      )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][13][1] == check_sign([0, 1, 4],
-            ((4, 3), (0, 1, 2, 6)),
-                                                                                       )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][14][1] == check_sign([0, 1, 4],
-            ((4, 6), (0, 1, 2, 3)),
-                                                                                       )
-    assert base_sign * test.exop_combinations[(0, 1, 4, 2, 3, 6)][14][1] == check_sign([0, 1, 4],
-            ((0, 1, 4, 2, 3, 6), ),
-                                                                                       )
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0][-1]) == check_sign([0, 1, 4],
+        ((0, 2), (1, 3), (4, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1][-1]) == check_sign([0, 1, 4],
+            ((0, 2), (1, 6), (4, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][2][-1]) == check_sign([0, 1, 4],
+            ((0, 3), (1, 2), (4, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][3][-1]) == check_sign([0, 1, 4],
+            ((0, 3), (1, 6), (4, 2)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][4][-1]) == check_sign([0, 1, 4],
+            ((0, 6), (1, 2), (4, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][5][-1]) == check_sign([0, 1, 4],
+            ((0, 6), (1, 3), (4, 2)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0][-1]) == check_sign([0, 1, 4],
+            ((0, 2), (1, 4, 3, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1][-1]) == check_sign([0, 1, 4],
+            ((0, 3), (1, 4, 2, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][2][-1]) == check_sign([0, 1, 4],
+            ((0, 6), (1, 4, 2, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][3][-1]) == check_sign([0, 1, 4],
+            ((1, 2), (0, 4, 3, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][4][-1]) == check_sign([0, 1, 4],
+            ((1, 3), (0, 4, 2, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][5][-1]) == check_sign([0, 1, 4],
+            ((1, 6), (0, 4, 2, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][6][-1]) == check_sign([0, 1, 4],
+            ((4, 2), (0, 1, 3, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][7][-1]) == check_sign([0, 1, 4],
+            ((4, 3), (0, 1, 2, 6)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][8][-1]) == check_sign([0, 1, 4],
+            ((4, 6), (0, 1, 2, 3)),)
+    assert base_sign * scale_sign(test.exop_combinations[(0, 1, 4, 2, 3, 6)][1][0][1]) == check_sign([0, 1, 4],
+            ((0, 1, 4, 2, 3, 6), ),)
