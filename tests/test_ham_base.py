@@ -1,4 +1,5 @@
 """Test fanpy.ham.base."""
+
 from fanpy.ham.base import BaseHamiltonian
 from fanpy.wfn.ci.base import CIWavefunction
 
@@ -18,7 +19,7 @@ class TempBaseHamiltonian(BaseHamiltonian):
         """Return number of spin orbitals."""
         return 10
 
-    def integrate_sd_sd(self, sd1, sd2, deriv=None, components=True):
+    def integrate_sd_sd(self, sd1, sd2, deriv=None):
         """Integrate slater determinants."""
         return 1
 

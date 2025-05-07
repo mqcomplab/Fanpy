@@ -1,4 +1,5 @@
 r"""Hamiltonian used to describe a chemical system expressed wrt unrestricted orbitals."""
+
 import itertools as it
 import os
 
@@ -105,21 +106,11 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         """Cache away contractions of the two electron integrals."""
         # store away tensor contractions
         indices = np.arange(self.one_int[0].shape[0])
-        self._cached_two_int_0_ijij = self.two_int[0][
-            indices[:, None], indices, indices[:, None], indices
-        ]
-        self._cached_two_int_1_ijij = self.two_int[1][
-            indices[:, None], indices, indices[:, None], indices
-        ]
-        self._cached_two_int_2_ijij = self.two_int[2][
-            indices[:, None], indices, indices[:, None], indices
-        ]
-        self._cached_two_int_0_ijji = self.two_int[0][
-            indices[:, None], indices, indices, indices[:, None]
-        ]
-        self._cached_two_int_2_ijji = self.two_int[2][
-            indices[:, None], indices, indices, indices[:, None]
-        ]
+        self._cached_two_int_0_ijij = self.two_int[0][indices[:, None], indices, indices[:, None], indices]
+        self._cached_two_int_1_ijij = self.two_int[1][indices[:, None], indices, indices[:, None], indices]
+        self._cached_two_int_2_ijij = self.two_int[2][indices[:, None], indices, indices[:, None], indices]
+        self._cached_two_int_0_ijji = self.two_int[0][indices[:, None], indices, indices, indices[:, None]]
+        self._cached_two_int_2_ijji = self.two_int[2][indices[:, None], indices, indices, indices[:, None]]
 
     def assign_params(self, params=None):
         """Transform the integrals with a unitary matrix that corresponds to the given parameters.
@@ -145,9 +136,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         if params is None:
             params = np.zeros(num_params)
 
-        if __debug__ and not (
-            isinstance(params, np.ndarray) and params.ndim == 1 and params.size == num_params
-        ):
+        if __debug__ and not (isinstance(params, np.ndarray) and params.ndim == 1 and params.size == num_params):
             raise ValueError(
                 "Parameters for orbital rotation must be a one-dimension numpy array "
                 "with {0}=K*(K-1) elements, where K is the number of "
@@ -158,12 +147,8 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         self.params = params
         if self._prev_params is None:
             self._prev_params = np.zeros(params.size)
-            self._prev_unitary_alpha = math_tools.unitary_matrix(
-                self._prev_params[: num_params // 2]
-            )
-            self._prev_unitary_beta = math_tools.unitary_matrix(
-                self._prev_params[num_params // 2 :]
-            )
+            self._prev_unitary_alpha = math_tools.unitary_matrix(self._prev_params[: num_params // 2])
+            self._prev_unitary_beta = math_tools.unitary_matrix(self._prev_params[num_params // 2 :])
         params_prev = self._prev_params
         params_diff = params - params_prev
         unitary_prev_alpha = self._prev_unitary_alpha
@@ -225,7 +210,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
 
     # FIXME: remove sign?
     # FIXME: too many branches, too many statements
-    def integrate_sd_sd(self, sd1, sd2, deriv=None, components=False):  # pylint: disable=R0911
+    def integrate_sd_sd_decomposed(self, sd1, sd2, deriv=None):  # pylint: disable=R0911
         r"""Integrate the Hamiltonian with against two Slater determinants.
 
         .. math::
@@ -252,18 +237,11 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         deriv : np.ndarray
             Indices of the Hamiltonian parameters against which the integral is derivatized.
             Default is no derivatization.
-        components : {bool, False}
-            Option for separating the integrals into the one electron, coulomb, and exchange
-            components.
-            Default adds the three components together.
 
         Returns
         -------
-        integral : {float, np.ndarray(3,)}
-            Values of the integrals.
-            If `components` is False, then the value of the integral is returned.
-            If `components` is True, then the value of the one electron, coulomb, and exchange
-            components are returned.
+        integral : {np.ndarray(3,)}
+            Array containing the values of the one electron, coulomb, and exchange components.
 
         Raises
         ------
@@ -273,7 +251,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         """
         # pylint: disable=C0103,R0912,R0915
         if deriv is not None:
-            return self._integrate_sd_sd_deriv(sd1, sd2, deriv, components=components)
+            return self._integrate_sd_sd_deriv_decomposed(sd1, sd2, deriv)
 
         nspatial = self.nspatial
 
@@ -286,14 +264,10 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
 
         # if two Slater determinants do not have the same number of electrons
         if len(diff_sd1) != len(diff_sd2):
-            if components:
-                return 0.0, 0.0, 0.0
-            return 0.0
+            return 0.0, 0.0, 0.0
         diff_order = len(diff_sd1)
         if diff_order > 2:
-            if components:
-                return 0.0, 0.0, 0.0
-            return 0.0
+            return 0.0, 0.0, 0.0
 
         sign = slater.sign_excite(sd1, diff_sd1, reversed(diff_sd2))
 
@@ -305,17 +279,56 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
 
         # two sd's are different by single excitation
         elif diff_order == 1:
-            one_electron, coulomb, exchange = self._integrate_sd_sd_one(
-                diff_sd1, diff_sd2, shared_alpha, shared_beta
-            )
+            one_electron, coulomb, exchange = self._integrate_sd_sd_one(diff_sd1, diff_sd2, shared_alpha, shared_beta)
 
         # two sd's are different by double excitation
         else:
             one_electron, coulomb, exchange = self._integrate_sd_sd_two(diff_sd1, diff_sd2)
 
-        if components:
-            return sign * np.array([one_electron, coulomb, exchange])
-        return sign * (one_electron + coulomb + exchange)
+        return sign * np.array([one_electron, coulomb, exchange])
+
+    def integrate_sd_sd(self, sd1, sd2, deriv=None):  # pylint: disable=R0911
+        r"""Integrate the Hamiltonian with against two Slater determinants.
+
+        .. math::
+
+            H_{\mathbf{m}\mathbf{n}} &=
+            \left< \mathbf{m} \middle| \hat{H} \middle| \mathbf{n} \right>\\
+            &= \sum_{ij}
+               h_{ij} \left< \mathbf{m} \middle| a^\dagger_i a_j \middle| \mathbf{n} \right>
+            + \sum_{i<j, k<l} g_{ijkl}
+            \left< \mathbf{m} \middle| a^\dagger_i a^\dagger_j a_l a_k \middle| \mathbf{n} \right>\\
+
+        In the first summation involving :math:`h_{ij}`, only the terms where :math:`\mathbf{m}` and
+        :math:`\mathbf{n}` are different by at most single excitation will contribute to the
+        integral. In the second summation involving :math:`g_{ijkl}`, only the terms where
+        :math:`\mathbf{m}` and :math:`\mathbf{n}` are different by at most double excitation will
+        contribute to the integral.
+
+        Parameters
+        ----------
+        sd1 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        sd2 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        deriv : np.ndarray
+            Indices of the Hamiltonian parameters against which the integral is derivatized.
+            Default is no derivatization.
+
+        Returns
+        -------
+        integral : float
+            Value of the integral.
+
+        Raises
+        ------
+        TypeError
+            If Slater determinant is not an integer.
+
+        """
+        decomposed_integral = self.integrate_sd_sd_decomposed(sd1, sd2, deriv=deriv)
+
+        return np.sum(decomposed_integral, axis=0)
 
     def _integrate_sd_sd_zero(self, shared_alpha, shared_beta):
         """Return integrals of the given Slater determinant with itself.
@@ -336,20 +349,12 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         one_electron, coulomb, exchange = 0, 0, 0
         if shared_alpha.size != 0:
             one_electron += np.sum(self.one_int[0][shared_alpha, shared_alpha])
-            coulomb += np.sum(
-                np.triu(self._cached_two_int_0_ijij[shared_alpha[:, None], shared_alpha], k=1)
-            )
-            exchange -= np.sum(
-                np.triu(self._cached_two_int_0_ijji[shared_alpha[:, None], shared_alpha], k=1)
-            )
+            coulomb += np.sum(np.triu(self._cached_two_int_0_ijij[shared_alpha[:, None], shared_alpha], k=1))
+            exchange -= np.sum(np.triu(self._cached_two_int_0_ijji[shared_alpha[:, None], shared_alpha], k=1))
         if shared_beta.size != 0:
             one_electron += np.sum(self.one_int[1][shared_beta, shared_beta])
-            coulomb += np.sum(
-                np.triu(self._cached_two_int_2_ijij[shared_beta[:, None], shared_beta], k=1)
-            )
-            exchange -= np.sum(
-                np.triu(self._cached_two_int_2_ijji[shared_beta[:, None], shared_beta], k=1)
-            )
+            coulomb += np.sum(np.triu(self._cached_two_int_2_ijij[shared_beta[:, None], shared_beta], k=1))
+            exchange -= np.sum(np.triu(self._cached_two_int_2_ijji[shared_beta[:, None], shared_beta], k=1))
         if shared_alpha.size != 0 and shared_beta.size != 0:
             coulomb += np.sum(self._cached_two_int_1_ijij[shared_alpha[:, None], shared_beta])
 
@@ -396,9 +401,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             one_electron += self.one_int[0][spatial_a, spatial_b]
             if shared_alpha.size != 0:
                 coulomb += np.sum(self.two_int[0][shared_alpha, spatial_a, shared_alpha, spatial_b])
-                exchange -= np.sum(
-                    self.two_int[0][shared_alpha, spatial_a, spatial_b, shared_alpha]
-                )
+                exchange -= np.sum(self.two_int[0][shared_alpha, spatial_a, spatial_b, shared_alpha])
             if shared_beta.size != 0:
                 coulomb += np.sum(self.two_int[1][spatial_a, shared_beta, spatial_b, shared_beta])
         else:
@@ -530,10 +533,10 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
 
         return spin_ind, int(x), int(y)
 
-    # TODO: Much of the following function can be shortened by using impure functions (function with
-    # a side effect) instead
+    # TODO: Much of the following function can be shortened by using impure functions
+    # (function with a side effect) instead
     # FIXME: too many statements, too many branches
-    def _integrate_sd_sd_deriv(self, sd1, sd2, deriv, components=False):
+    def _integrate_sd_sd_deriv_decomposed(self, sd1, sd2, deriv):
         r"""Return derivative of the CI matrix element with respect to the antihermitian elements.
 
         Parameters
@@ -544,18 +547,12 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             Slater Determinant against which the Hamiltonian is integrated.
         deriv : np.ndarray
             Indices of the Hamiltonian parameters against which the integral is derivatized.
-        components : {bool, False}
-            Option for separating the integrals into the one electron, coulomb, and exchange
-            components.
-            Default adds the three components together.
 
         Returns
         -------
-        d_integral : {np.ndarray(len(deriv)), np.ndarray(3, len(deriv))}
-            Derivatives of the integral with respect to the given parameters.
-            If `components` is False, then the derivative of the integral is returned.
-            If `components` is True, then the derivative of the one electron, coulomb, and exchange
-            components are returned.
+        d_integral : np.ndarray(3, len(deriv))
+            Derivatives of the one electron, coulomb, and exchange integrals with respect
+            to the given parameters.
 
         Raises
         ------
@@ -586,22 +583,16 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
 
         # if two Slater determinants do not have the same number of electrons
         if len(diff_sd1) != len(diff_sd2):
-            if components:
-                return np.zeros((3, len(deriv)))
-            return np.zeros(len(deriv))
+            return np.zeros((3, len(deriv)))
         diff_order = len(diff_sd1)
         if diff_order > 2:
-            if components:
-                return np.zeros((3, len(deriv)))
-            return np.zeros(len(deriv))
+            return np.zeros((3, len(deriv)))
 
         # get sign
         sign = slater.sign_excite(sd1, diff_sd1, reversed(diff_sd2))
 
         # check deriv
-        if __debug__ and not (
-            isinstance(deriv, np.ndarray) and np.all(deriv >= 0) and np.all(deriv < self.nparams)
-        ):
+        if __debug__ and not (isinstance(deriv, np.ndarray) and np.all(deriv >= 0) and np.all(deriv < self.nparams)):
             raise ValueError(
                 "Derivative indices must be given as a numpy array of integers greater than or "
                 "equal to zero and less than the number of parameters, nspatial * (nspatial-1) / 2"
@@ -615,9 +606,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
 
             # two sd's are the same
             if diff_order == 0:
-                output[i] = self._integrate_sd_sd_deriv_zero(
-                    spin_ind, x, y, shared_alpha, shared_beta
-                )
+                output[i] = self._integrate_sd_sd_deriv_zero(spin_ind, x, y, shared_alpha, shared_beta)
             # two sd's are different by single excitation
             elif diff_order == 1:
                 output[i] = self._integrate_sd_sd_deriv_one(
@@ -627,9 +616,42 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             else:
                 output[i] = self._integrate_sd_sd_deriv_two(diff_sd1, diff_sd2, spin_ind, x, y)
 
-        if components:
-            return sign * output.T
-        return sign * np.sum(output, axis=1)
+        return sign * output.T
+
+    def _integrate_sd_sd_deriv(self, sd1, sd2, deriv):
+        r"""Return derivative of the CI matrix element with respect to the antihermitian elements.
+
+        Parameters
+        ----------
+        sd1 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        sd2 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        deriv : np.ndarray
+            Indices of the Hamiltonian parameters against which the integral is derivatized.
+
+        Returns
+        -------
+        d_integral : np.ndarray(len(deriv))
+            Derivatives of the integrals with respect to the given parameters.
+
+        Raises
+        ------
+        TypeError
+            If Slater determinant is not an integer.
+        ValueError
+            If the given `deriv` contains an integer greater than or equal to 0 and less than the
+            number of parameters.
+
+        Notes
+        -----
+        Integrals are not assumed to be real. The performance benefit (at the moment) for assuming
+        real orbitals is not much.
+
+        """
+
+        derivatives = self._integrate_sd_sd_deriv_decomposed(sd1, sd2, deriv)
+        return np.sum(derivatives)
 
     def _integrate_sd_sd_deriv_zero(self, spin_ind, x, y, shared_alpha, shared_beta):
         """Return the derivative of the integrals of the given Slater determinant with itself.
@@ -676,51 +698,33 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             if shared_beta.size != 0:
                 coulomb -= 2 * np.sum(np.real(self.two_int[1][x, shared_beta, y, shared_beta]))
             if shared_alpha_no_x.size != 0:
-                coulomb -= 2 * np.sum(
-                    np.real(self.two_int[0][x, shared_alpha_no_x, y, shared_alpha_no_x])
-                )
-                exchange += 2 * np.sum(
-                    np.real(self.two_int[0][x, shared_alpha_no_x, shared_alpha_no_x, y])
-                )
+                coulomb -= 2 * np.sum(np.real(self.two_int[0][x, shared_alpha_no_x, y, shared_alpha_no_x]))
+                exchange += 2 * np.sum(np.real(self.two_int[0][x, shared_alpha_no_x, shared_alpha_no_x, y]))
         elif spin_ind == 1 and x in shared_beta:
             one_electron -= 2 * np.real(self.one_int[1][x, y])
             if shared_alpha.size != 0:
                 coulomb -= 2 * np.sum(np.real(self.two_int[1][shared_alpha, x, shared_alpha, y]))
             if shared_beta_no_x.size != 0:
-                coulomb -= 2 * np.sum(
-                    np.real(self.two_int[2][x, shared_beta_no_x, y, shared_beta_no_x])
-                )
-                exchange += 2 * np.sum(
-                    np.real(self.two_int[2][x, shared_beta_no_x, shared_beta_no_x, y])
-                )
+                coulomb -= 2 * np.sum(np.real(self.two_int[2][x, shared_beta_no_x, y, shared_beta_no_x]))
+                exchange += 2 * np.sum(np.real(self.two_int[2][x, shared_beta_no_x, shared_beta_no_x, y]))
 
         if spin_ind == 0 and y in shared_alpha:
             one_electron += 2 * np.real(self.one_int[0][x, y])
             if shared_beta.size != 0:
                 coulomb += 2 * np.sum(np.real(self.two_int[1][x, shared_beta, y, shared_beta]))
             if shared_alpha_no_y.size != 0:
-                coulomb += 2 * np.sum(
-                    np.real(self.two_int[0][x, shared_alpha_no_y, y, shared_alpha_no_y])
-                )
-                exchange -= 2 * np.sum(
-                    np.real(self.two_int[0][x, shared_alpha_no_y, shared_alpha_no_y, y])
-                )
+                coulomb += 2 * np.sum(np.real(self.two_int[0][x, shared_alpha_no_y, y, shared_alpha_no_y]))
+                exchange -= 2 * np.sum(np.real(self.two_int[0][x, shared_alpha_no_y, shared_alpha_no_y, y]))
         elif spin_ind == 1 and y in shared_beta:
             one_electron += 2 * np.real(self.one_int[1][x, y])
             if shared_alpha.size != 0:
                 coulomb += 2 * np.sum(np.real(self.two_int[1][shared_alpha, x, shared_alpha, y]))
             if shared_beta_no_y.size != 0:
-                coulomb += 2 * np.sum(
-                    np.real(self.two_int[2][x, shared_beta_no_y, y, shared_beta_no_y])
-                )
-                exchange -= 2 * np.sum(
-                    np.real(self.two_int[2][x, shared_beta_no_y, shared_beta_no_y, y])
-                )
+                coulomb += 2 * np.sum(np.real(self.two_int[2][x, shared_beta_no_y, y, shared_beta_no_y]))
+                exchange -= 2 * np.sum(np.real(self.two_int[2][x, shared_beta_no_y, shared_beta_no_y, y]))
         return one_electron, coulomb, exchange
 
-    def _integrate_sd_sd_deriv_one(
-        self, diff_sd1, diff_sd2, spin_ind, x, y, shared_alpha, shared_beta
-    ):
+    def _integrate_sd_sd_deriv_one(self, diff_sd1, diff_sd2, spin_ind, x, y, shared_alpha, shared_beta):
         """Return derivative of integrals of given Slater determinant with its first excitation.
 
         Parameters
@@ -800,12 +804,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
                     coulomb -= np.sum(self.two_int[2][spatial_a, shared_beta, y, shared_beta])
                     exchange += np.sum(self.two_int[2][spatial_a, shared_beta, shared_beta, y])
         # spin of x, y, a, b = alpha and selected (spin orbital) != a, b
-        elif (
-            spin_ind == 0
-            and spin_a == spin_b == 0
-            and x in shared_alpha
-            and x not in [spatial_a, spatial_b]
-        ):
+        elif spin_ind == 0 and spin_a == spin_b == 0 and x in shared_alpha and x not in [spatial_a, spatial_b]:
             coulomb -= self.two_int[0][x, spatial_a, y, spatial_b]
             coulomb -= self.two_int[0][x, spatial_b, y, spatial_a]
             exchange += self.two_int[0][x, spatial_b, spatial_a, y]
@@ -819,12 +818,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             coulomb -= self.two_int[1][spatial_a, x, spatial_b, y]
             coulomb -= self.two_int[1][spatial_b, x, spatial_a, y]
         # spin of x, y, a, b = beta and selected (spin orbital) != a, b
-        elif (
-            spin_ind == 1
-            and spin_a == spin_b == 1
-            and x in shared_beta
-            and x not in [spatial_a, spatial_b]
-        ):
+        elif spin_ind == 1 and spin_a == spin_b == 1 and x in shared_beta and x not in [spatial_a, spatial_b]:
             coulomb -= self.two_int[2][x, spatial_a, y, spatial_b]
             coulomb -= self.two_int[2][x, spatial_b, y, spatial_a]
             exchange += self.two_int[2][x, spatial_b, spatial_a, y]
@@ -867,12 +861,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
                     coulomb += np.sum(self.two_int[2][spatial_a, shared_beta, x, shared_beta])
                     exchange -= np.sum(self.two_int[2][spatial_a, shared_beta, shared_beta, x])
         # spin of x, y, a, b = alpha and selected (spin orbital) != a, b
-        elif (
-            spin_ind == 0
-            and spin_a == spin_b == 0
-            and y in shared_alpha
-            and y not in [spatial_a, spatial_b]
-        ):
+        elif spin_ind == 0 and spin_a == spin_b == 0 and y in shared_alpha and y not in [spatial_a, spatial_b]:
             coulomb += self.two_int[0][x, spatial_a, y, spatial_b]
             coulomb += self.two_int[0][x, spatial_b, y, spatial_a]
             exchange -= self.two_int[0][x, spatial_a, spatial_b, y]
@@ -886,12 +875,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             coulomb += self.two_int[1][spatial_a, x, spatial_b, y]
             coulomb += self.two_int[1][spatial_b, x, spatial_a, y]
         # spin of x, y, a, b = beta and selected (spin orbital) != a, b
-        elif (
-            spin_ind == 1
-            and spin_a == spin_b == 1
-            and y in shared_beta
-            and y not in [spatial_a, spatial_b]
-        ):
+        elif spin_ind == 1 and spin_a == spin_b == 1 and y in shared_beta and y not in [spatial_a, spatial_b]:
             coulomb += self.two_int[2][x, spatial_a, y, spatial_b]
             coulomb += self.two_int[2][x, spatial_b, y, spatial_a]
             exchange -= self.two_int[2][x, spatial_a, spatial_b, y]
@@ -932,12 +916,8 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
 
         a, b = diff_sd1
         c, d = diff_sd2
-        (spatial_a, spatial_b, spatial_c, spatial_d) = map(
-            lambda i: slater.spatial_index(i, nspatial), [a, b, c, d]
-        )
-        spin_a, spin_b, spin_c, spin_d = map(
-            lambda i: int(not slater.is_alpha(i, nspatial)), [a, b, c, d]
-        )
+        (spatial_a, spatial_b, spatial_c, spatial_d) = map(lambda i: slater.spatial_index(i, nspatial), [a, b, c, d])
+        spin_a, spin_b, spin_c, spin_d = map(lambda i: int(not slater.is_alpha(i, nspatial)), [a, b, c, d])
 
         if x == spatial_a and spin_ind == spin_a:
             if spin_ind == spin_c == spin_b == spin_d == 0:
@@ -1501,9 +1481,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         )
 
         triu_indices = np.triu_indices(nspatial, k=1)
-        return np.array(
-            [one_electron_a[triu_indices], coulomb_a[triu_indices], exchange_a[triu_indices]]
-        )[:, :, None]
+        return np.array([one_electron_a[triu_indices], coulomb_a[triu_indices], exchange_a[triu_indices]])[:, :, None]
 
     def _integrate_sd_sds_deriv_zero_beta(self, occ_alpha, occ_beta, vir_beta):
         """Return the derivative wrt beta parameters of the integrals of the given SD with itself.
@@ -1622,9 +1600,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         )
 
         triu_indices = np.triu_indices(nspatial, k=1)
-        return np.array(
-            [one_electron_b[triu_indices], coulomb_b[triu_indices], exchange_b[triu_indices]]
-        )[:, :, None]
+        return np.array([one_electron_b[triu_indices], coulomb_b[triu_indices], exchange_b[triu_indices]])[:, :, None]
 
     def _integrate_sd_sds_deriv_one_aa(self, occ_alpha, occ_beta, vir_alpha):
         """Return (alpha) derivative of integrals an SD with its (alpha) single excitations.
@@ -2567,9 +2543,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             ]
         )
 
-    def _integrate_sd_sds_deriv_two_aaa(
-        self, occ_alpha, occ_beta, vir_alpha
-    ):  # pylint: disable=W0613
+    def _integrate_sd_sds_deriv_two_aaa(self, occ_alpha, occ_beta, vir_alpha):  # pylint: disable=W0613
         """Return (alpha) derivatives of integrals of an SD and its (alpha) double excitations.
 
         Paramters
@@ -3038,9 +3012,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         triu_rows, triu_cols = np.triu_indices(nspatial, k=1)
         return sign_ab[None, :] * coulomb_ba[triu_rows, triu_cols, :, :].reshape(triu_rows.size, -1)
 
-    def _integrate_sd_sds_deriv_two_bbb(
-        self, occ_alpha, occ_beta, vir_beta
-    ):  # pylint: disable=W0613
+    def _integrate_sd_sds_deriv_two_bbb(self, occ_alpha, occ_beta, vir_beta):  # pylint: disable=W0613
         """Return (beta) derivatives of integrals of an SD and its (beta) double excitations.
 
         Paramters
@@ -3362,11 +3334,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
                     " wavefunction and Hamiltonian parameters."
                 )
             if ham_deriv is not None:
-                if not (
-                    isinstance(ham_deriv, np.ndarray)
-                    and ham_deriv.ndim == 1
-                    and ham_deriv.dtype == int
-                ):
+                if not (isinstance(ham_deriv, np.ndarray) and ham_deriv.ndim == 1 and ham_deriv.dtype == int):
                     raise TypeError(
                         "Derivative indices for the Hamiltonian parameters must be given as a "
                         "one-dimensional numpy array of integers."
@@ -3412,18 +3380,12 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
 
         overlaps_zero = np.array([wfn.get_overlap(sd, deriv=wfn_deriv)]).reshape(*shape)
         if ham_deriv is not None:
-            integrals_zero_alpha = self._integrate_sd_sds_deriv_zero_alpha(
-                occ_alpha, occ_beta, vir_alpha
-            )
-            output[:, alpha_param_indices] += np.squeeze(
-                integrals_zero_alpha * overlaps_zero, axis=2
-            )[:, ham_deriv_alpha]
-            integrals_zero_beta = self._integrate_sd_sds_deriv_zero_beta(
-                occ_alpha, occ_beta, vir_beta
-            )
-            output[:, beta_param_indices] += np.squeeze(
-                integrals_zero_beta * overlaps_zero, axis=2
-            )[:, ham_deriv_beta]
+            integrals_zero_alpha = self._integrate_sd_sds_deriv_zero_alpha(occ_alpha, occ_beta, vir_alpha)
+            output[:, alpha_param_indices] += np.squeeze(integrals_zero_alpha * overlaps_zero, axis=2)[
+                :, ham_deriv_alpha
+            ]
+            integrals_zero_beta = self._integrate_sd_sds_deriv_zero_beta(occ_alpha, occ_beta, vir_beta)
+            output[:, beta_param_indices] += np.squeeze(integrals_zero_beta * overlaps_zero, axis=2)[:, ham_deriv_beta]
         else:
             integrals_zero = self._integrate_sd_sds_zero(occ_alpha, occ_beta)
             if wfn_deriv is not None:
@@ -3431,20 +3393,15 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             output += np.sum(integrals_zero * overlaps_zero, axis=1)
 
         overlaps_one_alpha = np.array(
-            [
-                wfn.get_overlap(sd_exc, deriv=wfn_deriv)
-                for sd_exc in slater.excite_bulk(sd, occ_alpha, vir_alpha, 1)
-            ]
+            [wfn.get_overlap(sd_exc, deriv=wfn_deriv) for sd_exc in slater.excite_bulk(sd, occ_alpha, vir_alpha, 1)]
         ).reshape(*shape)
         if ham_deriv is not None:
             output[:, alpha_param_indices] += np.sum(
-                self._integrate_sd_sds_deriv_one_aa(occ_alpha, occ_beta, vir_alpha)
-                * overlaps_one_alpha,
+                self._integrate_sd_sds_deriv_one_aa(occ_alpha, occ_beta, vir_alpha) * overlaps_one_alpha,
                 axis=2,
             )[:, ham_deriv_alpha]
             output[1, beta_param_indices] += np.sum(
-                self._integrate_sd_sds_deriv_one_ba(occ_alpha, occ_beta, vir_alpha)
-                * overlaps_one_alpha,
+                self._integrate_sd_sds_deriv_one_ba(occ_alpha, occ_beta, vir_alpha) * overlaps_one_alpha,
                 axis=1,
             )[ham_deriv_beta]
         else:
@@ -3462,13 +3419,11 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         ).reshape(*shape)
         if ham_deriv is not None:
             output[:, beta_param_indices] += np.sum(
-                self._integrate_sd_sds_deriv_one_bb(occ_alpha, occ_beta, vir_beta)
-                * overlaps_one_beta,
+                self._integrate_sd_sds_deriv_one_bb(occ_alpha, occ_beta, vir_beta) * overlaps_one_beta,
                 axis=2,
             )[:, ham_deriv_beta]
             output[1, alpha_param_indices] += np.sum(
-                self._integrate_sd_sds_deriv_one_ab(occ_alpha, occ_beta, vir_beta)
-                * overlaps_one_beta,
+                self._integrate_sd_sds_deriv_one_ab(occ_alpha, occ_beta, vir_beta) * overlaps_one_beta,
                 axis=1,
             )[ham_deriv_alpha]
         else:
@@ -3478,16 +3433,12 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
             output += np.sum(integrals_one_beta * overlaps_one_beta, axis=1)
 
         overlaps_two_aa = np.array(
-            [
-                wfn.get_overlap(sd_exc, deriv=wfn_deriv)
-                for sd_exc in slater.excite_bulk(sd, occ_alpha, vir_alpha, 2)
-            ]
+            [wfn.get_overlap(sd_exc, deriv=wfn_deriv) for sd_exc in slater.excite_bulk(sd, occ_alpha, vir_alpha, 2)]
         ).reshape(*shape)
         if occ_alpha.size > 1 and vir_alpha.size > 1:
             if ham_deriv is not None:
                 output[1:, alpha_param_indices] += np.sum(
-                    self._integrate_sd_sds_deriv_two_aaa(occ_alpha, occ_beta, vir_alpha)
-                    * overlaps_two_aa,
+                    self._integrate_sd_sds_deriv_two_aaa(occ_alpha, occ_beta, vir_alpha) * overlaps_two_aa,
                     axis=2,
                 )[:, ham_deriv_alpha]
             else:
@@ -3508,19 +3459,15 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         if occ_alpha.size > 0 and occ_beta.size > 0 and vir_alpha.size > 0 and vir_beta.size > 0:
             if ham_deriv is not None:
                 output[1, alpha_param_indices] += np.sum(
-                    self._integrate_sd_sds_deriv_two_aab(occ_alpha, occ_beta, vir_alpha, vir_beta)
-                    * overlaps_two_ab,
+                    self._integrate_sd_sds_deriv_two_aab(occ_alpha, occ_beta, vir_alpha, vir_beta) * overlaps_two_ab,
                     axis=1,
                 )[ham_deriv_alpha]
                 output[1, beta_param_indices] += np.sum(
-                    self._integrate_sd_sds_deriv_two_bab(occ_alpha, occ_beta, vir_alpha, vir_beta)
-                    * overlaps_two_ab,
+                    self._integrate_sd_sds_deriv_two_bab(occ_alpha, occ_beta, vir_alpha, vir_beta) * overlaps_two_ab,
                     axis=1,
                 )[ham_deriv_beta]
             else:
-                integrals_two_ab = self._integrate_sd_sds_two_ab(
-                    occ_alpha, occ_beta, vir_alpha, vir_beta
-                )
+                integrals_two_ab = self._integrate_sd_sds_two_ab(occ_alpha, occ_beta, vir_alpha, vir_beta)
                 if wfn_deriv is not None:
                     integrals_two_ab = np.expand_dims(integrals_two_ab, 1)
                 output[1] += np.sum(integrals_two_ab * overlaps_two_ab, axis=0)
@@ -3535,8 +3482,7 @@ class UnrestrictedMolecularHamiltonian(BaseUnrestrictedHamiltonian):
         if occ_beta.size > 1 and vir_beta.size > 1:
             if ham_deriv is not None:
                 output[1:, beta_param_indices] += np.sum(
-                    self._integrate_sd_sds_deriv_two_bbb(occ_alpha, occ_beta, vir_beta)
-                    * overlaps_two_bb,
+                    self._integrate_sd_sds_deriv_two_bbb(occ_alpha, occ_beta, vir_beta) * overlaps_two_bb,
                     axis=2,
                 )[:, ham_deriv_beta]
             else:
