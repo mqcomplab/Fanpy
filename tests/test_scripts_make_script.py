@@ -1,7 +1,7 @@
 """Test fanpy.script.make_script."""
 import subprocess
 
-from fanpy.scripts.gaussian.make_script import make_script
+from fanpy.scripts.make_script import make_script
 
 from utils import find_datafile
 
