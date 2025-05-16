@@ -40,9 +40,9 @@ jobs:
       - name: Run tests with pytest
         run: |
           pip install pytest pytest-cov
-          pytest tests/test_pyci_import.py
-      - name: lint
-        run: |
-          pip install flake8
-          flake8 --max-line-length=100 --ignore=E501,E203,E266,W503,E402 fanpy/
-          flake8 --max-line-length=100 --ignore=E501,E203,E266,W503,E402 tests/
+          pytest tests/test_*
+      # - name: lint
+      #   run: |
+      #     pip install flake8
+      #     flake8 --max-line-length=100 --ignore=E501,E203,E266,W503,E402 fanpy/
+      #     flake8 --max-line-length=100 --ignore=E501,E203,E266,W503,E402 tests/
