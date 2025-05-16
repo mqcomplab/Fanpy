@@ -17,8 +17,8 @@ from utils import find_datafile
 # FIXME: answer should be brute force or external (should not depend on the code)
 def answer_apsetg_h2_631gdp():
     """Find the APsetG/6-31G** wavefunction variationally for H2 system."""
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h2_hf_631gdp_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
     apsetg = BasicAPsetG(2, 20)
@@ -39,8 +39,8 @@ def test_apsetg_h2_631gdp_slow():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h2_hf_631gdp_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
     apsetg = BasicAPsetG(2, 20)
@@ -55,8 +55,8 @@ def test_apsetg_h2_631gdp_slow():
 # FIXME: answer should be brute force or external (should not depend on the code)
 def answer_apsetg_lih_sto6g():
     """Find the BasicAPsetG/STO-6G wavefunction variationally for LiH system."""
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.995317634356
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
     apsetg = BasicAPsetG(4, 12)
@@ -87,8 +87,8 @@ def test_apsetg_lih_sto6g_slow():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.995317634356
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
     apsetg = BasicAPsetG(4, 12)

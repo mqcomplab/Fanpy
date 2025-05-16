@@ -47,8 +47,8 @@ def test_fci_h2_631gdp():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_631gdp_twoint.npy"))
     nuc_nuc = 0.71317683129
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
 

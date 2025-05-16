@@ -9,8 +9,8 @@ from utils import find_datafile
 @pytest.mark.skip(reason="This test fails and is being worked on (PR 34).")
 def test_make_script(tmp_path):
     """Test fanpy.scripts.utils.make_script."""
-    oneint = find_datafile("data_h2_hf_sto6g_oneint.npy")
-    twoint = find_datafile("data_h2_hf_sto6g_twoint.npy")
+    oneint = find_datafile("data/h2_hf_sto6g_oneint.npy")
+    twoint = find_datafile("data/h2_hf_sto6g_twoint.npy")
     script_path = str(tmp_path / "script.py")
 
     wfn_list = [

@@ -24,8 +24,8 @@ def test_fci_lih_sto6g():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_sto6g_twoint.npy"))
     nuc_nuc = 0.995317634356
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
 
@@ -51,8 +51,8 @@ def test_fci_lih_631g_slow():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_631g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_631g_twoint.npy"))
     nuc_nuc = 0.995317634356
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
 

@@ -84,8 +84,8 @@ def test_assign_pmatch_generator():
 # FIXME: answer should be brute force or external (should not depend on the code)
 def answer_apsetg_h2_sto6g():
     """Find the APsetG/STO-6G wavefunction variationally for H2 system."""
-    one_int = np.load(find_datafile("data_h2_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
     apsetg = BasicAPsetG(2, 4)
@@ -113,8 +113,8 @@ def test_apsetg_h2_sto6g():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
     apsetg = BasicAPsetG(2, 4)

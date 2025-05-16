@@ -15,12 +15,12 @@ def test_integrate_sd_sd_h2_631gdp():
     Integrals that correspond to restricted orbitals were used.
 
     """
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h2_hf_631gdp_twoint.npy"))
     ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
 
-    ref_ci_matrix = np.load(find_datafile("data_h2_hf_631gdp_cimatrix.npy"))
-    ref_pspace = np.load(find_datafile("data_h2_hf_631gdp_civec.npy"))
+    ref_ci_matrix = np.load(find_datafile("../data/data_h2_hf_631gdp_cimatrix.npy"))
+    ref_pspace = np.load(find_datafile("../data/data_h2_hf_631gdp_civec.npy"))
 
     for i, sd1 in enumerate(ref_pspace):
         for j, sd2 in enumerate(ref_pspace):
@@ -30,8 +30,8 @@ def test_integrate_sd_sd_h2_631gdp():
 
 def test_integrate_sd_sd_decomposed_lih_631g_case():
     """Test UnrestrictedMolecularHamiltonian.integrate_sd_sd using sd's of LiH HF/6-31G orbitals."""
-    one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_631g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_631g_twoint.npy"))
     ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
 
     sd1 = 0b0000000001100000000111
@@ -60,12 +60,12 @@ def test_integrate_sd_sd_lih_631g_slow():
     Integrals that correspond to restricted orbitals were used.
 
     """
-    one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_631g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_631g_twoint.npy"))
     ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
 
-    ref_ci_matrix = np.load(find_datafile("data_lih_hf_631g_cimatrix.npy"))
-    ref_pspace = np.load(find_datafile("data_lih_hf_631g_civec.npy"))
+    ref_ci_matrix = np.load(find_datafile("../data/data_lih_hf_631g_cimatrix.npy"))
+    ref_pspace = np.load(find_datafile("../data/data_lih_hf_631g_civec.npy"))
 
     for i, sd1 in enumerate(ref_pspace):
         for j, sd2 in enumerate(ref_pspace):
@@ -78,8 +78,8 @@ def test_integrate_sd_sd_deriv_fdiff_h2_sto6g():
     Computed derivatives are compared against finite difference of the `integrate_sd_sd`.
 
     """
-    one_int = np.load(find_datafile("data_h2_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h2_hf_sto6g_twoint.npy"))
     test_ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
     epsilon = 1e-8
 
@@ -104,8 +104,8 @@ def test_integrate_sd_sd_deriv_fdiff_h4_sto6g_slow():
     Computed derivatives are compared against finite difference of the `integrate_sd_sd`.
 
     """
-    one_int = np.load(find_datafile("data_h4_square_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h4_square_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h4_square_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h4_square_hf_sto6g_twoint.npy"))
 
     test_ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
     epsilon = 1e-8

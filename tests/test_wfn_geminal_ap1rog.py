@@ -130,8 +130,8 @@ def answer_ap1rog_h2_sto6g():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = SeniorityZeroHamiltonian(one_int, two_int)
 
@@ -198,8 +198,8 @@ def test_ap1rog_h2_sto6g_ground():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = SeniorityZeroHamiltonian(one_int, two_int)
     ap1rog = AP1roG(2, 4)
@@ -225,8 +225,8 @@ def test_ap1rog_h2_sto6g_excited():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = SeniorityZeroHamiltonian(one_int, two_int)
     ap1rog = AP1roG(2, 4, ref_sd=0b1010)
@@ -245,8 +245,8 @@ def answer_ap1rog_h2_631gdp():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_631gdp_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = SeniorityZeroHamiltonian(one_int, two_int)
     ap1rog = AP1roG(2, 20)
@@ -272,8 +272,8 @@ def test_ap1rog_h2_631gdp():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_631gdp_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = SeniorityZeroHamiltonian(one_int, two_int)
     ap1rog = AP1roG(2, 20)
@@ -304,8 +304,8 @@ def answer_ap1rog_lih_sto6g():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_lih_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.995317634356
     ham = SeniorityZeroHamiltonian(one_int, two_int)
     ap1rog = AP1roG(4, 12)
@@ -331,8 +331,8 @@ def test_ap1rog_lih_sto6g():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_lih_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.995317634356
     ham = SeniorityZeroHamiltonian(one_int, two_int)
     ap1rog = AP1roG(4, 12)

@@ -14,12 +14,12 @@ def test_integrate_sd_sd_h2_631gdp():
     Compare CI matrix with the PySCF result.
 
     """
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h2_hf_631gdp_twoint.npy"))
     full_ham = RestrictedMolecularHamiltonian(one_int, two_int)
     test_ham = SeniorityZeroHamiltonian(one_int, two_int)
 
-    ref_pspace = np.load(find_datafile("data_h2_hf_631gdp_civec.npy"))
+    ref_pspace = np.load(find_datafile("../data/data_h2_hf_631gdp_civec.npy"))
 
     for i, sd1 in enumerate(ref_pspace):
         sd1 = int(sd1)
@@ -38,12 +38,12 @@ def test_integrate_sd_sd_lih_631g_full():
     Compared to all of the CI matrix.
 
     """
-    one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_631g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_631g_twoint.npy"))
     full_ham = RestrictedMolecularHamiltonian(one_int, two_int)
     test_ham = SeniorityZeroHamiltonian(one_int, two_int)
 
-    ref_pspace = np.load(find_datafile("data_lih_hf_631g_civec.npy"))
+    ref_pspace = np.load(find_datafile("../data/data_lih_hf_631g_civec.npy"))
 
     for i, sd1 in enumerate(ref_pspace):
         sd1 = int(sd1)

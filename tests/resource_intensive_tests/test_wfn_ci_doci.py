@@ -30,8 +30,8 @@ def test_doci_h4_hf_sto6g():
     #                     [0.000004942751, 0.707106849959, 0.707106712365, 0.000006630781],
     #                     [0.000004410256, 0.707106712383, -0.707106849949, -0.000006245943]])
 
-    one_int = np.load(find_datafile("data_h4_square_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h4_square_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h4_square_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h4_square_hf_sto6g_twoint.npy"))
     nuc_nuc = 2.70710678119
 
     # rotate orbitals
@@ -111,8 +111,8 @@ def test_doci_h2_hf_631gdp_slow():
     #                      0.000000474065, -0.119224270382, 0.611439523904, 0.000002445211,
     #                      -0.000002458517, 0.606180602568]])
 
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h2_hf_631gdp_twoint.npy"))
     nuc_nuc = 0.71317683129
 
     # rotate orbitals
