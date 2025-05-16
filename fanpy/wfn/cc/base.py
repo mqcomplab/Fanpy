@@ -547,7 +547,7 @@ class BaseCC(BaseWavefunction):
             for indices_sign in indices_multi.values():
                 indices, signs = indices_sign[:, :-1], indices_sign[:, -1]
                 signs = signs.astype(np.int8)
-                signs[signs > 1] = -1
+                signs[signs < 1] = -1
                 output += np.sum(np.prod(self.params[indices], axis=1) * signs)
             return output
 
@@ -555,7 +555,7 @@ class BaseCC(BaseWavefunction):
         for indices_sign in indices_multi.values():
             indices, signs = indices_sign[:, :-1], indices_sign[:, -1]
             signs = signs.astype(np.int8)
-            signs[signs > 1] = -1
+            signs[signs < 1] = -1
             for ind in set(indices.ravel()):
                 bool_indices = ind == indices
                 row_inds = np.sum(bool_indices, axis=1, dtype=bool)
@@ -875,6 +875,10 @@ class BaseCC(BaseWavefunction):
                         sign *= slater.sign_perm(jumbled_a_inds, a_inds)
                         # unjumble the creators
                         sign *= slater.sign_perm(jumbled_c_inds, c_inds)
+
+                        # convert negative integer to zero to keep using np.uint dtypes
+                        if sign == -1:
+                            sign = 0
 
                         inds = [self.get_ind(exop) for exop in combs] + [sign]
                         if len(inds) - 1 in inds_multi:

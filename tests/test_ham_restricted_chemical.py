@@ -1,4 +1,5 @@
 """Test fanpy.ham.restricted_chemical."""
+
 import itertools as it
 
 from fanpy.ham.base import BaseHamiltonian
@@ -24,30 +25,28 @@ def test_nspin():
     assert test.nspin == 4
 
 
-def test_integrate_sd_sd_trivial():
+def test_integrate_sd_sd_decomposed_trivial():
     """Test RestrictedMolecularHamiltonian.integrate_sd_sd for trivial cases."""
     one_int = np.random.rand(3, 3)
     two_int = np.random.rand(3, 3, 3, 3)
     test = RestrictedMolecularHamiltonian(one_int, two_int)
 
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b000111, 0b001001, components=True))
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b000111, 0b111000, components=True))
-    assert np.allclose(
-        (0, two_int[0, 1, 1, 0], 0), test.integrate_sd_sd(0b110001, 0b101010, components=True)
-    )
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b000111, 0b001001))
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b000111, 0b111000))
+    assert np.allclose((0, two_int[0, 1, 1, 0], 0), test.integrate_sd_sd_decomposed(0b110001, 0b101010))
     assert np.allclose(
         (
             0,
             -two_int[1, 1, 1, 0] - two_int[0, 1, 1, 1] + two_int[0, 0, 1, 0] + two_int[0, 1, 0, 0],
             0,
         ),
-        test.integrate_sd_sd(0b110001, 0b101010, deriv=np.array([0]), components=True).ravel(),
+        test.integrate_sd_sd_decomposed(0b110001, 0b101010, deriv=np.array([0])).ravel(),
     )
 
     with pytest.raises(TypeError):
-        test.integrate_sd_sd(0b110001, "1")
+        test.integrate_sd_sd_decomposed(0b110001, "1")
     with pytest.raises(TypeError):
-        test.integrate_sd_sd("1", 0b101010)
+        test.integrate_sd_sd_decomposed("1", 0b101010)
 
 
 def test_integrate_sd_sd_h2_631gdp():
@@ -69,7 +68,7 @@ def test_integrate_sd_sd_h2_631gdp():
             assert np.allclose((ham.integrate_sd_sd(sd1, sd2)), ref_ci_matrix[i, j])
 
 
-def test_integrate_sd_sd_lih_631g_case():
+def test_integrate_sd_sd_decomposed_lih_631g_case():
     """Test RestrictedMolecularHamiltonian.integrate_sd_sd using sd's of LiH HF/6-31G orbitals."""
     one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
     two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
@@ -79,7 +78,7 @@ def test_integrate_sd_sd_lih_631g_case():
     sd2 = 0b0000000001100100001001
     assert np.allclose(
         (0, two_int[1, 2, 3, 8], -two_int[1, 2, 8, 3]),
-        ham.integrate_sd_sd(sd1, sd2, components=True),
+        ham.integrate_sd_sd_decomposed(sd1, sd2),
     )
 
 
@@ -117,28 +116,20 @@ def test_integrate_sd_sd_particlenum():
     # \braket{12 | h_{11} + h_{22} + g_{1212} - g_{1221} | 12}
     assert np.allclose((ham.integrate_sd_sd(civec[1], civec[1])), 4)
 
-    assert np.allclose(ham.integrate_sd_sd(civec[0], civec[1], components=True), 0)
+    assert np.allclose(ham.integrate_sd_sd_decomposed(civec[0], civec[1]), 0)
 
 
 def test_integrate_sd_wfn():
     """Test RestrictedMolecularHamiltonian.integrate_sd_wfn."""
     one_int = np.arange(1, 5, dtype=float).reshape(2, 2)
     two_int = np.arange(5, 21, dtype=float).reshape(2, 2, 2, 2)
-    test_ham = disable_abstract(
-        RestrictedMolecularHamiltonian, {"integrate_sd_wfn": BaseHamiltonian.integrate_sd_wfn}
-    )(one_int, two_int)
+    test_ham = disable_abstract(RestrictedMolecularHamiltonian, {"integrate_sd_wfn": BaseHamiltonian.integrate_sd_wfn})(
+        one_int, two_int
+    )
     test_wfn = type(
         "Temporary wavefunction.",
         (object,),
-        {
-            "get_overlap": lambda sd, deriv=None: 1
-            if sd == 0b0101
-            else 2
-            if sd == 0b1010
-            else 3
-            if sd == 0b1100
-            else 0
-        },
+        {"get_overlap": lambda sd, deriv=None: 1 if sd == 0b0101 else 2 if sd == 0b1010 else 3 if sd == 0b1100 else 0},
     )
 
     one_energy, coulomb, exchange = test_ham.integrate_sd_wfn(0b0101, test_wfn, components=True)
@@ -184,12 +175,8 @@ def test_integrate_sd_sd_deriv():
         test_ham._integrate_sd_sd_deriv(0b0101, 0b0101, -1)
     with pytest.raises(ValueError):
         test_ham._integrate_sd_sd_deriv(0b0101, 0b0101, 2)
-    assert np.allclose(
-        test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0]), components=True), 0
-    )
-    assert np.allclose(
-        test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0]), components=False), 0
-    )
+    assert np.allclose(test_ham._integrate_sd_sd_deriv_decomposed(0b0101, 0b0001, np.array([0])), 0)
+    assert np.allclose(test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0])), 0)
 
     with pytest.raises(TypeError):
         test_ham._integrate_sd_sd_deriv(0b110001, "1", np.array([0]))
@@ -216,10 +203,10 @@ def test_integrate_sd_sd_deriv_fdiff_h2_sto6g():
                 test_ham2 = RestrictedMolecularHamiltonian(one_int, two_int, params=addition)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2))
+                    np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
@@ -250,10 +237,10 @@ def test_integrate_sd_sd_deriv_fdiff_h4_sto6g_slow():
                 test_ham2 = RestrictedMolecularHamiltonian(one_int, two_int, params=addition)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2))
+                    np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
@@ -287,21 +274,17 @@ def test_integrate_sd_sd_deriv_fdiff_random():
                 test_ham2 = RestrictedMolecularHamiltonian(one_int, two_int, params=addition)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2, components=True))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2, components=True))
+                    np.array(test_ham2.integrate_sd_sd_decomposed(sd1, sd2))
+                    - np.array(test_ham.integrate_sd_sd_decomposed(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(
-                    sd1, sd2, np.array([i]), components=True
-                ).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv_decomposed(sd1, sd2, np.array([i])).ravel()
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2, components=False))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2, components=False))
+                    np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(
-                    sd1, sd2, np.array([i]), components=False
-                ).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative)
                 assert np.allclose(finite_diff, derivative, atol=60 * epsilon)
 
 
@@ -334,10 +317,10 @@ def test_integrate_sd_sd_deriv_fdiff_random_small():
                 test_ham2 = RestrictedMolecularHamiltonian(one_int, two_int, params=addition)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2))
+                    np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
@@ -383,9 +366,7 @@ def test_integrate_sd_sds_one_alpha():
         test_ham._integrate_sd_sds_one_alpha(occ_alpha, occ_beta, vir_alpha),
         np.array(
             [
-                np.array(
-                    test_ham._integrate_sd_sd_one((i,), (j,), occ_alpha[occ_alpha != i], occ_beta)
-                )
+                np.array(test_ham._integrate_sd_sd_one((i,), (j,), occ_alpha[occ_alpha != i], occ_beta))
                 * slater.sign_excite(0b101101011001, [i], [j])
                 for i in occ_alpha.tolist()
                 for j in vir_alpha.tolist()
@@ -417,11 +398,7 @@ def test_integrate_sd_sds_one_beta():
         test_ham._integrate_sd_sds_one_beta(occ_alpha, occ_beta, vir_beta),
         np.array(
             [
-                np.array(
-                    test_ham._integrate_sd_sd_one(
-                        (i + 6,), (j + 6,), occ_alpha, occ_beta[occ_beta != i]
-                    )
-                )
+                np.array(test_ham._integrate_sd_sd_one((i + 6,), (j + 6,), occ_alpha, occ_beta[occ_beta != i]))
                 * slater.sign_excite(0b101101011001, [i + 6], [j + 6])
                 for i in occ_beta.tolist()
                 for j in vir_beta.tolist()
@@ -586,11 +563,7 @@ def test_integrate_sd_sds_deriv_one_a():
         np.array(
             [
                 [
-                    np.array(
-                        test_ham._integrate_sd_sd_deriv_one(
-                            [i], [j], x, y, occ_alpha[occ_alpha != i], occ_beta
-                        )
-                    )
+                    np.array(test_ham._integrate_sd_sd_deriv_one([i], [j], x, y, occ_alpha[occ_alpha != i], occ_beta))
                     * slater.sign_excite(0b101101011001, [i], [j])
                     for x in range(5)
                     for y in range(x + 1, 6)
@@ -611,11 +584,7 @@ def test_integrate_sd_sds_deriv_one_a():
         np.array(
             [
                 [
-                    np.array(
-                        test_ham._integrate_sd_sd_deriv_one(
-                            [i], [j], x, y, occ_alpha[occ_alpha != i], occ_beta
-                        )
-                    )
+                    np.array(test_ham._integrate_sd_sd_deriv_one([i], [j], x, y, occ_alpha[occ_alpha != i], occ_beta))
                     * slater.sign_excite(0b000001000001, [i], [j])
                     for x in range(5)
                     for y in range(x + 1, 6)
@@ -654,9 +623,7 @@ def test_integrate_sd_sds_deriv_one_b():
             [
                 [
                     np.array(
-                        test_ham._integrate_sd_sd_deriv_one(
-                            [i + 6], [j + 6], x, y, occ_alpha, occ_beta[occ_beta != i]
-                        )
+                        test_ham._integrate_sd_sd_deriv_one([i + 6], [j + 6], x, y, occ_alpha, occ_beta[occ_beta != i])
                     )
                     * slater.sign_excite(0b101101011001, [i + 6], [j + 6])
                     for x in range(5)
@@ -679,9 +646,7 @@ def test_integrate_sd_sds_deriv_one_b():
             [
                 [
                     np.array(
-                        test_ham._integrate_sd_sd_deriv_one(
-                            [i + 6], [j + 6], x, y, occ_alpha[occ_alpha != i], occ_beta
-                        )
+                        test_ham._integrate_sd_sd_deriv_one([i + 6], [j + 6], x, y, occ_alpha[occ_alpha != i], occ_beta)
                     )
                     * slater.sign_excite(0b000001000001, [i + 6], [j + 6])
                     for x in range(5)
@@ -825,20 +790,12 @@ def test_integrate_sd_wfn_compare_basehamiltonian():
                 test_ham2.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, wfn_deriv=None),
             )
             assert np.allclose(
-                test_ham.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)
-                ),
-                test_ham2.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)
-                ),
+                test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)),
+                test_ham2.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)),
             )
             assert np.allclose(
-                test_ham.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham.nparams)
-                ),
-                test_ham2.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham2.nparams)
-                ),
+                test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham.nparams)),
+                test_ham2.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham2.nparams)),
             )
             assert np.allclose(
                 test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, components=True),
@@ -888,17 +845,13 @@ def test_integrate_sd_wfn_deriv_fdiff():
     ham.assign_params(original + step1 + step2)
 
     temp_ham = RestrictedMolecularHamiltonian(one_int, two_int)
-    temp_ham.orb_rotate_matrix(
-        unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2))
-    )
+    temp_ham.orb_rotate_matrix(unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2)))
     assert np.allclose(ham.one_int, temp_ham.one_int)
     assert np.allclose(ham.two_int, temp_ham.two_int)
 
     def objective(params):
         temp_ham = RestrictedMolecularHamiltonian(one_int, two_int)
-        temp_ham.orb_rotate_matrix(
-            unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2))
-        )
+        temp_ham.orb_rotate_matrix(unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2)))
         temp_ham.set_ref_ints()
         temp_ham._prev_params = ham.params.copy()
         temp_ham.assign_params(params.copy())
@@ -923,9 +876,7 @@ def test_integrate_sd_wfn_deriv_fdiff():
 
     assert np.allclose(
         nd.Gradient(objective)(wfn.wfns[0].params),
-        ham.integrate_sd_wfn(
-            0b001011, wfn, wfn_deriv=(wfn.wfns[0], np.arange(wfn.wfns[0].nparams))
-        ),
+        ham.integrate_sd_wfn(0b001011, wfn, wfn_deriv=(wfn.wfns[0], np.arange(wfn.wfns[0].nparams))),
     )
 
 

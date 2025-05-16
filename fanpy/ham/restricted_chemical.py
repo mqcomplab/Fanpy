@@ -88,7 +88,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
     # FIXME: remove sign?
     # FIXME: too many branches, too many statements
-    def integrate_sd_sd(self, sd1, sd2, deriv=None, components=False):  # pylint: disable=R0911
+    def integrate_sd_sd_decomposed(self, sd1, sd2, deriv=None):  # pylint: disable=R0911
         r"""Integrate the Hamiltonian with against two Slater determinants.
 
         .. math::
@@ -115,18 +115,11 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         deriv : np.ndarray
             Indices of the Hamiltonian parameters against which the integral is derivatized.
             Default is no derivatization.
-        components : {bool, False}
-            Option for separating the integrals into the one electron, coulomb, and exchange
-            components.
-            Default adds the three components together.
 
         Returns
         -------
-        integral : {float, np.ndarray(3,)}
-            Values of the integrals.
-            If `components` is False, then the value of the integral is returned.
-            If `components` is True, then the value of the one electron, coulomb, and exchange
-            components are returned.
+        integral : {np.ndarray(3,)}
+            Array containing the values of the one electron, coulomb, and exchange components.
 
         Raises
         ------
@@ -136,7 +129,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         """
         # pylint: disable=C0103,R0912,R0915
         if deriv is not None:
-            return self._integrate_sd_sd_deriv(sd1, sd2, deriv, components=components)
+            return self._integrate_sd_sd_deriv_decomposed(sd1, sd2, deriv)
 
         nspatial = self.nspatial
 
@@ -149,14 +142,10 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
         # if two Slater determinants do not have the same number of electrons
         if len(diff_sd1) != len(diff_sd2):
-            if components:
-                return 0.0, 0.0, 0.0
-            return 0.0
+            return 0.0, 0.0, 0.0
         diff_order = len(diff_sd1)
         if diff_order > 2:
-            if components:
-                return 0.0, 0.0, 0.0
-            return 0.0
+            return 0.0, 0.0, 0.0
 
         sign = slater.sign_excite(sd1, diff_sd1, reversed(diff_sd2))
 
@@ -173,9 +162,50 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         else:
             one_electron, coulomb, exchange = self._integrate_sd_sd_two(diff_sd1, diff_sd2)
 
-        if components:
-            return sign * np.array([one_electron, coulomb, exchange])
-        return sign * (one_electron + coulomb + exchange)
+        return sign * np.array([one_electron, coulomb, exchange])
+
+    def integrate_sd_sd(self, sd1, sd2, deriv=None):  # pylint: disable=R0911
+        r"""Integrate the Hamiltonian with against two Slater determinants.
+
+        .. math::
+
+            H_{\mathbf{m}\mathbf{n}} &=
+            \left< \mathbf{m} \middle| \hat{H} \middle| \mathbf{n} \right>\\
+            &= \sum_{ij}
+               h_{ij} \left< \mathbf{m} \middle| a^\dagger_i a_j \middle| \mathbf{n} \right>
+            + \sum_{i<j, k<l} g_{ijkl}
+            \left< \mathbf{m} \middle| a^\dagger_i a^\dagger_j a_l a_k \middle| \mathbf{n} \right>\\
+
+        In the first summation involving :math:`h_{ij}`, only the terms where :math:`\mathbf{m}` and
+        :math:`\mathbf{n}` are different by at most single excitation will contribute to the
+        integral. In the second summation involving :math:`g_{ijkl}`, only the terms where
+        :math:`\mathbf{m}` and :math:`\mathbf{n}` are different by at most double excitation will
+        contribute to the integral.
+
+        Parameters
+        ----------
+        sd1 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        sd2 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        deriv : np.ndarray
+            Indices of the Hamiltonian parameters against which the integral is derivatized.
+            Default is no derivatization.
+
+        Returns
+        -------
+        integral : {np.ndarray(3,)}
+            Array containing the values of the one electron, coulomb, and exchange components.
+
+        Raises
+        ------
+        TypeError
+            If Slater determinant is not an integer.
+
+        """
+        decomposed_integral = self.integrate_sd_sd_decomposed(sd1, sd2, deriv=deriv)
+
+        return np.sum(decomposed_integral, axis=0)
 
     def param_ind_to_rowcol_ind(self, param_ind):
         r"""Return the row and column indices of the antihermitian matrix from the parameter index.
@@ -231,10 +261,10 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
         return int(x), int(y)
 
-    # TODO: Much of the following function can be shortened by using impure functions (function with
-    # a side effect) instead
+    # TODO: Much of the following function can be shortened by using impure functions
+    # (function with a side effect) instead
     # FIXME: too many branches, too many statements
-    def _integrate_sd_sd_deriv(self, sd1, sd2, deriv, components=False):
+    def _integrate_sd_sd_deriv_decomposed(self, sd1, sd2, deriv):
         r"""Return derivative of the CI matrix element with respect to the antihermitian elements.
 
         Parameters
@@ -245,18 +275,12 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             Slater Determinant against which the Hamiltonian is integrated.
         deriv : np.ndarray
             Indices of the Hamiltonian parameter against which the integral is derivatized.
-        components : {bool, False}
-            Option for separating the integrals into the one electron, coulomb, and exchange
-            components.
-            Default adds the three components together.
 
         Returns
         -------
-        d_integral : {np.ndarray(3, len(deriv)), np.ndarray(len(deriv))}
-            Derivatives of the integral with respect to the given parameters.
-            If `components` is False, then the derivative of the integral is returned.
-            If `components` is True, then the derivative of the one electron, coulomb, and exchange
-            components are returned.
+        d_integral : np.ndarray(3, len(deriv))
+            Derivatives of the one electron, coulomb, and exchange integrals with respect
+            to the given parameters.
 
         Raises
         ------
@@ -287,14 +311,10 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
 
         # if two Slater determinants do not have the same number of electrons
         if len(diff_sd1) != len(diff_sd2):
-            if components:
-                return np.zeros((3, len(deriv)))
-            return np.zeros(len(deriv))
+            return np.zeros((3, len(deriv)))
         diff_order = len(diff_sd1)
         if diff_order > 2:
-            if components:
-                return np.zeros((3, len(deriv)))
-            return np.zeros(len(deriv))
+            return np.zeros((3, len(deriv)))
 
         # get sign
         sign = slater.sign_excite(sd1, diff_sd1, reversed(diff_sd2))
@@ -324,9 +344,44 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             else:
                 output[i] = self._integrate_sd_sd_deriv_two(diff_sd1, diff_sd2, x, y)
 
-        if components:
-            return sign * output.T
-        return sign * np.sum(output, axis=1)
+        return sign * output.T
+
+    def _integrate_sd_sd_deriv(self, sd1, sd2, deriv):
+        r"""Return derivative of the CI matrix element with respect to the antihermitian elements.
+
+        Parameters
+        ----------
+        sd1 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        sd2 : int
+            Slater Determinant against which the Hamiltonian is integrated.
+        deriv : np.ndarray
+            Indices of the Hamiltonian parameter against which the integral is derivatized.
+
+        Returns
+        -------
+        d_integral : np.ndarray(len(deriv))
+            Derivatives of the one electron, coulomb, and exchange integrals with respect
+            to the given parameters.
+
+        Raises
+        ------
+        TypeError
+            If Slater determinant is not an integer.
+        ValueError
+            If the given `deriv` is not an integer greater than or equal to 0 and less than the
+            number of parameters.
+
+        Notes
+        -----
+        Integrals are not assumed to be real. The performance benefit (at the moment) for assuming
+        real orbitals is not much.
+
+        """
+        # pylint: disable=C0103
+
+        derivatives = self._integrate_sd_sd_deriv_decomposed(sd1, sd2, deriv)
+        return np.sum(derivatives)
 
     def _integrate_sd_sd_zero(self, shared_alpha, shared_beta):
         """Return integrals of the given Slater determinant with itself.
@@ -559,7 +614,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
         spin_a, spin_b = map(lambda i: int(not slater.is_alpha(i, nspatial)), [a, b])
 
         if spin_a == 0 and spin_b == 0:
-            shared_alpha_no_ab = shared_alpha[~np.in1d(shared_alpha, [a, b])]
+            shared_alpha_no_ab = shared_alpha[~np.isin(shared_alpha, [a, b])]
             shared_beta_no_ab = shared_beta
         elif spin_a == 0 and spin_b == 1:
             shared_alpha_no_ab = shared_alpha[shared_alpha != a]
@@ -569,7 +624,7 @@ class RestrictedMolecularHamiltonian(GeneralizedMolecularHamiltonian):
             shared_beta_no_ab = shared_beta[shared_beta != a]
         else:
             shared_alpha_no_ab = shared_alpha
-            shared_beta_no_ab = shared_beta[~np.in1d(shared_beta, [a, b])]
+            shared_beta_no_ab = shared_beta[~np.isin(shared_beta, [a, b])]
 
         # selected (spin orbital) x = a
         if x == spatial_a and spin_a == spin_b:
