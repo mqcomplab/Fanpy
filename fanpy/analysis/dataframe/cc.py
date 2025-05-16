@@ -48,7 +48,7 @@ class DataFrameCC(DataFrameFanpy):
         """Import dataframe as a CSV file, including metadata as JSON file."""
 
         # Prepare metadata
-        self.metadata = {
+        self._metadata = {
             "wfn_nspatial": self.wfn_nspatial,
             "wfn_reference": self.wfn_reference,
             "index_view": self.index_view,
@@ -64,9 +64,9 @@ class DataFrameCC(DataFrameFanpy):
         DataFrameFanpy.read_csv(self, filename, **kwargs)
 
         # Import wavefunction information from metadata
-        self.wfn_nspatial = self.metadata["wfn_nspatial"]
-        self.wfn_reference = self.metadata["wfn_reference"]
-        self._index_view = self.metadata["index_view"]
+        self.wfn_nspatial = self._metadata["wfn_nspatial"]
+        self.wfn_reference = self._metadata["wfn_reference"]
+        self._index_view = self._metadata["index_view"]
 
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
         """Add column to dataframe containing excitation operators and CC parameters.
@@ -104,10 +104,19 @@ class DataFrameCC(DataFrameFanpy):
         # Add the new column while ensuring alignment
         self.dataframe[wfn_label] = param_series.reindex(self.index)
 
+        # Check if the Dataframe metadata is empty
+        if (self.wfn_nspatial is None) or (self.wfn_reference is None):
+            self.wfn_nspatial = wfn.nspatial
+            self.wfn_reference = wfn.refwfn
+            print(f"DataFrame metadata imported from {wfn_label}.")
+
     def set_sds_as_index(self):
         """Convert DataFrame index to the default format of binary numbers which represents SDs in Fanpy convention."""
 
         if self.index_view == "operators":
+            if (self.wfn_reference is None) or (self.wfn_nspatial is None):
+                raise ValueError("Wavefunction information is not available. Index format cannot be changed.")
+
             operators = self.index
 
             # Prepare the list to store formatted excitation operators
@@ -116,13 +125,24 @@ class DataFrameCC(DataFrameFanpy):
             for operator in operators:
                 excitation_wfn = list(format(self.wfn_reference, f"0{2*self.wfn_nspatial}b")[::-1])
                 excitation_op = list(map(int, operator.split()))
+                creation_op = excitation_op[: len(excitation_op) // 2]
+                annihilation_op = excitation_op[len(excitation_op) // 2 :]
 
-                for index in excitation_op:
-                    # Change to '1' if occupied, '0' if unoccupied
+                for index in creation_op:
                     if excitation_wfn[index] == "1":
-                        excitation_wfn[index] = "0"  # Annihilation (occupied orbital)
-                    elif excitation_wfn[index] == "0":
-                        excitation_wfn[index] = "1"  # Creation (unoccupied orbital)
+                        excitation_wfn[index] = "0"
+                    else:
+                        raise ValueError(
+                            "Invalid excitation operator. Creation operator cannot be applied to an occupied orbital."
+                        )
+
+                for index in annihilation_op:
+                    if excitation_wfn[index] == "0":
+                        excitation_wfn[index] = "1"
+                    else:
+                        raise ValueError(
+                            "Invalid excitation operator. Annihilation operator cannot be applied to an unoccupied orbital."
+                        )
 
                 # Add the formatted excitation operator and parameter to the list
                 excitation_wfn = int("".join(excitation_wfn[::-1]), 2)
@@ -148,6 +168,12 @@ class DataFrameCC(DataFrameFanpy):
             # Update index_view flag
             self._index_view = "determinants"
 
+        elif self.index_view == "determinants":
+            pass
+
+        else:
+            raise ValueError("Invalid index format. Index format cannot be changed.")
+
     def set_formatted_sds_as_index(self):
         """Convert DataFrame index to the human-readable notation of excited Slater Determinants of occupied (1) and unoccupied (0) MOs."""
 
@@ -157,6 +183,9 @@ class DataFrameCC(DataFrameFanpy):
             self.set_sds_as_index()
 
         if self.index_view == "determinants":
+            if self.wfn_nspatial is None:
+                raise ValueError("Wavefunction information is not available. Index format cannot be changed.")
+
             sds_index = self.index
 
             formatted_sds = [
@@ -175,21 +204,45 @@ class DataFrameCC(DataFrameFanpy):
             # Update index_view flag
             self._index_view = "formatted determinants"
 
+        elif self.index_view == "formatted determinants":
+            pass
+
+        else:
+            raise ValueError("Invalid index format. Index format cannot be changed.")
+
     def set_operators_as_index(self):
         """Convert DataFrame index to coupled cluster operator indices."""
-
-        from fanpy.tools import slater
 
         if self.index_view == "formatted determinants":
             self.set_sds_as_index()
 
         if self.index_view == "determinants":
-            sds_index = self.index
+            if self.wfn_reference is None:
+                raise ValueError("Wavefunction information is not available. Index format cannot be changed.")
 
-            operators = [" ".join(map(str, slater.occ_indices(self.wfn_reference ^ sd))) for sd in sds_index]
+            sds = self.index
+
+            operators = []
+            for sd in sds:
+                # Create lists of bits, from least significant to most significant
+                ref_occs = [(self.wfn_reference >> i) & 1 for i in range(self.wfn_nspatial * 2)]
+                sd_occs = [(sd >> i) & 1 for i in range(self.wfn_nspatial * 2)]
+
+                # Get the positions
+                creation = [i for i in range(self.wfn_nspatial * 2) if ref_occs[i] == 0 and sd_occs[i] == 1]
+                annihilation = [i for i in range(self.wfn_nspatial * 2) if ref_occs[i] == 1 and sd_occs[i] == 0]
+
+                operator = " ".join(map(str, [*annihilation, *creation]))
+                operators.append(operator)
 
             # Update index notation of the DataFrame
             self.dataframe.index = operators
 
             # Update index_view flag
             self._index_view = "operators"
+
+        elif self.index_view == "operators":
+            pass
+
+        else:
+            raise ValueError("Invalid index format. Index format cannot be changed.")

@@ -69,7 +69,7 @@ class DataFrameGeminal(DataFrameFanpy):
         """Import dataframe as a CSV file, including metadata as JSON file."""
 
         # Prepare metadata
-        self.metadata = {
+        self._metadata = {
             "wfn_nspatial": self.wfn_nspatial,
             "wfn_nspin": self.wfn_nspin,
             "wfn_ref_sd": self.wfn_ref_sd,
@@ -86,10 +86,20 @@ class DataFrameGeminal(DataFrameFanpy):
         DataFrameFanpy.read_csv(self, filename, **kwargs)
 
         # Import wavefunction information from metadata
-        self.wfn_nspatial = self.metadata["wfn_nspatial"]
-        self.wfn_nspin = self.metadata["wfn_nspin"]
-        self.wfn_ref_sd = self.metadata["wfn_ref_sd"]
-        self._index_view = self.metadata["index_view"]
+        self.wfn_nspatial = self._metadata["wfn_nspatial"]
+        self.wfn_nspin = self._metadata["wfn_nspin"]
+        self.wfn_ref_sd = self._metadata["wfn_ref_sd"]
+        self._index_view = self._metadata["index_view"]
+
+        self.dataframe = self.dataframe.reset_index()
+        if self._metadata["index_view"] == "geminals":
+            self.dataframe = self.dataframe.set_index(["geminal", "pair"])
+        elif self._metadata["index_view"] == "determinants":
+            self.dataframe = self.dataframe.set_index(["geminal", "determinants"])
+        elif self._metadata["index_view"] == "formatted determinants":
+            self.dataframe = self.dataframe.set_index(["geminal", "formatted determinants"])
+        else:
+            raise ValueError("Invalid index_view attribute in metadata JSON file.")
 
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
         """Add column to dataframe containing excitation operators and Geminal parameters.
@@ -107,7 +117,7 @@ class DataFrameGeminal(DataFrameFanpy):
         wfn_params = wfn.params
         wfn_ngem = wfn.ngem
 
-        if hasattr(wfn, "ref_sd") and (wfn.ref_sd == None):
+        if hasattr(wfn, "ref_sd") and (wfn.ref_sd is None):
             self.wfn_ref_sd = wfn.ref_sd
 
         # Convert operators from tuple to strings
@@ -144,19 +154,30 @@ class DataFrameGeminal(DataFrameFanpy):
         # Add the new column while ensuring alignment
         self.dataframe[wfn_label] = param_series.reindex(self.index)
 
+        # Check if the Dataframe metadata is empty
+        if (self.wfn_nspatial is None) or (self.wfn_nspin is None):
+            self.wfn_nspatial = wfn.nspatial
+            self.wfn_nspin = wfn.nspin
+
+            if (self.wfn_ref_sd is None) and (hasattr(wfn, "ref_sd") and (wfn.ref_sd is not None)):
+                self.wfn_ref_sd = wfn.ref_sd
+            print(f"DataFrame metadata imported from {wfn_label}.")
+
     def set_sds_as_index(self):
         """Convert DataFrame index to the default format of binary numbers which represents pairs in Fanpy convention."""
 
         if self.index_view == "geminals":
+            if (self.wfn_nspin is None) or (self.wfn_nspatial is None):
+                raise ValueError("Wavefunction information is not available. Index format cannot be changed.")
+
             wfn_geminals = self.index.get_level_values("geminal")
             wfn_orbital_pairs = self.index.get_level_values("pair")
 
             # Prepare the list to store Slater Determinants
-            geminals = []
             sds = []
 
             for geminal, orbital_pair in zip(wfn_geminals, wfn_orbital_pairs):
-                if self.wfn_ref_sd:
+                if self.wfn_ref_sd is not None:
                     wfn_pair = list(format(self.wfn_ref_sd, f"0{2*self.wfn_nspatial}b")[::-1])
 
                     for orbital in list(map(int, geminal.split())):
@@ -173,36 +194,39 @@ class DataFrameGeminal(DataFrameFanpy):
                 # Add Slater Determinant and parameter to the list
                 wfn_pair = int("".join(wfn_pair[::-1]), 2)
 
-                geminals.append(geminal)
                 sds.append(wfn_pair)
 
             # Update index notation of the DataFrame
-            self.dataframe.index = MultiIndex.from_arrays([geminals, sds], names=["geminal", "pair"])
+            self.dataframe.index = MultiIndex.from_arrays([wfn_geminals, sds], names=["geminal", "determinants"])
 
             # Update index_view flag
             self._index_view = "determinants"
 
         elif self.index_view == "formatted determinants":
             wfn_geminals = self.index.get_level_values("geminal")
-            wfn_formatted_sds_pairs = self.index.get_level_values("pair")
+            wfn_formatted_sds = self.index.get_level_values("formatted determinants")
 
             # Prepare the list to store Slater Determinants
-            geminals = []
             sds = []
 
-            for geminal, formatted_sd_pair in zip(wfn_geminals, wfn_formatted_sds_pairs):
+            for formatted_sd_pair in wfn_formatted_sds:
 
                 sd_alpha, sd_beta = formatted_sd_pair.split()
                 sd_pair = int(sd_beta[::-1] + sd_alpha[::-1], 2)
 
-                geminals.append(geminal)
                 sds.append(sd_pair)
 
             # Update index notation of the DataFrame
-            self.dataframe.index = MultiIndex.from_arrays([geminals, sds], names=["geminal", "pair"])
+            self.dataframe.index = MultiIndex.from_arrays([wfn_geminals, sds], names=["geminal", "determinants"])
 
             # Update index_view flag
             self._index_view = "determinants"
+
+        elif self.index_view == "determinants":
+            pass
+
+        else:
+            raise ValueError("Invalid index format. Index format cannot be changed.")
 
     def set_formatted_sds_as_index(self):
         """Convert DataFrame index to the human-readable notation of excited Slater Determinants of occupied (1) and unoccupied (0) MOs."""
@@ -213,14 +237,16 @@ class DataFrameGeminal(DataFrameFanpy):
             self.set_sds_as_index()
 
         if self.index_view == "determinants":
+            if self.wfn_nspatial is None:
+                raise ValueError("Wavefunction information is not available. Index format cannot be changed.")
+
             wfn_geminals = self.index.get_level_values("geminal")
-            wfn_sds_pairs = self.index.get_level_values("pair")
+            wfn_sds = self.index.get_level_values("determinants")
 
             # Prepare the list to store formatted Slater Determinants
-            geminals = []
             formatted_sds = []
 
-            for geminal, sd_pair in zip(wfn_geminals, wfn_sds_pairs):
+            for sd_pair in wfn_sds:
 
                 formatted_sd = " ".join(
                     [
@@ -229,14 +255,21 @@ class DataFrameGeminal(DataFrameFanpy):
                     ]
                 )
 
-                geminals.append(geminal)
                 formatted_sds.append(formatted_sd)
 
             # Update index notation of the DataFrame
-            self.dataframe.index = MultiIndex.from_arrays([geminals, formatted_sds], names=["geminal", "pair"])
+            self.dataframe.index = MultiIndex.from_arrays(
+                [wfn_geminals, formatted_sds], names=["geminal", "formatted determinants"]
+            )
 
             # Update index_view flag
             self._index_view = "formatted determinants"
+
+        elif self.index_view == "formatted determinants":
+            pass
+
+        else:
+            raise ValueError("Invalid index format. Index format cannot be changed.")
 
     def set_geminals_as_index(self):
         """Convert DataFrame index to geminals operator indices."""
@@ -248,15 +281,17 @@ class DataFrameGeminal(DataFrameFanpy):
 
         if self.index_view == "determinants":
             wfn_geminals = self.index.get_level_values("geminal")
-            wfn_sds_pairs = self.index.get_level_values("pair")
+            wfn_sds_pairs = self.index.get_level_values("determinants")
 
             # Prepare the list to store formatted Slater Determinants
-            geminals = []
             operators = []
 
             for geminal, sd_pair in zip(wfn_geminals, wfn_sds_pairs):
 
-                if self.wfn_ref_sd:
+                if self.wfn_ref_sd is not None:
+                    if self.wfn_nspatial is None:
+                        raise ValueError("Wavefunction information is not available. Index format cannot be changed.")
+
                     wfn_pair = list(format(self.wfn_ref_sd, f"0{2*self.wfn_nspatial}b")[::-1])
 
                     for orbital in list(map(int, geminal.split())):
@@ -269,11 +304,16 @@ class DataFrameGeminal(DataFrameFanpy):
                 else:
                     operator = " ".join(map(str, slater.occ_indices(sd_pair)))
 
-                geminals.append(geminal)
                 operators.append(operator)
 
             # Update index notation of the DataFrame
-            self.dataframe.index = MultiIndex.from_arrays([geminals, operators], names=["geminal", "pair"])
+            self.dataframe.index = MultiIndex.from_arrays([wfn_geminals, operators], names=["geminal", "pair"])
 
             # Update index_view flag
             self._index_view = "geminals"
+
+        elif self.index_view == "geminals":
+            pass
+
+        else:
+            raise ValueError("Invalid index format. Index format cannot be changed.")

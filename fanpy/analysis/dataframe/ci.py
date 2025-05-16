@@ -41,7 +41,7 @@ class DataFrameCI(DataFrameFanpy):
         """Import dataframe as a CSV file, including metadata as JSON file."""
 
         # Prepare metadata
-        self.metadata = {
+        self._metadata = {
             "wfn_nspatial": self.wfn_nspatial,
             "index_view": self.index_view,
         }
@@ -56,8 +56,8 @@ class DataFrameCI(DataFrameFanpy):
         DataFrameFanpy.read_csv(self, filename, **kwargs)
 
         # Import wavefunction information from metadata
-        self.wfn_nspatial = self.metadata["wfn_nspatial"]
-        self._index_view = self.metadata["index_view"]
+        self.wfn_nspatial = self._metadata["wfn_nspatial"]
+        self._index_view = self._metadata["index_view"]
 
     def add_wfn_to_dataframe(self, wfn, wfn_label=None):
         """Add column to dataframe containing Slater determinants and CI parameters.
@@ -90,12 +90,20 @@ class DataFrameCI(DataFrameFanpy):
         # Add the new column while ensuring alignment
         self.dataframe[wfn_label] = param_series.reindex(self.index)
 
+        # Check if the Dataframe metadata is empty
+        if self.wfn_nspatial is None:
+            self.wfn_nspatial = wfn.nspatial
+            print(f"DataFrame metadata imported from {wfn_label}.")
+
     def set_formatted_sds_as_index(self):
         """Convert DataFrame index to the human-readable format of occupied (1) and unoccupied (0) MOs."""
 
         from fanpy.tools import slater
 
         if self.index_view == "determinants":
+            if self.wfn_nspatial is None:
+                raise ValueError("Wavefunction information is not available. Index format cannot be changed.")
+
             sds_index = self.index
 
             formatted_sds = [
@@ -114,6 +122,12 @@ class DataFrameCI(DataFrameFanpy):
             # Update index_view flag
             self._index_view = "formatted determinants"
 
+        elif self.index_view == "formatted determinants":
+            pass
+
+        else:
+            raise ValueError("Invalid index format. Index format cannot be changed.")
+
     def set_sds_as_index(self):
         """Convert DataFrame index to the default format of binary numbers which represents SDs in Fanpy convention."""
 
@@ -130,3 +144,9 @@ class DataFrameCI(DataFrameFanpy):
 
             # Update index_view flag
             self._index_view = "determinants"
+
+        elif self.index_view == "determinants":
+            pass
+
+        else:
+            raise ValueError("Invalid index format. Index format cannot be changed.")
