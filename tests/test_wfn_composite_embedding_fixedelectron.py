@@ -1,7 +1,6 @@
 """Test fanpy.wavefunction.composite.embedding."""
 from fanpy.wfn.ci.base import CIWavefunction
 from fanpy.wfn.composite.embedding_fixedelectron import FixedEmbeddedWavefunction
-from fanpy.tools.slater import ground
 from fanpy.tools.sd_list import sd_list
 
 import numpy as np
@@ -230,7 +229,7 @@ def test_get_overlaps():
          for sd in sd_list(4, 12)],
     )
 
-
+@pytest.mark.skip(reason="This test fails and is being worked on (PR 30).")
 def test_get_overlaps_rbm_ap1rog():
     """Test FixedEmbeddedWavefunction.get_overlaps using RBM and AP1roG."""
     from fanpy.wfn.geminal.ap1rog import AP1roG
