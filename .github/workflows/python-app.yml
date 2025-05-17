@@ -30,7 +30,7 @@ jobs:
           python -m pip install numpy==1.24.4
           python -m pip install psutil
           python -m pip install .
-          python -m pip install tensorflow
+          python -m pip install tensorflow=2.14.0
           python -m pip install numdifftools
       - name : Install PyCI
         run: |
