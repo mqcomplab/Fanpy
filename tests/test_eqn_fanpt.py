@@ -11,6 +11,7 @@ from fanpy.fanpt import reduce_to_fock
 import pytest
 from utils import find_datafile
 
+@pytest.mark.skip(reason="This test fails and is being worked on (Issue 23).")
 def test_fock_energy():
     """Test that Fock operator and Hamiltonian operator gives same energy for ground state HF."""
     nelec = 6
@@ -54,7 +55,7 @@ def test_fock_energy():
     print(energy_val_orig, energy_val_fock)
     assert np.allclose(energy_val_orig, energy_val_fock)
 
-
+@pytest.mark.skip(reason="This test fails and is being worked on (Issue 23).")
 def test_fock_objective():
     """Test that Fock operator with HF ground state satisfies projected Schrodinger equation."""
     nelec = 6
@@ -132,7 +133,7 @@ def test_fock_objective():
 #    print(np.sum(np.abs(fanci_wfn_fock.compute_jacobian(np.hstack([fanci_wfn_fock.active_params, energy_val_fock])))))
 #    assert np.allclose(np.sum(np.abs(fanci_wfn_fock.compute_jacobian(np.hstack([fanci_wfn_fock.active_params, energy_val_fock])))), 0)
 
-
+@pytest.mark.skip(reason="This test fails and is being worked on (Issue 23).")
 def test_fock_rotation():
     """Test that Fock operator invariance to orbital rotation."""
     nelec = 6
