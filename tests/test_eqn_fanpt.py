@@ -14,9 +14,9 @@ import pytest
 def test_fock_energy():
     """Test that Fock operator and Hamiltonian operator gives same energy for ground state HF."""
     nelec = 6
-    one_int_file = '/blue/rmirandaquintana/kimt1/beh2/beh2_r3.0/sto-6g/hf/oneint.npy'
+    one_int_file = 'data/data_beh2_r3.0_hf_sto6g_oneint.npy'
     one_int = np.load(one_int_file)
-    two_int_file = '/blue/rmirandaquintana/kimt1/beh2/beh2_r3.0/sto-6g/hf/twoint.npy'
+    two_int_file = 'data/data_beh2_r3.0_hf_sto6g_twoint.npy'
     two_int = np.load(two_int_file)
     nspin = one_int.shape[0] * 2
 
@@ -58,9 +58,9 @@ def test_fock_energy():
 def test_fock_objective():
     """Test that Fock operator with HF ground state satisfies projected Schrodinger equation."""
     nelec = 6
-    one_int_file = '/blue/rmirandaquintana/kimt1/beh2/beh2_r3.0/sto-6g/hf/oneint.npy'
+    one_int_file = 'data/data_beh2_r3.0_hf_sto6g_oneint.npy'
     one_int = np.load(one_int_file)
-    two_int_file = '/blue/rmirandaquintana/kimt1/beh2/beh2_r3.0/sto-6g/hf/twoint.npy'
+    two_int_file = 'data/data_beh2_r3.0_hf_sto6g_twoint.npy'
     two_int = np.load(two_int_file)
     nspin = one_int.shape[0] * 2
 
@@ -136,9 +136,9 @@ def test_fock_objective():
 def test_fock_rotation():
     """Test that Fock operator invariance to orbital rotation."""
     nelec = 6
-    one_int_file = '/blue/rmirandaquintana/kimt1/beh2/beh2_r3.0/sto-6g/hf/oneint.npy'
+    one_int_file = 'data/data_beh2_r3.0_hf_sto6g_oneint.npy'
     one_int = np.load(one_int_file)
-    two_int_file = '/blue/rmirandaquintana/kimt1/beh2/beh2_r3.0/sto-6g/hf/twoint.npy'
+    two_int_file = 'data/data_beh2_r3.0_hf_sto6g_twoint.npy'
     two_int = np.load(two_int_file)
     nspin = one_int.shape[0] * 2
 
