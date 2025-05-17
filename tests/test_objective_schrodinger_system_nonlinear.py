@@ -59,7 +59,7 @@ def test_system_assign_pspace():
     """Test ProjectedSchrodinger.assign_pspace."""
     test = skip_init(ProjectedSchrodinger)
     test.wfn = CIWavefunction(2, 4)
-
+    test.pspace_exc_orders=None
     test.assign_pspace()
     for sd, sol_sd in zip(test.pspace, [0b0101, 0b0110, 0b1100, 0b0011, 0b1001, 0b1010]):
         assert sd == sol_sd
@@ -104,6 +104,7 @@ def test_system_assign_eqn_weights():
     """Test ProjectedSchrodinger.assign_eqn_weights."""
     test = skip_init(ProjectedSchrodinger)
     test.wfn = CIWavefunction(2, 4)
+    test.pspace_exc_orders=None
     test.assign_pspace()
     test.assign_refwfn()
     test.indices_component_params = ComponentParameterIndices()

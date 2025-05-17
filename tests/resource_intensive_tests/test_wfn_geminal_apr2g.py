@@ -21,8 +21,8 @@ def answer_apr2g_h2_631gdp():
     Uses APIG answer from test_apr2g_apig.answer_apig_h2_631gdp, converting it to APr2G.
 
     """
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h2_hf_631gdp_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = SeniorityZeroHamiltonian(one_int, two_int)
 
@@ -87,8 +87,8 @@ def test_apr2g_apr2g_h2_631gdp_slow():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_h2_hf_631gdp_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_h2_hf_631gdp_twoint.npy"))
     # nuc_nuc = 0.71317683129
     ham = SeniorityZeroHamiltonian(one_int, two_int)
     apr2g = APr2G(2, 20)
@@ -120,8 +120,8 @@ def answer_apr2g_lih_sto6g():
     Uses APIG answer from test_apr2g_apig.answer_apig_lih_sto6g, converting it to APr2G.
 
     """
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.995317634356
     ham = SeniorityZeroHamiltonian(one_int, two_int)
 
@@ -195,8 +195,8 @@ def test_apr2g_apr2g_lih_sto6g_slow():
     # one_int = hf_dict["one_int"]
     # two_int = hf_dict["two_int"]
     # nuc_nuc = hf_dict["nuc_nuc_energy"]
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("../data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("../data/data_lih_hf_sto6g_twoint.npy"))
     # nuc_nuc = 0.995317634356
     ham = SeniorityZeroHamiltonian(one_int, two_int)
     apr2g = APr2G(4, 12)

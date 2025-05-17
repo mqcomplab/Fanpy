@@ -150,7 +150,7 @@ def test_horton_hartreefock_h2_rhf_sto6g():
         oneint_name="oneint.npy",
         twoint_name="twoint.npy",
         remove_npyfiles=True,
-        fn=find_datafile("data_h2.xyz"),
+        fn=find_datafile("data/data_h2.xyz"),
         basis="sto-6g",
         nelec=2,
     )
@@ -168,7 +168,7 @@ def test_horton_gaussian_fchk_h2_rhf_sto6g():
         oneint_name="oneint.npy",
         twoint_name="twoint.npy",
         remove_npyfiles=True,
-        fchk_file=find_datafile("data_h2_hf_sto6g.fchk"),
+        fchk_file=find_datafile("data/data_h2_hf_sto6g.fchk"),
         horton_internal=False,
     )
     check_data_h2_rhf_sto6g(*fchk_data)
@@ -185,7 +185,7 @@ def test_gaussian_fchk_h2_uhf_sto6g():
         oneint_name="oneint.npy",
         twoint_name="twoint.npy",
         remove_npyfiles=True,
-        fchk_file=find_datafile("data_h2_uhf_sto6g.fchk"),
+        fchk_file=find_datafile("data/data_h2_uhf_sto6g.fchk"),
         horton_internal=False,
     )
     check_data_h2_uhf_sto6g(*fchk_data)

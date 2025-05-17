@@ -160,8 +160,8 @@ def test_generate_possible_orbsubsets():
 # FIXME: check properly
 def test_run():
     """Check if calculation runs with APT."""
-    one_int = np.load(find_datafile("data_h4_square_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h4_square_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_h4_square_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h4_square_hf_sto6g_twoint.npy"))
     ham = RestrictedMolecularHamiltonian(one_int, two_int)
     wfn = AntisymmeterizedProductTetrets(4, 8, nquasiparticle=1)
 

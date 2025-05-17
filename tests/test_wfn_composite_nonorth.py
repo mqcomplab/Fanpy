@@ -686,8 +686,8 @@ def test_nonorth_energy_unitary_transform_hamiltonian():
         )
 
         ham = RestrictedMolecularHamiltonian(
-            np.load(find_datafile("data_h4_square_hf_sto6g_oneint.npy")),
-            np.load(find_datafile("data_h4_square_hf_sto6g_twoint.npy")),
+            np.load(find_datafile("data/data_h4_square_hf_sto6g_oneint.npy")),
+            np.load(find_datafile("data/data_h4_square_hf_sto6g_twoint.npy")),
         )
 
         # rotating hamiltonian using orb_rotate_matrix
