@@ -9,14 +9,14 @@ from scipy.special import comb
 import scipy.linalg
 from fanpy.fanpt import reduce_to_fock
 import pytest
-
+from tests.utils import find_datafile
 
 def test_fock_energy():
     """Test that Fock operator and Hamiltonian operator gives same energy for ground state HF."""
     nelec = 6
-    one_int_file = 'data/data_beh2_r3.0_hf_sto6g_oneint.npy'
+    one_int_file = find_datafile('data/data_beh2_r3.0_hf_sto6g_oneint.npy')
     one_int = np.load(one_int_file)
-    two_int_file = 'data/data_beh2_r3.0_hf_sto6g_twoint.npy'
+    two_int_file = find_datafile('data/data_beh2_r3.0_hf_sto6g_twoint.npy')
     two_int = np.load(two_int_file)
     nspin = one_int.shape[0] * 2
 
@@ -58,9 +58,9 @@ def test_fock_energy():
 def test_fock_objective():
     """Test that Fock operator with HF ground state satisfies projected Schrodinger equation."""
     nelec = 6
-    one_int_file = 'data/data_beh2_r3.0_hf_sto6g_oneint.npy'
+    one_int_file = find_datafile('data/data_beh2_r3.0_hf_sto6g_oneint.npy')
     one_int = np.load(one_int_file)
-    two_int_file = 'data/data_beh2_r3.0_hf_sto6g_twoint.npy'
+    two_int_file = find_datafile('data/data_beh2_r3.0_hf_sto6g_twoint.npy')
     two_int = np.load(two_int_file)
     nspin = one_int.shape[0] * 2
 
@@ -136,9 +136,9 @@ def test_fock_objective():
 def test_fock_rotation():
     """Test that Fock operator invariance to orbital rotation."""
     nelec = 6
-    one_int_file = 'data/data_beh2_r3.0_hf_sto6g_oneint.npy'
+    one_int_file = find_datafile('data/data_beh2_r3.0_hf_sto6g_oneint.npy')
     one_int = np.load(one_int_file)
-    two_int_file = 'data/data_beh2_r3.0_hf_sto6g_twoint.npy'
+    two_int_file = find_datafile('data/data_beh2_r3.0_hf_sto6g_twoint.npy')
     two_int = np.load(two_int_file)
     nspin = one_int.shape[0] * 2
 
