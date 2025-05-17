@@ -229,7 +229,7 @@ def test_get_overlaps():
          for sd in sd_list(4, 12)],
     )
 
-@pytest.mark.skip(reason="This test fails and is being worked on (PR 30).")
+@pytest.mark.skip(reason="This test fails and is being worked on (Issue 30).")
 def test_get_overlaps_rbm_ap1rog():
     """Test FixedEmbeddedWavefunction.get_overlaps using RBM and AP1roG."""
     from fanpy.wfn.geminal.ap1rog import AP1roG

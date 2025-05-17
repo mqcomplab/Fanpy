@@ -6,7 +6,7 @@ from fanpy.scripts.gaussian.make_script import make_script
 
 from utils import find_datafile
 
-@pytest.mark.skip(reason="This test fails and is being worked on (PR 34).")
+@pytest.mark.skip(reason="This test fails and is being worked on (Issue 34).")
 def test_make_script(tmp_path):
     """Test fanpy.scripts.utils.make_script."""
     oneint = find_datafile("data/h2_hf_sto6g_oneint.npy")

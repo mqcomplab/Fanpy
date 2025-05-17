@@ -30,7 +30,7 @@ def test_init():
     with pytest.raises(ValueError):
         wfn = ProductWavefunction([wfn1, wfn1])
 
-@pytest.mark.skip(reason="This test fails and is being worked on (PR 55).")
+@pytest.mark.skip(reason="This test fails and is being worked on (Issue 55).")
 def test_get_overlap():
     """Test ProductWavefunction.get_overlap."""
     wfn1 = CIWavefunction(4, 10)
@@ -82,7 +82,7 @@ def test_get_overlaps():
         np.array([[wfn1.get_overlap(wfn2.sds[0]), 0], [0, wfn1.get_overlap(wfn2.sds[1])]]),
     )
 
-@pytest.mark.skip(reason="This test fails and is being worked on (PR 30).")
+@pytest.mark.skip(reason="This test fails and is being worked on (Issue 30).")
 def test_get_overlaps_rbm_ap1rog():
     """Test ProductWavefunction.get_overlaps using RBM and AP1roG."""
     from fanpy.wfn.geminal.ap1rog import AP1roG
