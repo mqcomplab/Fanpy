@@ -2,7 +2,7 @@ name: Test Fanpy
 
 on:
   push:
-    branches: [enh-test-automation]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -24,6 +24,9 @@ jobs:
 
       - name: Install dependencies
         # dependencies listed in setup.py 
+        # NOTE on versions:
+        #   we have not properly tested for numpy 2.0 yet,
+        #   so we need to specify versions for those two
         run: |
           python -m pip install --upgrade pip
           python -m pip install Cython
