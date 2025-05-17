@@ -2,7 +2,7 @@ name: Test Fanpy
 
 on:
   push:
-    branches: [enh-test-automation]
+    branches: [main]
   pull_request:
     branches: [main]
 
