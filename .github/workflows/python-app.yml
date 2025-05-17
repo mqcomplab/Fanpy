@@ -43,7 +43,7 @@ jobs:
       - name: Run tests with pytest
         run: |
           pip install pytest pytest-cov
-          pytest tests/test_*
+          pytest --cov=fanpy tests/test_*
       # - name: lint
       #   run: |
       #     pip install flake8
