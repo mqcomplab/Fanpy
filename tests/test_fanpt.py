@@ -6,7 +6,7 @@ from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from scipy.special import comb
 import scipy.linalg
 import pytest
-from tests.utils import find_datafile
+from utils import find_datafile
 
 # Initialize Hamiltonian
 def reduce_to_fock(two_int):

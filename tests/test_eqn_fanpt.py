@@ -9,7 +9,7 @@ from scipy.special import comb
 import scipy.linalg
 from fanpy.fanpt import reduce_to_fock
 import pytest
-from tests.utils import find_datafile
+from utils import find_datafile
 
 def test_fock_energy():
     """Test that Fock operator and Hamiltonian operator gives same energy for ground state HF."""
