@@ -670,6 +670,37 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         return f, dfdx
 
+    def mask_function(self, f: Callable, x_ref: np.ndarray) -> Callable:
+        """
+        Generate masked function for optimization with frozen parameters.
+
+        Parameters
+        ----------
+        f : Callable
+            Initial function.
+        x_ref : np.ndarray
+            Full parameter vector including frozen terms.
+
+        Returns
+        -------
+        f : Callable
+            Masked function.
+
+        """
+        if self.nactive == self.nparam:
+            return f
+
+        def masked_f(x: np.ndarray) -> Any:
+            """
+            Masked function.
+
+            """
+            y = np.copy(x_ref)
+            y[self.mask] = x
+            return f(y)
+
+        return masked_f
+
     def optimize(
         self,
         x0: np.ndarray,
