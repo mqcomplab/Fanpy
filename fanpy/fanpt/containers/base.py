@@ -193,7 +193,9 @@ class FANPTContainer(metaclass=ABCMeta):
 
         # Update Hamilonian in the fanci_objective.
         self.fanci_objective = update_fanci_objective(self.ham, self.fanci_objective, self.norm_det)
-
+        #BUG: fix the energy param if efree FanPT
+        if not self.active_energy:
+            self.fanci_objective.freeze_parameter(-1)
         # Assign ref_sd.
         if self.inorm:
             if f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}" in self.fanci_objective.constraints:
