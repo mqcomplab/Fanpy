@@ -280,7 +280,8 @@ class FANPT:
         # Initialize FanCI objective with Hamiltonian of ideal system
         print(f"Solving FanPT problem using the ideal Hamiltonian")
         self._fanci_objective = update_fanci_objective(self.ham0, self.fanci_objective, self.norm_det)
-
+        if not self.energy_active:
+            self.fanci_objective.freeze_parameter(-1)
         # Get initial guess for parameters at initial lambda value.
         results = self.fanci_objective.optimize(guess_params, **solver_kwargs)
         guess_params[self.fanci_objective.mask] = results.x
