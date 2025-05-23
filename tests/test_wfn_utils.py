@@ -49,8 +49,8 @@ def test_convert_to_fanci():
     fanci = pytest.importorskip("fanci")
     pyci = pytest.importorskip("pyci")
 
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_lih_hf_sto6g_twoint.npy"))
 
     ham = RestrictedMolecularHamiltonian(one_int, two_int, update_prev_params=True)
     pyci_ham = pyci.hamiltonian(0, ham.one_int, ham.two_int)
@@ -115,8 +115,8 @@ def test_convert_to_fanci_ap1rog():
     fanci = pytest.importorskip("fanci")
     pyci = pytest.importorskip("pyci")
 
-    one_int = np.load(find_datafile("data_lih_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_sto6g_twoint.npy"))
+    one_int = np.load(find_datafile("data/data_lih_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_lih_hf_sto6g_twoint.npy"))
 
     ham = RestrictedMolecularHamiltonian(one_int, two_int, update_prev_params=True)
     pyci_ham = pyci.hamiltonian(0, ham.one_int, ham.two_int)
