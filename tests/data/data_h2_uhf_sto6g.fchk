@@ -1,0 +1,178 @@
+H2 hf/sto-6g
+SP        UHF                                                         STO-6G
+Number of atoms                            I                2
+Info1-9                                    I   N=           9
+          10           9           0           0           0         111
+           1           1           2
+Charge                                     I                0
+Multiplicity                               I                1
+Number of electrons                        I                2
+Number of alpha electrons                  I                1
+Number of beta electrons                   I                1
+Number of basis functions                  I                2
+Number of independent functions            I                2
+Number of point charges in /Mol/           I                0
+Number of translation vectors              I                0
+Atomic numbers                             I   N=           2
+           1           1
+Nuclear charges                            R   N=           2
+  1.00000000E+00  1.00000000E+00
+Current cartesian coordinates              R   N=           6
+  0.00000000E+00  0.00000000E+00  7.01088395E-01  8.58585659E-17  0.00000000E+00
+ -7.01088395E-01
+Force Field                                I                0
+Int Atom Types                             I   N=           2
+           0           0
+MM charges                                 R   N=           2
+  0.00000000E+00  0.00000000E+00
+Integer atomic weights                     I   N=           2
+           1           1
+Real atomic weights                        R   N=           2
+  1.00782504E+00  1.00782504E+00
+Atom fragment info                         I   N=           2
+           0           0
+Atom residue num                           I   N=           2
+           0           0
+Nuclear spins                              I   N=           2
+           1           1
+Nuclear ZEff                               R   N=           2
+ -1.00000000E+00 -1.00000000E+00
+Nuclear ZNuc                               R   N=           2
+  1.00000000E+00  1.00000000E+00
+Nuclear QMom                               R   N=           2
+  0.00000000E+00  0.00000000E+00
+Nuclear GFac                               R   N=           2
+  2.79284600E+00  2.79284600E+00
+MicOpt                                     I   N=           2
+          -1          -1
+Number of contracted shells                I                2
+Number of primitive shells                 I               12
+Pure/Cartesian d shells                    I                0
+Pure/Cartesian f shells                    I                0
+Highest angular momentum                   I                0
+Largest degree of contraction              I                6
+Shell types                                I   N=           2
+           0           0
+Number of primitives per shell             I   N=           2
+           6           6
+Shell to atom map                          I   N=           2
+           1           2
+Primitive exponents                        R   N=          12
+  3.55232212E+01  6.51314373E+00  1.82214290E+00  6.25955266E-01  2.43076747E-01
+  1.00112428E-01  3.55232212E+01  6.51314373E+00  1.82214290E+00  6.25955266E-01
+  2.43076747E-01  1.00112428E-01
+Contraction coefficients                   R   N=          12
+  9.16359628E-03  4.93614929E-02  1.68538305E-01  3.70562800E-01  4.16491530E-01
+  1.30334084E-01  9.16359628E-03  4.93614929E-02  1.68538305E-01  3.70562800E-01
+  4.16491530E-01  1.30334084E-01
+Coordinates of each shell                  R   N=           6
+  0.00000000E+00  0.00000000E+00  7.01088395E-01  8.58585659E-17  0.00000000E+00
+ -7.01088395E-01
+Constraint Structure                       R   N=           6
+  0.00000000E+00  0.00000000E+00  7.01088395E-01  8.58585659E-17  0.00000000E+00
+ -7.01088395E-01
+Num ILSW                                   I              100
+ILSW                                       I   N=         100
+           1           0           0           0           2           0
+           0           0           0           0           0          -1
+           0           0           0           0           0           0
+           0           0           0           0           0           0
+           1           0           0           0           0           0
+           0           0      100000           0          -1           0
+           0           0           0           0           0           0
+           0           0           0           1           0           0
+           0           0           1           0           0           0
+           0           0           4          41           0           0
+           0           0           0           0           0           0
+           0           0           0           2           0           0
+           0           0           0           0           0           0
+           0           0           0           0           0           0
+           0           0           0           0           0           0
+           0           0           0           0           0           0
+           0           0           0           0
+Num RLSW                                   I               41
+RLSW                                       R   N=          41
+  1.00000000E+00  1.00000000E+00  1.00000000E+00  1.00000000E+00  1.00000000E+00
+  0.00000000E+00  0.00000000E+00  1.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  1.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  1.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  1.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  1.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  1.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  1.00000000E+00  1.00000000E+00
+  0.00000000E+00
+MxBond                                     I                1
+NBond                                      I   N=           2
+           1           1
+IBond                                      I   N=           2
+           2           1
+RBond                                      R   N=           2
+  1.00000000E+00  1.00000000E+00
+Virial Ratio                               R      1.930869175792900E+00
+SCF Energy                                 R     -1.125257424940639E+00
+Total Energy                               R     -1.125257424940639E+00
+S**2                                       R     -1.776356839400251E-15
+External E-field                           R   N=          35
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+IOpCl                                      I                1
+IROHF                                      I                0
+Alpha Orbital Energies                     R   N=           2
+ -5.82058857E-01  6.65872217E-01
+Beta Orbital Energies                      R   N=           2
+ -5.82058857E-01  6.65872217E-01
+Alpha MO coefficients                      R   N=           4
+  5.49082150E-01  5.49082150E-01  1.20987580E+00 -1.20987580E+00
+Beta MO coefficients                       R   N=           4
+  5.49082150E-01  5.49082150E-01  1.20987580E+00 -1.20987580E+00
+Total SCF Density                          R   N=           3
+  6.02982415E-01  6.02982415E-01  6.02982415E-01
+Spin SCF Density                           R   N=           3
+  0.00000000E+00  0.00000000E+00  0.00000000E+00
+Mulliken Charges                           R   N=           2
+ -9.43689571E-16 -9.99200722E-16
+ONIOM Charges                              I   N=          16
+           0           0           0           0           0           0
+           0           0           0           0           0           0
+           0           0           0           0
+ONIOM Multiplicities                       I   N=          16
+           1           0           0           0           0           0
+           0           0           0           0           0           0
+           0           0           0           0
+Atom Layers                                I   N=           2
+           1           1
+Atom Modifiers                             I   N=           2
+           0           0
+Force Field                                I                0
+Int Atom Modified Types                    I   N=           2
+           0           0
+Link Atoms                                 I   N=           2
+           0           0
+Atom Modified MM Charges                   R   N=           2
+  0.00000000E+00  0.00000000E+00
+Link Distances                             R   N=           8
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00
+Cartesian Gradient                         R   N=           6
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00
+Dipole Moment                              R   N=           3
+ -8.62816615E-32  0.00000000E+00  1.33888992E-16
+Quadrupole Moment                          R   N=           6
+ -1.04079451E-01 -1.04079451E-01  2.08158902E-01  0.00000000E+00 -1.91190849E-17
+  0.00000000E+00
+Anisotropic Hyperfine tensors              R   N=          12
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00  0.00000000E+00
+  0.00000000E+00  0.00000000E+00
+Isotropic Hyperfine splittings             R   N=           2
+  0.00000000E+00  0.00000000E+00
+QEq coupling tensors                       R   N=          12
+  1.74325352E-01  0.00000000E+00  1.74325352E-01  4.82025036E-17  0.00000000E+00
+ -3.48650703E-01  1.74325352E-01  0.00000000E+00  1.74325352E-01  7.25351878E-18
+  0.00000000E+00 -3.48650703E-01
