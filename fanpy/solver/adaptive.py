@@ -54,7 +54,7 @@ def adaptive_solver(solver, objective, update_objective_parameters=True, **kwarg
     # Run the adaptive optimization loop until convergence criteria are met
     while not objective.is_adaptive_step_converged:
 
-        objective.update_current_pspace()
+        objective.update_current_pspace(residuals=results["residuals"], **kwargs)
         results = solver(objective, **kwargs)
 
         if objective.adaptive_step_print:

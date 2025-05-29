@@ -154,7 +154,6 @@ class AdaptiveProjectedSchrodinger(ProjectedSchrodinger):
         step_save=True,
         tmpfile="",
         initial_pspace=None,
-        final_pspace=None,
         refwfn=None,
         eqn_weights=None,
         energy_type="compute",
@@ -237,7 +236,6 @@ class AdaptiveProjectedSchrodinger(ProjectedSchrodinger):
 
         self.assign_initial_pspace(pspace=initial_pspace)
         self.pspace = self.initial_pspace
-        self.final_pspace = final_pspace
 
         self.is_adaptive_step_converged = False
         self.adaptive_step_print = adaptive_step_print
@@ -257,18 +255,6 @@ class AdaptiveProjectedSchrodinger(ProjectedSchrodinger):
             energy=energy,
             constraints=constraints,
         )
-
-    @property
-    def nproj(self):
-        """Return the size of the current projection space.
-
-        Returns
-        -------
-        nproj : int
-            Number of Slater determinants onto which the Schrodinger equation is projected.
-
-        """
-        return len(self.current_pspace)
 
     def assign_initial_pspace(self, pspace=None):
         """Assign the initial projection space.
@@ -573,7 +559,6 @@ class PruningAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
             adaptive_step_print=adaptive_step_print,
             step_save=step_save,
             tmpfile=tmpfile,
-            pspace=None,
             initial_pspace=initial_pspace,
             refwfn=refwfn,
             eqn_weights=eqn_weights,
@@ -623,8 +608,11 @@ class PruningAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
 
         updated_pspace_indices = np.transpose(np.argwhere(np.abs(residuals[:-1]) < residuals_threshold))[0]
 
-        print(f"Projection space updated: {len(updated_pspace_indices)} -> {len(self.pspace)}.")
+        print(f"Projection space updated: {len(self.pspace)} -> {len(updated_pspace_indices)}.")
         self.pspace = tuple(np.asarray(self.pspace)[updated_pspace_indices])
+
+        # Reassing equation weights
+        self.assign_eqn_weights()
 
     def check_adaptive_step_convergence(self, **kwargs):
         """Check if the adaptive convergence criteria are met.
@@ -644,5 +632,5 @@ class PruningAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
         if residuals is None:
             raise ValueError("Residuals must be provided to update the current projection space.")
 
-        if not np.any(residuals[:-1] < residuals_threshold):
+        if np.any(residuals[:-1] < residuals_threshold):
             self.is_adaptive_step_converged = True
