@@ -10,7 +10,7 @@ from fanpy.eqn.base import BaseSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
 from fanpy.tools.performance import current_memory
 
-from typing import Any, List, Tuple, Union, Sequence
+from typing import Any, Callable, List, Tuple, Union, Sequence
 
 import os
 import math
@@ -669,6 +669,37 @@ class ProjectedSchrodingerPyCI(FanCI):
             return y
 
         return f, dfdx
+
+    def mask_function(self, f: Callable, x_ref: np.ndarray) -> Callable:
+        """
+        Generate masked function for optimization with frozen parameters.
+
+        Parameters
+        ----------
+        f : Callable
+            Initial function.
+        x_ref : np.ndarray
+            Full parameter vector including frozen terms.
+
+        Returns
+        -------
+        f : Callable
+            Masked function.
+
+        """
+        if self.nactive == self.nparam:
+            return f
+
+        def masked_f(x: np.ndarray) -> Any:
+            """
+            Masked function.
+
+            """
+            y = np.copy(x_ref)
+            y[self.mask] = x
+            return f(y)
+
+        return masked_f
 
     def optimize(
         self,
