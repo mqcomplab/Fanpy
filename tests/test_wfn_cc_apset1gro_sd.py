@@ -46,7 +46,7 @@ def check_sign(occ_indices, exops):
         sd = slater.excite(sd, *exop)
     return sign
 
-@pytest.mark.skip(reason="This test fails and is being worked on (Issue 56).")
+
 def test_generate_possible_exops():
     """Test APset1GroSD.generate_possible_exops."""
     test = TempAPset1GroSD()
@@ -69,21 +69,21 @@ def test_generate_possible_exops():
     sign = check_sign([0, 1, 4], [[0, 2], [1, 3], [4, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0],
-        [test.get_ind((0, 2)), test.get_ind((1, 3)), test.get_ind((4, 6)), sign if sign == 1 else 255],
+        [test.get_ind((0, 2)), test.get_ind((1, 3)), test.get_ind((4, 6)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[0, 3], [1, 2], [4, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1],
-        [test.get_ind((0, 3)), test.get_ind((1, 2)), test.get_ind((4, 6)), sign if sign == 1 else 255],
+        [test.get_ind((0, 3)), test.get_ind((1, 2)), test.get_ind((4, 6)), sign if sign == 1 else 0],
     )
 
     sign = check_sign([0, 1, 4], [[1, 2], [0, 4, 3, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0],
-        [test.get_ind((1, 2)), test.get_ind((0, 4, 3, 6)), sign if sign == 1 else 255],
+        [test.get_ind((1, 2)), test.get_ind((0, 4, 3, 6)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[1, 3], [0, 4, 2, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1],
-        [test.get_ind((1, 3)), test.get_ind((0, 4, 2, 6)), sign if sign == 1 else 255],
+        [test.get_ind((1, 3)), test.get_ind((0, 4, 2, 6)), sign if sign == 1 else 0],
     )
