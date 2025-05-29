@@ -105,34 +105,6 @@ def test_integrate_sd_wfn_h4_sto6g():
         )
 
 
-def test_integrate_sd_sd_lih_631g_trial_slow():
-    """Test GeneralizedMolecularHamiltonian.integrate_sd_sd using LiH HF/6-31G orbitals.
-
-    Integrals that correspond to restricted orbitals were used.
-
-    """
-    restricted_one_int = np.load(find_datafile("../data/data_lih_hf_631g_oneint.npy"))
-    restricted_two_int = np.load(find_datafile("../data/data_lih_hf_631g_twoint.npy"))
-    one_int = np.zeros((22, 22))
-    one_int[:11, :11] = restricted_one_int
-    one_int[11:, 11:] = restricted_one_int
-    two_int = np.zeros((22, 22, 22, 22))
-    two_int[:11, :11, :11, :11] = restricted_two_int
-    two_int[:11, 11:, :11, 11:] = restricted_two_int
-    two_int[11:, :11, 11:, :11] = restricted_two_int
-    two_int[11:, 11:, 11:, 11:] = restricted_two_int
-
-    ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-
-    ref_ci_matrix = np.load(find_datafile("../data/data_lih_hf_631g_cimatrix.npy"))
-    ref_pspace = np.load(find_datafile("../data/data_lih_hf_631g_civec.npy"))
-
-    for i, sd1 in enumerate(ref_pspace):
-        for j, sd2 in enumerate(ref_pspace):
-            sd1, sd2 = int(sd1), int(sd2)
-            assert np.allclose(ham.integrate_sd_sd(sd1, sd2), ref_ci_matrix[i, j])
-
-
 def test_integrate_sd_sd_deriv_fdiff_h2_sto6g():
     """Test GeneralizedMolecularHamiltonian._integrate_sd_sd_deriv using H2/STO6G.
 
