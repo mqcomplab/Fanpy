@@ -10,7 +10,7 @@ from fanpy.eqn.base import BaseSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
 from fanpy.tools.performance import current_memory
 
-from typing import Any, List, Tuple, Union, Sequence
+from typing import Any, Callable, List, Tuple, Union, Sequence
 
 import os
 import math
