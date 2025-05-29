@@ -503,10 +503,10 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
 
         """
         for param in params:
-            self.mask[param] = False
+            self._mask[param] = False
 
         # Update nactive
-        self.nactive = self.mask.sum()
+        self._nactive = self._mask.sum()
 
     def unfreeze_parameter(self, *params: Sequence[int]) -> None:
         """
@@ -519,10 +519,10 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
 
         """
         for param in params:
-            self.mask[param] = True
+            self._mask[param] = True
 
         # Update nactive
-        self.nactive = self.mask.sum()
+        self._nactive = self._mask.sum()
 
     def compute_objective(self, x: np.ndarray) -> np.ndarray:
         """
