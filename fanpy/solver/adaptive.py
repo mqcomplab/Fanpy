@@ -39,9 +39,13 @@ def adaptive_solver(solver, objective, update_objective_parameters=True, **kwarg
         print("(Adaptive Optimization) Cost: {}".format(cost))
         if _objective.constraints:
             cost_constraints = np.sum(_results["residuals"][_objective.nproj :])
-            print("(Adaptive Optimization) Cost from constraints: {}\n".format(cost_constraints))
+            print("(Adaptive Optimization) Cost from constraints: {}".format(cost_constraints))
 
-    # Initial evaluation of the objective function usint the initial p-space
+    # Check adaptive objective kwargs
+    adaptive_kwargs = {}
+    adaptive_kwargs["residuals_thresholds"] = kwargs.pop("residuals_thresholds", [])
+
+    # Initial evaluation of the objective function using the initial p-space
     results = solver(objective, **kwargs)
 
     if objective.adaptive_step_print:
@@ -51,18 +55,27 @@ def adaptive_solver(solver, objective, update_objective_parameters=True, **kwarg
     if update_objective_parameters:
         objective.wfn.assign_params(results["params"])
 
-    # Run the adaptive optimization loop until convergence criteria are met
-    while not objective.is_adaptive_step_converged:
+    adaptive_kwargs["residuals"] = results["residuals"]
 
-        objective.update_current_pspace(residuals=results["residuals"], **kwargs)
+    # Reset Adaptive convergence and completion flags
+    objective._is_adaptive_procedure_done = False
+    objective._is_adaptive_procedure_converged = False
+
+    # Run the adaptive optimization loop until convergence criteria are met
+    while (not objective.is_adaptive_procedure_done) and (not objective.is_adaptive_procedure_converged):
+
+        objective.update_current_pspace(**adaptive_kwargs)
         results = solver(objective, **kwargs)
 
         if objective.adaptive_step_print:
             print_adaptive_step(objective, results)
+        adaptive_kwargs["residuals"] = results["residuals"]
 
+        objective.check_adaptive_step_convergence(**adaptive_kwargs)
+        objective.check_adaptive_procedure(**adaptive_kwargs)
+
+        # Update the objective parameters based on the previous results
         if update_objective_parameters:
             objective.wfn.assign_params(results["params"])
-
-        objective.check_adaptive_step_convergence(residuals=results["residuals"], **kwargs)
 
     return results

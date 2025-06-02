@@ -237,7 +237,8 @@ class AdaptiveProjectedSchrodinger(ProjectedSchrodinger):
         self.assign_initial_pspace(pspace=initial_pspace)
         self.pspace = self.initial_pspace
 
-        self.is_adaptive_step_converged = False
+        self._is_adaptive_procedure_done = False
+        self._is_adaptive_procedure_converged = False
         self.adaptive_step_print = adaptive_step_print
 
         super().__init__(
@@ -255,6 +256,30 @@ class AdaptiveProjectedSchrodinger(ProjectedSchrodinger):
             energy=energy,
             constraints=constraints,
         )
+
+    @property
+    def is_adaptive_procedure_done(self):
+        """Return flag to check adaptive procedure completion.
+
+        Returns
+        -------
+        _is_adaptive_procedure_done : boolean
+            If True, the conditions to adaptive procedure completion were achieved.
+
+        """
+        return self._is_adaptive_procedure_done
+
+    @property
+    def is_adaptive_procedure_converged(self):
+        """Return flag to check adaptive procedure is converged.
+
+        Returns
+        -------
+        _is_adaptive_procedure_done : boolean
+            If True, the conditions to adaptive procedure convergence criteria were achieved.
+
+        """
+        return self._is_adaptive_procedure_converged
 
     def assign_initial_pspace(self, pspace=None):
         """Assign the initial projection space.
@@ -601,14 +626,18 @@ class PruningAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
 
         """
         residuals = kwargs.get("residuals", None)
-        residuals_threshold = kwargs.get("residuals_threshold", 1e-8)
+        residuals_threshold = kwargs.get("residuals_thresholds", [1e-8])[0]
 
         if residuals is None:
             raise ValueError("Residuals must be provided to update the current projection space.")
 
         updated_pspace_indices = np.transpose(np.argwhere(np.abs(residuals[:-1]) < residuals_threshold))[0]
 
-        print(f"Projection space updated: {len(self.pspace)} -> {len(updated_pspace_indices)}.")
+        if self.adaptive_step_print:
+            print(
+                f"(Adaptive Optimization) Projection space updated: {len(self.pspace)} -> {len(updated_pspace_indices)}."
+            )
+
         self.pspace = tuple(np.asarray(self.pspace)[updated_pspace_indices])
 
         # Reassing equation weights
@@ -627,10 +656,38 @@ class PruningAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
 
         """
         residuals = kwargs.get("residuals", None)
-        residuals_threshold = kwargs.get("residuals_threshold", 1e-8)
+        residuals_thresholds = kwargs.get("residuals_thresholds", [1e-8])
 
         if residuals is None:
             raise ValueError("Residuals must be provided to update the current projection space.")
 
-        if np.any(residuals[:-1] < residuals_threshold):
-            self.is_adaptive_step_converged = True
+        if not residuals_thresholds:
+            raise ValueError("Residuals thresholds list must be provided to update the current projection space.")
+        else:
+            residuals_threshold = residuals_thresholds.pop(0)
+
+        if np.any(np.abs(residuals[:-1]) > residuals_threshold):
+            self._is_adaptive_procedure_converged = False
+        else:
+            self._is_adaptive_procedure_converged = True
+            if self.adaptive_step_print:
+                print(f"Adaptive convergence criteria met: residuals < {residuals_threshold}")
+
+    def check_adaptive_procedure(self, **kwargs):
+        """Check if the adaptive procedure completion criteria are met.
+
+        This method can be used to determine if the optimization has converged based on the
+        the projection space construction method.
+
+        Returns
+        -------
+        bool
+            True if the convergence criteria are met, False otherwise.
+
+        """
+        residuals_threshold = kwargs.get("residuals_thresholds", [])
+
+        if not residuals_threshold:
+            self._is_adaptive_procedure_done = True
+            if self.adaptive_step_print:
+                print(f"All residuals thresholds were applied. Adaptive procedure done.")
