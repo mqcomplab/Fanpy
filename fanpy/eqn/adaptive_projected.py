@@ -4,6 +4,7 @@ from fanpy.eqn.projected import ProjectedSchrodinger
 from fanpy.eqn.constraints.norm import NormConstraint
 from fanpy.eqn.utils import ParamContainer
 from fanpy.tools import sd_list, slater
+from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.wfn.ci.base import CIWavefunction
 
 import numpy as np
@@ -238,7 +239,6 @@ class AdaptiveProjectedSchrodinger(ProjectedSchrodinger):
         self.pspace = self.initial_pspace
 
         self._is_adaptive_procedure_done = False
-        self._is_adaptive_procedure_converged = False
         self.adaptive_step_print = adaptive_step_print
 
         super().__init__(
@@ -268,18 +268,6 @@ class AdaptiveProjectedSchrodinger(ProjectedSchrodinger):
 
         """
         return self._is_adaptive_procedure_done
-
-    @property
-    def is_adaptive_procedure_converged(self):
-        """Return flag to check adaptive procedure is converged.
-
-        Returns
-        -------
-        _is_adaptive_procedure_done : boolean
-            If True, the conditions to adaptive procedure convergence criteria were achieved.
-
-        """
-        return self._is_adaptive_procedure_converged
 
     def assign_initial_pspace(self, pspace=None):
         """Assign the initial projection space.
@@ -336,6 +324,47 @@ class AdaptiveProjectedSchrodinger(ProjectedSchrodinger):
 
         """
         raise NotImplementedError("General adaptive projection space update is not implemented yet.")
+
+    def rebuild_restricted_ham_sds(self, pspace):
+        """Rebuild the projection space by restoring missing Slater determinant pairs
+           in the context of a restricted orbital basis.
+
+        In a restricted orbital basis, alpha and beta spin-orbitals share the same spatial orbitals.
+        During adaptive procedures, it is possible to unintentionally remove one determinant
+        from a pair of spin-equivalent excitations (e.g., '0b00110101' and '0b01010011'),
+        leading to an incomplete representation of the excitation space.
+
+        This method iterates over the current projection space and adds any missing
+        spin-complementary determinants to ensure all relevant excitation pairs are included.
+
+        Parameters
+        ----------
+        pspace : {tuple/list of int}
+            States onto which the Schrodinger equation is projected.
+
+        Returns
+        -------
+        corrected_pspace : tuple of int
+            Corrected projection space, including any previously missing spin-partner determinants.
+
+        """
+
+        if isinstance(self.ham, RestrictedMolecularHamiltonian):
+            formatted_sds = [slater.split_spin(sd, self.wfn.nspatial) for sd in pspace]
+
+            # Use a set for faster lookup of existing spin pairs
+            existing_pairs = set(formatted_sds)
+            corrected_pspace = []
+
+            for sd_alpha, sd_beta in formatted_sds:
+                if sd_alpha != sd_beta and (sd_beta, sd_alpha) not in existing_pairs:
+                    new_sd = slater.combine_spin(sd_beta, sd_alpha, self.wfn.nspatial)
+                    corrected_pspace.append(new_sd)
+
+            # Append only new determinants
+            pspace = tuple(pspace) + tuple(corrected_pspace)
+
+        return pspace
 
     def check_adaptive_step_convergence(self, **kwargs):
         """Check if the adaptive convergence criteria are met.
@@ -631,20 +660,28 @@ class PruningAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
         if residuals is None:
             raise ValueError("Residuals must be provided to update the current projection space.")
 
-        updated_pspace_indices = np.transpose(np.argwhere(np.abs(residuals[:-1]) < residuals_threshold))[0]
+        abs_residuals = np.abs(residuals[:-1])
+        below_threshold_indices = np.where(abs_residuals < residuals_threshold)[0]
+        n_below_threshold = len(below_threshold_indices)
+
+        if n_below_threshold < self.active_nparams:
+            below_threshold_indices = np.argsort(abs_residuals)[: self.active_nparams]
+
+        updated_pspace = tuple(np.asarray(self.pspace)[below_threshold_indices])
+
+        # Check if equivalent SDs pairs in restricted orbital basis need to be fixed
+        updated_pspace = self.rebuild_restricted_ham_sds(updated_pspace)
 
         if self.adaptive_step_print:
-            print(
-                f"(Adaptive Optimization) Projection space updated: {len(self.pspace)} -> {len(updated_pspace_indices)}."
-            )
+            print(f"(Adaptive Optimization) Projection space updated: {len(self.pspace)} -> {len(updated_pspace)}.")
 
-        self.pspace = tuple(np.asarray(self.pspace)[updated_pspace_indices])
+        self.pspace = updated_pspace
 
         # Reassing equation weights
         self.assign_eqn_weights()
 
-    def check_adaptive_step_convergence(self, **kwargs):
-        """Check if the adaptive convergence criteria are met.
+    def check_adaptive_procedure(self, **kwargs):
+        """Check if the adaptive procedure completion criterias are met.
 
         This method can be used to determine if the optimization has converged based on the
         the projection space construction method.
@@ -652,7 +689,7 @@ class PruningAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
         Returns
         -------
         bool
-            True if the convergence criteria are met, False otherwise.
+            True if the convergence criteria are met or procedure is completed, False otherwise.
 
         """
         residuals = kwargs.get("residuals", None)
@@ -663,31 +700,28 @@ class PruningAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
 
         if not residuals_thresholds:
             raise ValueError("Residuals thresholds list must be provided to update the current projection space.")
-        else:
-            residuals_threshold = residuals_thresholds.pop(0)
 
-        if np.any(np.abs(residuals[:-1]) > residuals_threshold):
-            self._is_adaptive_procedure_converged = False
-        else:
-            self._is_adaptive_procedure_converged = True
+        # Check if the current residuals meet the convergence thresholds
+        while residuals_thresholds:
+            threshold = residuals_thresholds[0]
+            if np.any(np.abs(residuals[:-1]) > threshold):
+                break
+
+            # Threshold met: remove it and optionally print
+            residuals_thresholds.pop(0)
             if self.adaptive_step_print:
-                print(f"Adaptive convergence criteria met: residuals < {residuals_threshold}")
+                print(f"(Adaptive Optimization) Adaptive convergence criteria met: residuals < {threshold}")
 
-    def check_adaptive_procedure(self, **kwargs):
-        """Check if the adaptive procedure completion criteria are met.
-
-        This method can be used to determine if the optimization has converged based on the
-        the projection space construction method.
-
-        Returns
-        -------
-        bool
-            True if the convergence criteria are met, False otherwise.
-
-        """
-        residuals_threshold = kwargs.get("residuals_thresholds", [])
-
-        if not residuals_threshold:
+        # If all thresholds have been met, mark procedure as done
+        if not residuals_thresholds:
             self._is_adaptive_procedure_done = True
             if self.adaptive_step_print:
-                print(f"All residuals thresholds were applied. Adaptive procedure done.")
+                print("(Adaptive Optimization) All residuals thresholds were applied. Adaptive procedure done.")
+
+        # If the number of projections is the same as the number of parameters, mark procedure as done
+        if len(residuals) - 1 == self.active_nparams:
+            self._is_adaptive_procedure_done = True
+            if self.adaptive_step_print:
+                print(
+                    "(Adaptive Optimization) Projection space reached the active number of parameters. Adaptive procedure done."
+                )
