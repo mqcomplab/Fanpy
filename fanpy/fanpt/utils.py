@@ -1,7 +1,7 @@
 """ FANPT wrapper"""
 
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
-from fanpy.interface.fanci import ProjectedSchrodingerPyCI
+from fanpy.interface.fanci import ProjectedSchrodingerFanCI
 import numpy as np
 import pyci
 
@@ -27,7 +27,7 @@ def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
     fanpy_objective_class = fanci_objective.fanpy_objective.__class__
 
     # Determine if the legacy FanCI interface is used
-    legacy_fanci = isinstance(fanci_objective, ProjectedSchrodingerPyCI)
+    legacy_fanci = isinstance(fanci_objective, ProjectedSchrodingerFanCI)
 
     # Convert new_ham to RestrictedMolecularHamiltonian if necessary
     if isinstance(new_ham, pyci.hamiltonian):
