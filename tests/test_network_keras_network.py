@@ -14,7 +14,7 @@ from utils import skip_init
 
 keras.backend.set_floatx("float64")
 
-@pytest.mark.skip(reason="This test fails and is being worked on (Issue 36).")
+
 def test_keras_assign_model():
     """Test KerasNetwork.assign_model."""
     test = skip_init(KerasNetwork)
@@ -54,7 +54,7 @@ def test_keras_assign_model():
     with pytest.raises(TypeError):
         test.assign_model(1)
     with pytest.raises(TypeError):
-        test.assign_model(keras.engine.network.Network())
+        test.assign_model(keras.engine.functional.Functional())
     #  more than one set of inputs
     model_input = keras.layers.Input(shape=(10,))
     model = keras.models.Model(
