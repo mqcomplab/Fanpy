@@ -1191,7 +1191,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
         else:
             # Select parameters according to selected chunks
             y = np.zeros(
-                (f_chunk - s_chunk, self.nactive - self.mask[-1]),
+                (len(sds), self.nactive - self.mask[-1]),
                 dtype=pyci.c_double,
             )
 
