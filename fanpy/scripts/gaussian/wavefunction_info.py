@@ -1,12 +1,12 @@
 """Factory for importing and initializing wavefunction classes.
 
-This module provides a factory function `get_wfn_info` that takes a wavefunction type as input and returns the corresponding 
+This module provides a factory function `get_wfn_info` that takes a wavefunction type as input and returns the corresponding
 private function.
 
 Methods
 -------
 get_wfn_info(wfn_type)
-    Returns the private function for the given wavefunction type. All private functions return 
+    Returns the private function for the given wavefunction type. All private functions return
     the import line, wavefunction name, and wavefunction arguments for their wavefunction type.
 
 Private Functions
@@ -82,6 +82,7 @@ _get_custom_info(wfn_kwargs)
 
 from typing import Union
 
+
 def get_wfn_info(wfn_type: str) -> callable:
     """
     Returns the corresponding wavefunction information function based on the given wavefunction type.
@@ -96,7 +97,7 @@ def get_wfn_info(wfn_type: str) -> callable:
     function : function
         The wavefunction information function corresponding to the given wavefunction type.
 
-    Raises 
+    Raises
     ------
     ValueError
         If the given wavefunction type is invalid.
@@ -136,9 +137,9 @@ def get_wfn_info(wfn_type: str) -> callable:
         "ccsd": _get_ccsd_info,
         "ccsdt": _get_ccsdt_info,
         "ccsdtq": _get_ccsdtq_info,
-        "custom": _get_custom_info
+        "custom": _get_custom_info,
     }
-    
+
     if wfn_type in wfn_info_dict:
         return wfn_info_dict[wfn_type]
     else:
@@ -166,6 +167,7 @@ def _get_ci_pairs_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = ""
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_cisd_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about CISD.
@@ -188,6 +190,7 @@ def _get_cisd_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = ""
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_hci_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about HCI.
@@ -209,6 +212,7 @@ def _get_hci_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "alpha1=0.5, alpha2=0.25, hierarchy=2.5"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_fci_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about FCI.
@@ -217,7 +221,7 @@ def _get_fci_info(wfn_kwargs: Union[str, None]) -> tuple:
     ----------
     wfn_kwargs : str, None
         Additional keyword arguments for FCI.
-    
+
     Returns
     -------
     results : tuple
@@ -230,6 +234,7 @@ def _get_fci_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "spin=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_doci_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about DOCI.
@@ -238,7 +243,7 @@ def _get_doci_info(wfn_kwargs: Union[str, None]) -> tuple:
     ----------
     wfn_kwargs : str, None
         Additional keyword arguments for DOCI.
-    
+
     Returns
     -------
     results : tuple
@@ -250,6 +255,7 @@ def _get_doci_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = ""
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_mps_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -272,6 +278,7 @@ def _get_mps_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "dimension=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_det_ratio_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about the DeterminantRatio wavefunction.
@@ -292,6 +299,7 @@ def _get_det_ratio_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "numerator_mask=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_ap1rog_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -314,6 +322,7 @@ def _get_ap1rog_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ref_sd=None, ngem=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_apr2g_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about the APr2G wavefunction.
@@ -334,6 +343,7 @@ def _get_apr2g_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ngem=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_apig_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -356,13 +366,14 @@ def _get_apig_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ngem=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_apsetg_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about the APsetG wavefunction.
 
     Parameters
     ----------
-    wfn_kwargs : str, None    
+    wfn_kwargs : str, None
         Additional keyword arguments for the APsetG wavefunction.
 
     Returns
@@ -376,6 +387,7 @@ def _get_apsetg_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ngem=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_apg_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -398,6 +410,7 @@ def _get_apg_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ngem=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_network_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about the network wavefunction.
@@ -419,6 +432,7 @@ def _get_network_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "num_layers=2"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_rbm_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get the information about the restricted Boltzmann machine wavefunction.
@@ -434,11 +448,12 @@ def _get_rbm_info(wfn_kwargs: Union[str, None]) -> tuple:
         A tuple containing the import line, the name of the restricted Boltzmann machine class, and the additional keyword arguments.
     """
 
-    import_line = ("fanpy.wfn.network.rbm_standard", "RestrictedBoltzmannMachine")
+    import_line = ("fanpy.wfn.network.rbm", "RestrictedBoltzmannMachine")
     wfn_name = "RestrictedBoltzmannMachine"
     if wfn_kwargs is None:
-        wfn_kwargs = "nbath=nspin, num_layers=1, orders=(1, 2)"
+        wfn_kwargs = "nbath=nspin, orders=(1, 2)"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_basecc_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -446,7 +461,7 @@ def _get_basecc_info(wfn_kwargs: Union[str, None]) -> tuple:
 
     Parameters
     ----------
-    wfn_kwargs : str, None 
+    wfn_kwargs : str, None
         Keyword arguments for the BaseCC wavefunction.
 
     Returns
@@ -460,6 +475,7 @@ def _get_basecc_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_standardcc_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -482,6 +498,7 @@ def _get_standardcc_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_generalizedcc_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the GeneralizedCC wavefunction.
@@ -502,6 +519,7 @@ def _get_generalizedcc_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_senioritycc_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -524,6 +542,7 @@ def _get_senioritycc_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_pccd_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the PCCD wavefunction.
@@ -544,6 +563,7 @@ def _get_pccd_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_ap1rogsd_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -566,6 +586,7 @@ def _get_ap1rogsd_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_ap1rogsd_spin_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the AP1roGSDSpin wavefunction.
@@ -586,6 +607,7 @@ def _get_ap1rogsd_spin_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_apsetgd_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -608,6 +630,7 @@ def _get_apsetgd_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_apsetgsd_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the APset1roGSD wavefunction.
@@ -628,6 +651,7 @@ def _get_apsetgsd_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_apg1rod_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -650,6 +674,7 @@ def _get_apg1rod_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_apg1rosd_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the APG1roSD wavefunction.
@@ -670,6 +695,7 @@ def _get_apg1rosd_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_ccsdsen0_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -692,6 +718,7 @@ def _get_ccsdsen0_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_ccsdqsen0_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the CCSDQsen0 wavefunction.
@@ -712,6 +739,7 @@ def _get_ccsdqsen0_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_ccsdtqsen0_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -734,6 +762,7 @@ def _get_ccsdtqsen0_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_ccsdtsen2qsen0_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the CCSDTsen2Qsen0 wavefunction.
@@ -754,6 +783,7 @@ def _get_ccsdtsen2qsen0_info(wfn_kwargs: Union[str, None]) -> tuple:
     if wfn_kwargs is None:
         wfn_kwargs = "ranks=None, indices=None, refwfn=None, exop_combinations=None"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_ccsd_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -777,6 +807,7 @@ def _get_ccsd_info(wfn_kwargs: Union[str, None]) -> tuple:
     wfn_kwargs = f"ranks=[1, 2], {wfn_kwargs}"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_ccsdt_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the CCSDT wavefunction.
@@ -798,6 +829,7 @@ def _get_ccsdt_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
     wfn_kwargs = f"ranks=[1, 2, 3], {wfn_kwargs}"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_ccsdtq_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -821,6 +853,7 @@ def _get_ccsdtq_info(wfn_kwargs: Union[str, None]) -> tuple:
     wfn_kwargs = f"ranks=[1, 2, 3, 4], {wfn_kwargs}"
     return import_line, wfn_name, wfn_kwargs
 
+
 def _get_ccs_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
     Get information about the CCS wavefunction.
@@ -842,6 +875,7 @@ def _get_ccs_info(wfn_kwargs: Union[str, None]) -> tuple:
         wfn_kwargs = "indices=None, refwfn=None, exop_combinations=None"
     wfn_kwargs = f"ranks=[1], {wfn_kwargs}"
     return import_line, wfn_name, wfn_kwargs
+
 
 def _get_custom_info(wfn_kwargs: Union[str, None]) -> tuple:
     """
@@ -868,7 +902,7 @@ def _get_custom_info(wfn_kwargs: Union[str, None]) -> tuple:
         raise ValueError("import_form not found in wfn_kwargs. Custom wavefunction must specify where to import from.")
     if "wfn_name" not in wfn_kwargs:
         raise ValueError("wfn_name not found in wfn_kwargs. Custom wavefunction must specify name of wavefunction.")
-    
+
     wfn_kwarg_list = wfn_kwargs.split(",")
     output_wfn_kwargs = ""
     for kwarg in wfn_kwarg_list:

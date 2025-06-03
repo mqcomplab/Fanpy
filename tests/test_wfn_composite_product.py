@@ -1,6 +1,5 @@
 """Test fanpy.wavefunction.composite.product."""
 
-
 from fanpy.wfn.ci.base import CIWavefunction
 from fanpy.wfn.composite.product import ProductWavefunction
 from fanpy.tools.sd_list import sd_list
@@ -29,6 +28,7 @@ def test_init():
 
     with pytest.raises(ValueError):
         wfn = ProductWavefunction([wfn1, wfn1])
+
 
 @pytest.mark.skip(reason="This test fails and is being worked on (Issue 55).")
 def test_get_overlap():
@@ -82,7 +82,10 @@ def test_get_overlaps():
         np.array([[wfn1.get_overlap(wfn2.sds[0]), 0], [0, wfn1.get_overlap(wfn2.sds[1])]]),
     )
 
-@pytest.mark.skip(reason="This test fails and is being worked on (Issue 30).")
+
+@pytest.mark.skip(
+    reason="This test requires updates when the RBM wavefunctions development is merged into the main branch."
+)
 def test_get_overlaps_rbm_ap1rog():
     """Test ProductWavefunction.get_overlaps using RBM and AP1roG."""
     from fanpy.wfn.geminal.ap1rog import AP1roG
@@ -95,24 +98,22 @@ def test_get_overlaps_rbm_ap1rog():
 
     test = ProductWavefunction((ap1rog, rbm))
     sds = sd_list(4, 10)
-    assert np.allclose(
-        test.get_overlaps(sds), [ap1rog.get_overlap(sd) * rbm.get_overlap(sd) for sd in sds]
-    )
+    assert np.allclose(test.get_overlaps(sds), [ap1rog.get_overlap(sd) * rbm.get_overlap(sd) for sd in sds])
     assert np.allclose(
         test.get_overlaps(sds, deriv=(ap1rog, np.arange(ap1rog.nparams))),
-        [ap1rog.get_overlap(sd, deriv=np.arange(ap1rog.nparams)) * rbm.get_overlap(sd) for sd in sds]
+        [ap1rog.get_overlap(sd, deriv=np.arange(ap1rog.nparams)) * rbm.get_overlap(sd) for sd in sds],
     )
     assert np.allclose(
         test.get_overlaps(sds, deriv=(rbm, np.arange(rbm.nparams))),
-        [ap1rog.get_overlap(sd) * rbm.get_overlap(sd, deriv=np.arange(rbm.nparams)) for sd in sds]
+        [ap1rog.get_overlap(sd) * rbm.get_overlap(sd, deriv=np.arange(rbm.nparams)) for sd in sds],
     )
     deriv_ap1rog = np.random.choice(np.arange(ap1rog.nparams), ap1rog.nparams // 2, replace=False)
     assert np.allclose(
         test.get_overlaps(sds, deriv=(ap1rog, deriv_ap1rog)),
-        np.array([ap1rog.get_overlap(sd, deriv=deriv_ap1rog) * rbm.get_overlap(sd) for sd in sds])
+        np.array([ap1rog.get_overlap(sd, deriv=deriv_ap1rog) * rbm.get_overlap(sd) for sd in sds]),
     )
     deriv_rbm = np.random.choice(np.arange(rbm.nparams), rbm.nparams // 2)
     assert np.allclose(
         test.get_overlaps(sds, deriv=(rbm, deriv_rbm)),
-        [rbm.get_overlap(sd, deriv=deriv_rbm) * ap1rog.get_overlap(sd) for sd in sds]
+        [rbm.get_overlap(sd, deriv=deriv_rbm) * ap1rog.get_overlap(sd) for sd in sds],
     )
