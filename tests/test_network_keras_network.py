@@ -1,4 +1,5 @@
 """Tests for fanpy.wfn.network.keras_network.KerasNetwork."""
+
 import fanpy.tools.slater as slater
 from fanpy.tools.sd_list import sd_list
 from fanpy.wfn.network.keras_network import KerasNetwork
@@ -54,7 +55,7 @@ def test_keras_assign_model():
     with pytest.raises(TypeError):
         test.assign_model(1)
     with pytest.raises(TypeError):
-        test.assign_model(keras.engine.functional.Functional())
+        test.assign_model(keras.Model())
     #  more than one set of inputs
     model_input = keras.layers.Input(shape=(10,))
     model = keras.models.Model(
@@ -110,8 +111,7 @@ def test_keras_assign_default_params():
     for i, hidden_sd in enumerate(hidden_sds):
         hidden_units[i, hidden_sd] = 1
     assert all(
-        test._default_params[200:].dot(z) < test._default_params[200:].dot(hidden_units[0])
-        for z in hidden_units[1:]
+        test._default_params[200:].dot(z) < test._default_params[200:].dot(hidden_units[0]) for z in hidden_units[1:]
     )
     # bad model
     model = keras.engine.sequential.Sequential()
@@ -177,9 +177,7 @@ def test_keras_get_overlap():
     test = skip_init(KerasNetwork)
     test.nspin = 4
     model = keras.engine.sequential.Sequential()
-    model.add(
-        keras.layers.core.Dense(4, input_dim=4, activation=keras.activations.relu, use_bias=False)
-    )
+    model.add(keras.layers.core.Dense(4, input_dim=4, activation=keras.activations.relu, use_bias=False))
     model.add(keras.layers.core.Dense(1, input_dim=4, activation=None, use_bias=False))
     test.assign_model(model)
     matrix1 = np.random.rand(4, 4)
