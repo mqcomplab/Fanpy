@@ -3,6 +3,7 @@
 import pytest
 from fanpy.scripts.gaussian.wavefunction_info import get_wfn_info
 
+
 def old_input(wfn_type, wfn_kwargs=None):
     from_imports = []
     if wfn_type == "ci_pairs":
@@ -73,10 +74,10 @@ def old_input(wfn_type, wfn_kwargs=None):
         if wfn_kwargs is None:
             wfn_kwargs = "num_layers=2"
     elif wfn_type == "rbm":
-        from_imports.append(("fanpy.wfn.network.rbm_standard", "RestrictedBoltzmannMachine"))
+        from_imports.append(("fanpy.wfn.network.rbm", "RestrictedBoltzmannMachine"))
         wfn_name = "RestrictedBoltzmannMachine"
         if wfn_kwargs is None:
-            wfn_kwargs = "nbath=nspin, num_layers=1, orders=(1, 2)"
+            wfn_kwargs = "nbath=nspin, orders=(1, 2)"
 
     elif wfn_type == "basecc":
         from_imports.append(("fanpy.wfn.cc.base", "BaseCC"))
@@ -180,11 +181,12 @@ def old_input(wfn_type, wfn_kwargs=None):
         wfn_kwargs = f"ranks=[1, 2, 3, 4], {wfn_kwargs}"
     return from_imports, wfn_name, wfn_kwargs
 
+
 def test_make_script():
     wfn_list = [
         "ci_pairs",
         "cisd",
-        "hci", # "hci" is missing in the original test
+        "hci",  # "hci" is missing in the original test
         "fci",
         "doci",
         "mps",
@@ -214,7 +216,7 @@ def test_make_script():
         "ccs",
         "ccsd",
         "ccsdt",
-        "ccsdtq"
+        "ccsdtq",
     ]
     for wfn in wfn_list:
         wfn_info = get_wfn_info(wfn)
@@ -224,11 +226,12 @@ def test_make_script():
         assert wfn_name == old_wfn_name
         assert wfn_kwargs == old_wfn_kwargs
 
+
 def test_import_line():
     wfn_list = [
         "ci_pairs",
         "cisd",
-        "hci", # "hci" is missing in the original test
+        "hci",  # "hci" is missing in the original test
         "fci",
         "doci",
         "mps",
@@ -257,7 +260,7 @@ def test_import_line():
         "ccsdtsen2qsen0",
         "ccsd",
         "ccsdt",
-        "ccsdtq"
+        "ccsdtq",
     ]
     for wfn in wfn_list:
         wfn_info = get_wfn_info(wfn)
@@ -267,6 +270,7 @@ def test_import_line():
             exec(command)
         except ModuleNotFoundError:
             pytest.fail(f"ModuleNotFoundError: {import_line[0]}")
+
 
 @pytest.mark.parametrize("wfn_type", ["42 is the answer to everything", 41, None, 3.14])
 def test_invalid_wfn_type(wfn_type):
