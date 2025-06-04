@@ -141,9 +141,9 @@ class ProductWavefunction(LinearCombinationWavefunction):
                 isinstance(deriv, tuple)
                 and len(deriv) == 2
                 and isinstance(deriv[0], BaseWavefunction)
-                # and isinstance(deriv[1], np.ndarray)
-                # and deriv[1].ndim == 1
-                # and np.issubdtype(deriv[1].dtype, np.integer)
+                and isinstance(deriv[1], np.ndarray)
+                and deriv[1].ndim == 1
+                and np.issubdtype(deriv[1].dtype, np.integer)
             ):
                 raise TypeError(
                     "Derivative indices must be given as a 2-tuple whose first element is the "

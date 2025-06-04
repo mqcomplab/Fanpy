@@ -30,7 +30,6 @@ def test_init():
         wfn = ProductWavefunction([wfn1, wfn1])
 
 
-@pytest.mark.skip(reason="This test fails and is being worked on (Issue 55).")
 def test_get_overlap():
     """Test ProductWavefunction.get_overlap."""
     wfn1 = CIWavefunction(4, 10)
