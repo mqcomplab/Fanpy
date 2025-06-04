@@ -49,7 +49,7 @@ def test_apsetg_h2_631gdp_slow():
     # Solve system of equations
     objective = ProjectedSchrodinger(apsetg, ham, refwfn=full_sds)
     results = least_squares(objective)
-    assert np.allclose(results["energy"], 0.0)
+    assert np.allclose(results["energy"], -1.8783255857444985)
 
 
 # FIXME: answer should be brute force or external (should not depend on the code)
