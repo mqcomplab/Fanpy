@@ -104,7 +104,7 @@ class FANPTContainerEFree(FANPTContainerEParam):
 
     def __init__(
         self,
-        fanci_objective,
+        fanci_interface,
         params,
         ham0,
         ham1,
@@ -121,8 +121,8 @@ class FANPTContainerEFree(FANPTContainerEParam):
 
         Parameters
         ----------
-        fanci_objective : FanCI instance
-            FanCI wavefunction.
+        fanci_interface : PYCI interface instance
+            PYCI interface to FanCI wavefunction.
         params : np.ndarray
             Wavefunction parameters and energy at for the given lambda value.
         ham0 : pyci.hamiltonian
@@ -143,11 +143,11 @@ class FANPTContainerEFree(FANPTContainerEParam):
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
         """
-        if fanci_objective.mask[-1]:
+        if fanci_interface.objective.mask[-1]:
             raise TypeError("The energy cannot be an active parameter.")
         else:
             super().__init__(
-                fanci_objective,
+                fanci_interface,
                 params,
                 ham0,
                 ham1,
