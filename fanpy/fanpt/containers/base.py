@@ -1,7 +1,7 @@
 r"""Base class that contains the elements required to perform a FANPT calculation."""
 
 from abc import ABCMeta, abstractmethod
-from fanpy.fanpt.utils import update_fanci_objective, linear_comb_ham
+from fanpy.fanpt.utils import linear_comb_ham
 
 import pyci
 
@@ -102,7 +102,7 @@ class FANPTContainer(metaclass=ABCMeta):
 
     def __init__(
         self,
-        fanci_objective,
+        fanci_interface,
         params,
         ham0,
         ham1,
@@ -119,8 +119,8 @@ class FANPTContainer(metaclass=ABCMeta):
 
         Parameters
         ----------
-        fanci_objective : FanCI instance
-            FanCI wavefunction built using legacy FanCI code or PyCI code.
+        fanci_interface : PYCI interface instance
+            PYCI interface to FanCI wavefunction.
         params : np.ndarray
             Wavefunction parameters and energy at for the given lambda value.
         ham0 : pyci.hamiltonian
@@ -144,10 +144,13 @@ class FANPTContainer(metaclass=ABCMeta):
             Derivatives of the overlaps in the "S" projection space.
         """
         # Separate parameters for better readability.
+        self.fanci_interface = fanci_interface
+        self.fanci_objective = fanci_interface.objective
+
         self.params = params
         self.wfn_params = params[:-1]
         self.energy = params[-1]
-        self.active_energy = fanci_objective.mask[-1]
+        self.active_energy = self.fanci_objective.mask[-1]
         self.inorm = inorm
         self.norm_det = norm_det
 
@@ -157,9 +160,6 @@ class FANPTContainer(metaclass=ABCMeta):
 
         # Lambda parameter.
         self.l = l
-
-        # Assign FanCI wfn
-        self.fanci_objective = fanci_objective
 
         # Build the perturbed Hamiltonian.
         self.ham = linear_comb_ham(self.ham1, self.ham0, self.l, 1 - self.l)
@@ -192,7 +192,7 @@ class FANPTContainer(metaclass=ABCMeta):
             self.d_ovlp_s = self.fanci_objective.compute_overlap_deriv(self.wfn_params, "S")
 
         # Update Hamilonian in the fanci_objective.
-        self.fanci_objective = update_fanci_objective(self.ham, self.fanci_objective, self.norm_det)
+        self.fanci_interface.pyci_ham = self.ham
 
         # Assign ref_sd.
         if self.inorm:

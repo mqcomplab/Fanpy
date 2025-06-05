@@ -1035,7 +1035,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
 
         self.print_queue = {}
 
-        nparam = np.sum(mask)
+        nparam = len(mask)
 
         # Define constraints
         if constraints is None and norm_det is None:

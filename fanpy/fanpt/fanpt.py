@@ -1,10 +1,10 @@
-""" FANPT wrapper"""
+"""FANPT wrapper"""
 
 import numpy as np
 import pyci
 
 import fanpy.interface.pyci
-from fanpy.fanpt.utils import update_fanci_objective, reduce_to_fock
+from fanpy.fanpt.utils import reduce_to_fock
 from fanpy.eqn.projected import ProjectedSchrodinger
 from fanpy.fanpt.containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
 
@@ -20,12 +20,12 @@ class FANPT:
         return self._fanpt_container_class
 
     @property
-    def fanci_objective(self):
+    def fanci_interface(self):
         """
-        Projected Schrodinger Objective object from FancI code.
+        Projected Schrodinger Objective as interface to PyCI code.
 
         """
-        return self._fanci_objective
+        return self._fanci_interface
 
     @property
     def ham0(self) -> pyci.hamiltonian:
@@ -76,14 +76,6 @@ class FANPT:
         return self._norm_det
 
     @property
-    def guess_params(self):
-        """
-        Default guess parameters.
-
-        """
-        return self._guess_params
-
-    @property
     def energy_nuc(self):
         """
         Nuclear repulsion energy in Hartree.
@@ -96,7 +88,6 @@ class FANPT:
         fanpy_objective,
         energy_nuc,
         legacy_fanci=True,
-        guess_params=None,
         energy_active=True,
         resum=False,
         ref_sd=0,
@@ -118,8 +109,6 @@ class FANPT:
                 Nuclear repulsion energy in Hartree.
             legacy_fanci : bool, optional
                 Select Legacy FanCI code as interface to PyCI. It will be removed in future. Defaults to True.
-            guess_params : np.ndarray, optional
-                Initial guess for wave function parameters.
             energy_active : bool, optional
                 Whether the energy is an active parameter. It determines which FANPT
                 method is used. If set to true, FANPTContainerEParam is used.
@@ -203,11 +192,7 @@ class FANPT:
         self._energy_nuc = energy_nuc
 
         # Assign attributes to instance
-        self._fanci_objective = fanci_objective
-
-        self._guess_params = guess_params
-        if self.guess_params is None:
-            self._guess_params = fanci_objective.active_params
+        self._fanci_interface = fanci_interface
 
         self.fill = fanci_objective.fill
         self.energy_active = energy_active
@@ -224,9 +209,6 @@ class FANPT:
     def optimize(
         self,
         guess_params=None,
-        energy_active=None,
-        resum=None,
-        ref_sd=None,
         final_order=None,
         lambda_i=None,
         lambda_f=None,
@@ -240,14 +222,6 @@ class FANPT:
         ---------
             guess_params : np.ndarray, optional
                 Initial guess for wave function parameters.
-            energy_active : bool, optional
-                It determines which FANPT method is used.
-                Defaults to True, which uses FANPTContainerEParam method.
-            resum : bool, optional
-                Indicates if we will solve the FANPT equations by re-summing the series.
-                Defaults to False.
-            ref_sd : int, optional
-                Index of the Slater determinant used to impose intermediate normalization.
             final_order : int, optional
                 Final order of the FANPT calculation. Defaults to 1.
             lambda_i : float, optional
@@ -267,11 +241,8 @@ class FANPT:
 
         # Assign attributes
         if guess_params is None:
-            guess_params = self.guess_params
+            guess_params = self.fanci_interface.objective.active_params
 
-        energy_active = energy_active or self.energy_active
-        resum = resum or self.resum
-        ref_sd = ref_sd or self.ref_sd
         final_order = final_order or self.final_order
         lambda_i = lambda_i or self.lambda_i
         lambda_f = lambda_f or self.lambda_f
@@ -279,16 +250,17 @@ class FANPT:
 
         # Initialize FanCI objective with Hamiltonian of ideal system
         print(f"Solving FanPT problem using the ideal Hamiltonian")
-        self._fanci_objective = update_fanci_objective(self.ham0, self.fanci_objective, self.norm_det)
+        self.fanci_interface.update_objective(self.ham0)
+        fanci_objective = self.fanci_interface.objective
 
         # Get initial guess for parameters at initial lambda value.
-        results = self.fanci_objective.optimize(guess_params, **solver_kwargs)
-        guess_params[self.fanci_objective.mask] = results.x
+        results = fanci_objective.optimize(guess_params, **solver_kwargs)
+        guess_params[fanci_objective.mask] = results.x
 
         # Solve FANPT equations
         for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
             fanpt_container = self.fanpt_container_class(
-                fanci_objective=self.fanci_objective,
+                fanci_interface=self.fanci_interface,
                 params=guess_params,
                 ham0=self.ham0,
                 ham1=self.ham1,
@@ -307,7 +279,7 @@ class FANPT:
                 final_order=final_order,
                 final_l=final_l,
                 solver=None,
-                resum=resum,
+                resum=self.resum,
             )
             new_wfn_params = fanpt_updater.new_wfn_params
             new_energy = fanpt_updater.new_energy
@@ -318,16 +290,18 @@ class FANPT:
             print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - guess_params[-1])))
 
             # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
-            self._fanci_objective = update_fanci_objective(fanpt_updater.new_ham, self.fanci_objective, self.norm_det)
+            self.fanci_interface.update_objective(fanpt_updater.new_ham)
+            fanci_objective = self.fanci_interface.objective
 
             # Solve the fanci problem with fanpt_params as initial guess.
             # Take the params given by fanci and use them as initial params in the FANPT calculation for the next lambda.
-            results = self.fanci_objective.optimize(fanpt_params, **solver_kwargs)
+            results = fanci_objective.optimize(fanpt_params, **solver_kwargs)
 
-            fanpt_params[self.fanci_objective.mask] = results.x
+            fanpt_params[fanci_objective.mask] = results.x
             guess_params = fanpt_params
 
-            if not energy_active:
-                self.fanci_objective.freeze_parameter([-1])
+            # Rebuild active parameters mask according to energy_active
+            if not self.energy_active:
+                fanci_objective.freeze_parameter(-1)
 
         return results
