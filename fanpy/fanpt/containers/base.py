@@ -192,7 +192,7 @@ class FANPTContainer(metaclass=ABCMeta):
             self.d_ovlp_s = self.fanci_objective.compute_overlap_deriv(self.wfn_params, "S")
 
         # Update Hamilonian in the fanci_objective.
-        self.fanci_interface.update_objective_ham(self.ham)
+        self.fanci_interface.pyci_ham = self.ham
 
         # Assign ref_sd.
         if self.inorm:

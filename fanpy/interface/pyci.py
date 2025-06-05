@@ -80,7 +80,7 @@ class PYCI:
 
         self.fanpy_objective = fanpy_objective
         self.fanpy_wfn = fanpy_objective.wfn
-        self.fanpy_ham = fanpy_objective.ham
+        self._fanpy_ham = fanpy_objective.ham
 
         self.legacy_fanci = legacy_fanci
         self.nproj = fanpy_objective.nproj
@@ -93,7 +93,8 @@ class PYCI:
         self.kwargs = kwargs
 
         # Build PyCI Hamiltonian Object
-        self.pyci_ham = pyci.hamiltonian(energy_nuc, self.fanpy_ham.one_int, self.fanpy_ham.two_int)
+        self.energy_nuc = energy_nuc
+        self._pyci_ham = pyci.hamiltonian(energy_nuc, self.fanpy_ham.one_int, self.fanpy_ham.two_int)
 
         # Obtain required data from Fanpy Wavefunction object
         self.seniority = self.fanpy_wfn.seniority
@@ -175,8 +176,93 @@ class PYCI:
             mask = self._mask
         return mask
 
-    # Define ProjectedSchrodingerPyCI objective interface class
+    @property
+    def pyci_ham(self) -> pyci.sparse_op:
+        """
+        PyCI Hamiltonian object.
+
+        Returns
+        -------
+        self._pyci_ham : pyci.sparse_op
+            Returns PyCI Hamiltonian object associated to PyCI interface.
+
+        """
+        return self._pyci_ham
+
+    @property
+    def fanpy_ham(self) -> RestrictedMolecularHamiltonian:
+        """
+        Fanpy Hamiltonian object.
+
+        Returns
+        -------
+        self._fanpy_ham : RestrictedMolecularHamiltonian
+            Returns Fanpy Hamiltonian object associated to PyCI interface.
+
+        """
+        return self._fanpy_ham
+
+    @pyci_ham.setter
+    def pyci_ham(self, new_ham):
+        """
+        Assign value of the interface Hamiltonians.
+
+        Arguments
+        ---------
+        new_ham : (pyci.hamiltonian, RestrictedMolecularHamiltonian)
+            PyCI or Fanpy Hamiltonian object.
+
+        """
+
+        if isinstance(new_ham, pyci.hamiltonian):
+            # Update Hamiltonian in PyCI interface objective
+            self._pyci_ham = new_ham
+            self.objective._ham = self._pyci_ham
+            self.energy_nuc = new_ham.ecore
+
+            # Update Hamiltonian in Fanpy objects
+            self._fanpy_ham = RestrictedMolecularHamiltonian(new_ham.one_mo, new_ham.two_mo)
+            self.fanpy_objective.ham = self._fanpy_ham
+
+        elif isinstance(new_ham, RestrictedMolecularHamiltonian):
+            self.fanpy_ham(new_ham)
+
+    @fanpy_ham.setter
+    def fanpy_ham(self, new_ham):
+        """
+        Assign value of the interface Hamiltonians.
+
+        Arguments
+        ---------
+        new_ham : (pyci.hamiltonian, RestrictedMolecularHamiltonian)
+            PyCI or Fanpy Hamiltonian object.
+
+        """
+
+        if isinstance(new_ham, RestrictedMolecularHamiltonian):
+            # Update Hamiltonian in Fanpy objects
+            self._fanpy_ham = new_ham
+            self.fanpy_objective.ham = self._fanpy_ham
+
+            # Update Hamiltonian in PyCI interface objective
+            self._pyci_ham = pyci.hamiltonian(self.energy_nuc, new_ham.one_int, new_ham.two_int)
+            self.objective._ham = self._pyci_ham
+
+        elif isinstance(new_ham, pyci.hamiltonian):
+            self.fanpy_ham(new_ham)
+
     def build_pyci_objective(self, legacy=True):
+        """
+        Define ProjectedSchrodingerPyCI objective interface class
+
+        Arguments
+        ---------
+        legacy : (bool, optional)
+            Select objective class. If True, uses legacy FanCI code as interface.
+            If False, uses actual PyCI installation as interface.
+            Defaults to True.
+
+        """
 
         # Select PyCI objective class based on Fanpy or PyCI
         if legacy:
@@ -226,8 +312,9 @@ class PYCI:
                 **self.kwargs,
             )
 
-    def update_objective_ham(self, new_ham):
-        """Update the FanCI and Fanpy objectives with a new Hamiltonian.
+    def update_objective(self, new_ham):
+        """
+        Update the FanCI and Fanpy objectives with a new Hamiltonian.
 
         Arguments
         ---------
@@ -243,7 +330,7 @@ class PYCI:
             energy_nuc = new_ham.ecore
             new_ham = RestrictedMolecularHamiltonian(new_ham.one_mo, new_ham.two_mo)
         else:
-            energy_nuc = 0
+            energy_nuc = self.energy_nuc
 
         # Create new Fanpy objective
         new_fanpy_objective = fanpy_objective_class(
