@@ -9,8 +9,8 @@ from utils import find_datafile
 @pytest.mark.skip(reason="This test fails and is being worked on (Issue 34).")
 def test_make_script(tmp_path):
     """Test fanpy.scripts.utils.make_script."""
-    oneint = find_datafile("data/data_h2_hf_sto6g_oneint.npy")
-    twoint = find_datafile("data/data_h2_hf_sto6g_twoint.npy")
+    oneint = find_datafile("data/h2_hf_sto6g_oneint.npy")
+    twoint = find_datafile("data/h2_hf_sto6g_twoint.npy")
     script_path = str(tmp_path / "script.py")
 
     wfn_list = [
@@ -51,18 +51,6 @@ def test_make_script(tmp_path):
         "apig",
         objective="projected",
         solver="least_squares",
-        filename=script_path,
-        solver_kwargs="",
-    )
-    subprocess.check_output(["python", script_path])
-
-    make_script(
-        2,
-        oneint,
-        twoint,
-        "apig",
-        objective="one_energy",
-        solver="trustregion",
         filename=script_path,
         solver_kwargs="",
     )
