@@ -162,7 +162,7 @@ class PYCI:
             )
             self.nproj = max_pyci_nproj
 
-        self.build_pyci_objective(legacy=legacy_fanci)
+        self.build_pyci_objective()
 
     @property
     def mask(self) -> np.ndarray:
@@ -251,21 +251,14 @@ class PYCI:
         elif isinstance(new_ham, pyci.hamiltonian):
             self.fanpy_ham(new_ham)
 
-    def build_pyci_objective(self, legacy=True):
+    def build_pyci_objective(self):
         """
         Define ProjectedSchrodingerPyCI objective interface class
-
-        Arguments
-        ---------
-        legacy : (bool, optional)
-            Select objective class. If True, uses legacy FanCI code as interface.
-            If False, uses actual PyCI installation as interface.
-            Defaults to True.
 
         """
 
         # Select PyCI objective class based on Fanpy or PyCI
-        if legacy:
+        if self.legacy_fanci:
             from fanpy.interface.fanci import ProjectedSchrodingerFanCI
 
             self.objective = ProjectedSchrodingerFanCI(
