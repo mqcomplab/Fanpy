@@ -39,13 +39,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     with open(script_filenames[0], 'r') as f:
         output = f.read()
 
-    output = re.sub(
-            "from fanpy.upgrades import speedup_sign",
-            """from fanpy.upgrades import speedup_sign
-import fanpy.tools.slater as slater
-from fanpy.wfn.composite.embedding_fixedelectron import FixedEmbeddedWavefunction""",
-            output
-    )
 
     if loc_type == "svd":
         indices_list_assign = """indices_list[ao_ind].append(i)
