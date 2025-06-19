@@ -1,9 +1,13 @@
+from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.eqn.projected import ProjectedSchrodinger
+from fanpy.interface.fanci import ProjectedSchrodingerFanCI
 from fanpy.tools.sd_list import sd_list
 
 import numpy as np
 from scipy.special import comb
 from typing import Any
+
+import pyci
 
 # Log Levels
 INFO = 4
@@ -23,6 +27,7 @@ class PYCI:
         norm_det=None,
         norm_param=None,
         constraints=None,
+        mask=None,
         max_memory=8192,
         legacy_fanci=False,
         verbose=4,
@@ -43,6 +48,10 @@ class PYCI:
             Parameters normalization from FanCI PyCI objective.
         constraints : (optional)
             Constraints conditions from FanCI PyCI objective.
+        mask : Sequence[int] or Sequence[bool], optional
+            List of parameters to freeze. If the list contains ints, then each element corresponds
+            to a frozen parameter. If the list contains bools, then each element indicates whether
+            that parameter is active (True) or frozen (False).
         max_memory : (float (in Mb), optional)
             Set maximum memory available to be used in specific memory demanding tasks.
         legacy_fanci : (bool, optional)
@@ -51,11 +60,6 @@ class PYCI:
             Selects print level. Defaults to 4.
 
         """
-
-        try:
-            import pyci
-        except ImportError:
-            print("# ERROR: PyCI package not found.")
 
         # Output settings
         def info(str, *args):
@@ -76,7 +80,7 @@ class PYCI:
 
         self.fanpy_objective = fanpy_objective
         self.fanpy_wfn = fanpy_objective.wfn
-        self.fanpy_ham = fanpy_objective.ham
+        self._fanpy_ham = fanpy_objective.ham
 
         self.legacy_fanci = legacy_fanci
         self.nproj = fanpy_objective.nproj
@@ -89,7 +93,8 @@ class PYCI:
         self.kwargs = kwargs
 
         # Build PyCI Hamiltonian Object
-        self.pyci_ham = pyci.hamiltonian(energy_nuc, self.fanpy_ham.one_int, self.fanpy_ham.two_int)
+        self.energy_nuc = energy_nuc
+        self._pyci_ham = pyci.hamiltonian(energy_nuc, self.fanpy_ham.one_int, self.fanpy_ham.two_int)
 
         # Obtain required data from Fanpy Wavefunction object
         self.seniority = self.fanpy_wfn.seniority
@@ -104,18 +109,20 @@ class PYCI:
         # Build list of indices for objective parameters
         # TODO: Check if it can be built by Fanpy objective settings
         # TODO: Check if mask can (or even must) be related to norm_param and norm_det
-        self.mask = []
-        for component, indices in self.fanpy_objective.indices_component_params.items():
-            bool_indices = np.zeros(component.nparams, dtype=bool)
-            bool_indices[indices] = True
-            self.mask.append(bool_indices)
+        if mask is None:
+            mask = []
+            for component, indices in self.fanpy_objective.indices_component_params.items():
+                bool_indices = np.zeros(component.nparams, dtype=bool)
+                bool_indices[indices] = True
+                mask.append(bool_indices)
 
-        # Optimize energy
-        self.mask.append(True)
-        self.mask = np.hstack(self.mask)
+            # Optimize energy
+            mask.append(True)
+            mask = np.hstack(mask)
+        self._mask = mask
 
         # Compute number of parameters including energy as a parameter
-        self.nparam = np.sum(self.mask)
+        self.nparam = len(self.mask)
 
         # Handle default wfn (P space == single pair excitations)
         if self.seniority == 0:
@@ -155,13 +162,103 @@ class PYCI:
             )
             self.nproj = max_pyci_nproj
 
-        self.build_pyci_objective(legacy=legacy_fanci)
+        self.build_pyci_objective()
 
-    # Define ProjectedSchrodingerPyCI objective interface class
-    def build_pyci_objective(self, legacy=True):
+    @property
+    def mask(self) -> np.ndarray:
+        """
+        Frozen parameter mask.
+
+        """
+        if hasattr(self, "objective"):
+            mask = self.objective.mask
+        else:
+            mask = self._mask
+        return mask
+
+    @property
+    def pyci_ham(self) -> pyci.sparse_op:
+        """
+        PyCI Hamiltonian object.
+
+        Returns
+        -------
+        self._pyci_ham : pyci.sparse_op
+            Returns PyCI Hamiltonian object associated to PyCI interface.
+
+        """
+        return self._pyci_ham
+
+    @property
+    def fanpy_ham(self) -> RestrictedMolecularHamiltonian:
+        """
+        Fanpy Hamiltonian object.
+
+        Returns
+        -------
+        self._fanpy_ham : RestrictedMolecularHamiltonian
+            Returns Fanpy Hamiltonian object associated to PyCI interface.
+
+        """
+        return self._fanpy_ham
+
+    @pyci_ham.setter
+    def pyci_ham(self, new_ham):
+        """
+        Assign value of the interface Hamiltonians.
+
+        Arguments
+        ---------
+        new_ham : (pyci.hamiltonian, RestrictedMolecularHamiltonian)
+            PyCI or Fanpy Hamiltonian object.
+
+        """
+
+        if isinstance(new_ham, pyci.hamiltonian):
+            # Update Hamiltonian in PyCI interface objective
+            self._pyci_ham = new_ham
+            self.objective._ham = self._pyci_ham
+            self.energy_nuc = new_ham.ecore
+
+            # Update Hamiltonian in Fanpy objects
+            self._fanpy_ham = RestrictedMolecularHamiltonian(new_ham.one_mo, new_ham.two_mo)
+            self.fanpy_objective.ham = self._fanpy_ham
+
+        elif isinstance(new_ham, RestrictedMolecularHamiltonian):
+            self.fanpy_ham(new_ham)
+
+    @fanpy_ham.setter
+    def fanpy_ham(self, new_ham):
+        """
+        Assign value of the interface Hamiltonians.
+
+        Arguments
+        ---------
+        new_ham : (pyci.hamiltonian, RestrictedMolecularHamiltonian)
+            PyCI or Fanpy Hamiltonian object.
+
+        """
+
+        if isinstance(new_ham, RestrictedMolecularHamiltonian):
+            # Update Hamiltonian in Fanpy objects
+            self._fanpy_ham = new_ham
+            self.fanpy_objective.ham = self._fanpy_ham
+
+            # Update Hamiltonian in PyCI interface objective
+            self._pyci_ham = pyci.hamiltonian(self.energy_nuc, new_ham.one_int, new_ham.two_int)
+            self.objective._ham = self._pyci_ham
+
+        elif isinstance(new_ham, pyci.hamiltonian):
+            self.fanpy_ham(new_ham)
+
+    def build_pyci_objective(self):
+        """
+        Define ProjectedSchrodingerPyCI objective interface class
+
+        """
 
         # Select PyCI objective class based on Fanpy or PyCI
-        if legacy:
+        if self.legacy_fanci:
             from fanpy.interface.fanci import ProjectedSchrodingerFanCI
 
             self.objective = ProjectedSchrodingerFanCI(
@@ -207,3 +304,52 @@ class PYCI:
                 tmpfile=self.tmpfile,
                 **self.kwargs,
             )
+
+    def update_objective(self, new_ham):
+        """
+        Update the FanCI and Fanpy objectives with a new Hamiltonian.
+
+        Arguments
+        ---------
+        new_ham : pyci.hamiltonian or RestrictedMolecularHamiltonian
+            New Hamiltonian to be used.
+
+        """
+        # Get the class of the Fanpy objective
+        fanpy_objective_class = self.objective.fanpy_objective.__class__
+
+        # Convert new_ham to RestrictedMolecularHamiltonian if necessary
+        if isinstance(new_ham, pyci.hamiltonian):
+            energy_nuc = new_ham.ecore
+            new_ham = RestrictedMolecularHamiltonian(new_ham.one_mo, new_ham.two_mo)
+        else:
+            energy_nuc = self.energy_nuc
+
+        # Create new Fanpy objective
+        new_fanpy_objective = fanpy_objective_class(
+            self.fanpy_wfn,
+            new_ham,
+            param_selection=self.fanpy_objective.param_selection,
+            optimize_orbitals=self.fanpy_objective.optimize_orbitals,
+            step_print=self.step_print,
+            step_save=self.step_save,
+            tmpfile=self.tmpfile,
+            pspace=self.fanpy_objective.pspace,
+            refwfn=self.fanpy_objective.refwfn,
+            eqn_weights=self.fanpy_objective.eqn_weights,
+            energy_type=self.fanpy_objective.energy_type,
+            energy=self.fanpy_objective.energy.params,
+            constraints=self.constraints,
+        )
+
+        # Build FanCI objective as PyCI interface
+        self.__init__(
+            new_fanpy_objective,
+            energy_nuc,
+            norm_det=self.norm_det,
+            norm_param=self.norm_param,
+            constraints=self.constraints,
+            mask=self.mask,
+            max_memory=self.max_memory,
+            legacy_fanci=self.legacy_fanci,
+        )

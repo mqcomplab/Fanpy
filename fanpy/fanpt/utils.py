@@ -1,70 +1,7 @@
-""" FANPT wrapper"""
+"""FANPT wrapper"""
 
-from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
-from fanpy.interface.fanci import ProjectedSchrodingerFanCI
 import numpy as np
 import pyci
-
-
-def update_fanci_objective(new_ham, fanci_objective, norm_det=None):
-    """Update the FanCI objective with a new Hamiltonian.
-
-    Arguments
-    ---------
-    new_ham : pyci.hamiltonian or RestrictedMolecularHamiltonian
-        New Hamiltonian to be used.
-    fanci_objective : ProjectedSchrodingerPyCI
-        Existing FanCI objective to be updated.
-    norm_det : float, optional
-        Normalization determinant.
-
-    Returns
-    -------
-    ProjectedSchrodingerPyCI
-        Updated FanCI objective.
-    """
-    # Get the class of the Fanpy objective
-    fanpy_objective_class = fanci_objective.fanpy_objective.__class__
-
-    # Determine if the legacy FanCI interface is used
-    legacy_fanci = isinstance(fanci_objective, ProjectedSchrodingerFanCI)
-
-    # Convert new_ham to RestrictedMolecularHamiltonian if necessary
-    if isinstance(new_ham, pyci.hamiltonian):
-        energy_nuc = new_ham.ecore
-        new_ham = RestrictedMolecularHamiltonian(new_ham.one_mo, new_ham.two_mo)
-    else:
-        energy_nuc = 0
-
-    # Create new Fanpy objective
-    new_fanpy_objective = fanpy_objective_class(
-        fanci_objective.fanpy_wfn,
-        new_ham,
-        param_selection=fanci_objective.param_selection,
-        optimize_orbitals=fanci_objective.fanpy_objective.optimize_orbitals,
-        step_print=fanci_objective.step_print,
-        step_save=fanci_objective.step_save,
-        tmpfile=fanci_objective.tmpfile,
-        pspace=fanci_objective.fanpy_objective.pspace,
-        refwfn=fanci_objective.fanpy_objective.refwfn,
-        eqn_weights=fanci_objective.fanpy_objective.eqn_weights,
-        energy_type=fanci_objective.fanpy_objective.energy_type,
-        energy=fanci_objective.fanpy_objective.energy.params,
-        constraints=fanci_objective.fanpy_objective.constraints,
-    )
-
-    # Build FanCI objective as PyCI interface
-    from fanpy.interface.pyci import PYCI
-
-    fanci_interface = PYCI(
-        new_fanpy_objective,
-        energy_nuc,
-        norm_det=norm_det,
-        max_memory=fanci_objective.max_memory,
-        legacy_fanci=legacy_fanci,
-    )
-
-    return fanci_interface.objective
 
 
 def linear_comb_ham(ham1, ham0, a1, a0):

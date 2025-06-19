@@ -106,7 +106,7 @@ class FANPTContainerEParam(FANPTContainer):
 
     def __init__(
         self,
-        fanci_objective,
+        fanci_interface,
         params,
         ham0,
         ham1,
@@ -123,8 +123,8 @@ class FANPTContainerEParam(FANPTContainer):
 
         Parameters
         ----------
-        fanci_objective : FanCI instance
-            FanCI wavefunction.
+        fanci_interface : PYCI interface instance
+            PYCI interface to FanCI wavefunction.
         params : np.ndarray
             Wavefunction parameters and energy at for the given lambda value.
         ham0 : pyci.hamiltonian
@@ -146,7 +146,7 @@ class FANPTContainerEParam(FANPTContainer):
             Derivatives of the overlaps in the "S" projection space.
         """
         super().__init__(
-            fanci_objective,
+            fanci_interface,
             params,
             ham0,
             ham1,

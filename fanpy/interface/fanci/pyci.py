@@ -236,8 +236,8 @@ class ProjectedSchrodingerPyCI(FanCI):
         self._fanpy_wfn = fanpy_objective.wfn
         self._nocc = nocc
         self._fill = fill
-        self._mask = mask
-        self._mask_view = mask[...]
+        self._mask = mask.copy()
+        self._mask_view = self._mask[...]
         self._nactive = mask.sum()
         self._seniority = seniority
         self._step_print = step_print
@@ -262,7 +262,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             ham,
             wfn,
             nproj,
-            nparam=self.nactive,
+            nparam=len(self.mask),
             norm_param=norm_param,
             norm_det=norm_det,
             constraints=constraints,
@@ -507,7 +507,10 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         """
         if self.objective_type == "projected":
-            output = super().compute_jacobian(x)
+            if self.nactive == self.nparam:
+                output = super().compute_jacobian(x)
+            else:
+                output = self.masked_compute_jacobian(x)
             self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
             if self.step_print:
                 print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
@@ -570,6 +573,80 @@ class ProjectedSchrodingerPyCI(FanCI):
         if self.step_save:
             self.save_params()
         return output
+
+    # TODO: This implementation was needed because PyCI does not support frozen parameters.
+    # TODO: It can be removed in the future if PyCI adds support.
+    def masked_compute_jacobian(self, x: np.ndarray) -> np.ndarray:
+        """
+        Compute the Jacobian of the FanCI objective function with frozen parameters.
+
+            j : x[k] -> y[n, k]
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Parameter array, [p_0, p_1, ..., p_n, E].
+
+        Returns
+        -------
+        jac : np.ndarray
+            Jacobian matrix.
+
+        """
+        # Allocate Jacobian matrix (in transpose memory order)
+        jac = np.empty((self.nequation, self.nactive), order="F", dtype=pyci.c_double)
+        jac_proj = jac[: self.nproj]
+        jac_cons = jac[self.nproj :]
+
+        # Assign Energy = x[-1]
+        energy = x[-1]
+
+        # Compute Jacobian:
+        #
+        #   J_{nk} = d(<n|H|\Psi>)/d(p_k) - E d(<n|\Psi>)/d(p_k) - dE/d(p_k) <n|\Psi>
+        #
+        # Compute overlap derivatives in sspace:
+        #
+        #   d(c_m)/d(p_k)
+        #
+        d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
+
+        # Check is energy parameter is active:
+        if self.mask[-1]:
+            #
+            # Compute final Jacobian column if mask[-1] == True
+            #
+            #   dE/d(p_k) <n|\Psi> = dE/d(p_k) \delta_{nk} c_n
+            #
+            ovlp = self.compute_overlap(x[:-1], "P")
+            ovlp *= -1
+            jac_proj[:, -1] = ovlp
+            #
+            # Remove final column from jac_proj
+            #
+            jac_proj = jac_proj[:, :-1]
+
+        # Iterate over remaining columns of Jacobian and d_ovlp
+        for jac_col, d_ovlp_col in zip(jac_proj.transpose(), d_ovlp.transpose()):
+            #
+            # Compute each column of the Jacobian:
+            #
+            #   d(<n|H|\Psi>)/d(p_k) = <m|H|n> d(c_m)/d(p_k)
+            #
+            #   E d(<n|\Psi>)/d(p_k) = E \delta_{nk} d(c_n)/d(p_k)
+            #
+            # Note: we update d_ovlp in-place here
+            self.ci_op(d_ovlp_col, out=jac_col)
+            d_ovlp_proj = d_ovlp_col[: self.nproj]
+            d_ovlp_proj *= energy
+            jac_col -= d_ovlp_proj
+
+        # Compute Jacobian of constraint functions
+        for i, constraint in enumerate(self._constraints.values()):
+            jac_cons[i] = constraint[1](x)
+
+        # Return Jacobian
+        return jac
 
     def save_params(self):
         """Save the parameters associated with the Schrodinger equation.
