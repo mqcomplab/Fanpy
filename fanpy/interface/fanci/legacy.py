@@ -5,7 +5,6 @@ Based of the original class from FanCI code.
 
 from fanpy.tools import slater
 
-# from fanpy.solver.least_squares_fanci import least_squares
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
