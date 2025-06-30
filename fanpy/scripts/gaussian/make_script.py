@@ -213,6 +213,13 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         output += "import {}\n".format(i)
     for key, val in from_imports:
         output += "from {} import {}\n".format(key, val)
+    output += "from fanpy.upgrades import speedup_sign\n"
+    if "apg" in wfn_type or wfn_type in ['ap1rog', 'apig']:
+        output += "import fanpy.upgrades.speedup_apg\n"
+        # output += "import fanpy.upgrades.speedup_objective\n"
+    if 'ci' in wfn_type or wfn_type == 'network':
+        # output += "import fanpy.upgrades.speedup_objective\n"
+        pass
 
     output += "\n\n"
 

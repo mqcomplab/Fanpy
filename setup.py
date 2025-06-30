@@ -115,6 +115,35 @@ setup(
         #     ["fanpy/wfn/geminal/cext.pyx"],
         #     include_dirs=[numpy.get_include()],
         # ),
+        Extension(
+            "fanpy.upgrades.cext_apg",
+            ["fanpy/upgrades/cext_apg.pyx"],
+            include_dirs=[numpy.get_include()],
+        ),
+        Extension(
+            "fanpy.upgrades.cext_sign",
+            ["fanpy/upgrades/cext_sign.pyx"],
+            include_dirs=[numpy.get_include()],
+        ),
+        Extension(
+            "fanpy.upgrades.cext_objective",
+            ["fanpy/upgrades/cext_objective.pyx"],
+            include_dirs=[numpy.get_include()],
+        ),
+        Extension(
+            "fanpy.upgrades.cext_apg_parallel",
+            ["fanpy/upgrades/cext_apg_parallel.pyx"],
+            #extra_compile_args=['-fopenmp'],
+            #extra_link_args=['-fopenmp'],
+            include_dirs=[numpy.get_include()],
+        ),
+        Extension(
+            "fanpy.upgrades.cext_apg_parallel2",
+            ["fanpy/upgrades/cext_apg_parallel2.pyx"],
+            #extra_compile_args=['-fopenmp'],
+            #extra_link_args=['-fopenmp'],
+            include_dirs=[numpy.get_include()],
+        ),
         ]
     ),
 )

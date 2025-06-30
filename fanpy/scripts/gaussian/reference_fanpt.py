@@ -10,6 +10,7 @@ from fanpy.wfn.composite.embedding_fixedelectron import FixedEmbeddedWavefunctio
 import fanpy.tools.slater as slater
 from fanpy.tools.sd_list import sd_list
 from scipy.special import comb
+from fanpy.upgrades import speedup_sign
 from fanci.fanpt_wrapper import reduce_to_fock, solve_fanpt
 
 
