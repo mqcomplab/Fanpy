@@ -58,13 +58,17 @@ def scale_sign(sgn):
     """Convert sign to 1 or -1.
     
     Args:
-        sgn (int): Sign of the excitation in exop_comb (-1 is stored as 0).
+        sgn (uint): Sign of the excitation in exop_comb (-1 is stored as 0).
     
     Returns:
         int: 1 or -1.
     """
-
-    return sgn * 2 - 1
+    if sgn == 0:
+        return -1
+    elif sgn == 1:
+        return 1
+    else:
+        raise ValueError(f"Invalid sign value: {sgn}. Expected 1 or 0, where 0 represents -1.")
 
 def test_generate_possible_exops():
     """Test StandardCC.generate_possible_exops."""
