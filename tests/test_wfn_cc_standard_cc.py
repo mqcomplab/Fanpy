@@ -88,9 +88,6 @@ def test_generate_possible_exops():
         test.exop_combinations[(0, 2, 1, 3)][2][1][0:2], [test.get_ind((0, 3)), test.get_ind((2, 1))]
     )
     base_sign = slater.sign_excite(0b0101, [0, 2], [1, 3]) # base sign of excitation
-    print("DEBUG: base_sign", base_sign)
-    print("DEBUG: scale_sign", scale_sign(test.exop_combinations[(0, 2, 1, 3)][2][0][-1]))
-    print("DEBUG: check_sign", check_sign([0, 2], [[0, 1], [2, 3]]))
     assert  base_sign * scale_sign(test.exop_combinations[(0, 2, 1, 3)][2][0][-1] ) == check_sign([0, 2], [[0, 1], [2, 3]])
     assert base_sign * scale_sign(test.exop_combinations[(0, 2, 1, 3)][2][1][-1] ) == check_sign([0, 2], [[0, 3], [2, 1]])
 
