@@ -1031,10 +1031,9 @@ class ExtendingAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
 
         get_overlap = self.wrapped_get_overlap
         integrate_sd_wfn = self.wrapped_integrate_sd_wfn
+        energy = self.energy.params
 
-        external_residuals = [
-            (integrate_sd_wfn(sd) - self.energy * get_overlap(sd)) ** 2 for sd in self.external_pspace
-        ]
+        external_residuals = [(integrate_sd_wfn(sd) - energy * get_overlap(sd)) ** 2 for sd in self.external_pspace]
 
         abs_residuals = np.abs(external_residuals[:-1])
 
