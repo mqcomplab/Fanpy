@@ -1029,8 +1029,8 @@ class ExtendingAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
         """
         residuals_thresholds = kwargs.get("residuals_thresholds", [1e-8])
 
-        get_overlap = self.wfn.wrapped_get_overlap
-        integrate_sd_wfn = self.wfn.wrapped_integrate_sd_wfn
+        get_overlap = self.wrapped_get_overlap
+        integrate_sd_wfn = self.wrapped_integrate_sd_wfn
 
         external_residuals = [
             (integrate_sd_wfn(sd) - self.energy * get_overlap(sd)) ** 2 for sd in self.external_pspace
