@@ -1041,7 +1041,7 @@ class ExtendingAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
         threshold = residuals_thresholds.pop(0)
         below_threshold_indices = np.where(abs_residuals < threshold)[0]
 
-        updated_pspace = tuple(self.pspace + list(np.asarray(self.external_pspace)[below_threshold_indices]))
+        updated_pspace = tuple(self.pspace + tuple(np.asarray(self.external_pspace)[below_threshold_indices]))
 
         # Check if equivalent SDs pairs in restricted orbital basis need to be fixed
         updated_pspace = self.rebuild_restricted_ham_sds(updated_pspace)
