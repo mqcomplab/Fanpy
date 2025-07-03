@@ -1067,10 +1067,13 @@ class ExtendingAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
             True if the convergence criteria are met or procedure is completed, False otherwise.
 
         """
-        residuals_thresholds = kwargs.get("residuals_thresholds", [1e-8])
+        residuals_thresholds = kwargs.get("residuals_thresholds", [])
 
+        # If all thresholds have been met, mark procedure as done
         if not residuals_thresholds:
-            raise ValueError("Residuals thresholds list must be provided to update the current projection space.")
+            self._is_adaptive_procedure_done = True
+            if self.adaptive_step_print:
+                print("(Adaptive Optimization) All residuals thresholds were applied. Adaptive procedure done.")
 
         # If the number of external projections is zero, mark procedure as done
         if len(self.external_pspace) == 0:
@@ -1079,9 +1082,3 @@ class ExtendingAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
                 print(
                     "(Adaptive Optimization) All expansion projections added to the projection space. Adaptive procedure done."
                 )
-
-        # If all thresholds have been met, mark procedure as done
-        if not residuals_thresholds:
-            self._is_adaptive_procedure_done = True
-            if self.adaptive_step_print:
-                print("(Adaptive Optimization) All residuals thresholds were applied. Adaptive procedure done.")
