@@ -1010,7 +1010,7 @@ class ExtendingAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
             )
 
         # Remove duplicates from the external projection space
-        pspace = list(set(pspace) - set(self.internal_pspace))
+        pspace = list(set(pspace) - set(self.initial_pspace))
 
         self.external_pspace = pspace
 
@@ -1023,11 +1023,11 @@ class ExtendingAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
 
         Parameters
         ----------
-        residuals : np.ndarray
-            Residuals of the objective function, used to determine current projection performance.
+        residuals_thresholds : np.ndarray
+            Description.
 
         """
-        residuals_threshold = kwargs.get("residuals_thresholds", [1e-8])[0]
+        residuals_thresholds = kwargs.get("residuals_thresholds", [1e-8])
 
         get_overlap = self.wfn.get_overlap
         integrate_sd_wfn = self.wfn.integrate_sd_wfn
@@ -1037,7 +1037,10 @@ class ExtendingAdaptiveProjectedSchrodinger(AdaptiveProjectedSchrodinger):
         ]
 
         abs_residuals = np.abs(external_residuals[:-1])
-        below_threshold_indices = np.where(abs_residuals < residuals_threshold)[0]
+
+        # Check if the current residuals meet the convergence thresholds
+        threshold = residuals_thresholds.pop(0)
+        below_threshold_indices = np.where(abs_residuals < threshold)[0]
 
         updated_pspace = tuple(self.pspace + list(np.asarray(self.external_pspace)[below_threshold_indices]))
 
