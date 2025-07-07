@@ -178,9 +178,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         wfn_name = "APG"
         if wfn_kwargs is None:
             wfn_kwargs = "ngem=None"
-    elif wfn_type == "network":
-        from_imports.append(("fanpy.upgrades.numpy_network", "NumpyNetwork"))
-        wfn_name = "NumpyNetwork"
         if wfn_kwargs is None:
             wfn_kwargs = "num_layers=2"
     elif wfn_type == "rbm":

@@ -179,11 +179,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         wfn_name = "APG"
         if wfn_kwargs is None:
             wfn_kwargs = "ngem=None"
-    elif wfn_type == "network":
-        from_imports.append(("fanpy.upgrades.numpy_network", "NumpyNetwork"))
-        wfn_name = "NumpyNetwork"
-        if wfn_kwargs is None:
-            wfn_kwargs = "num_layers=2"
     elif wfn_type == "rbm":
         from_imports.append(("fanpy.wfn.network.rbm", "RestrictedBoltzmannMachine"))
         wfn_name = "RestrictedBoltzmannMachine"
@@ -605,7 +600,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         output += "objective.sample_size = len(pspace)\n"
         output += "wfn.pspace_norm = objective.refwfn\n"
 
-    if wfn_type in ['apg', 'apig', 'apsetg', 'apg2', 'apg3', 'apg4', 'apg5', 'apg6', 'apg7', 'doci', 'network']:
+    if wfn_type in ['apg', 'apig', 'apsetg', 'apg2', 'apg3', 'apg4', 'apg5', 'apg6', 'apg7', 'doci']:
         output += "# Normalize\n"
         output += "wfn.normalize(pspace)\n\n"
 
