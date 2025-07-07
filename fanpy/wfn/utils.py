@@ -11,9 +11,7 @@ from fanpy.tools import slater
 import numpy as np
 import math
 
-# from scipy.optimize import OptimizeResult, least_squares, root, minimize
-from scipy.optimize import OptimizeResult, root, minimize
-from fanpy.solver.least_squares_fanci import least_squares
+from scipy.optimize import OptimizeResult, least_squares, root, minimize
 from fanpy.tools.performance import current_memory
 import cma
 
