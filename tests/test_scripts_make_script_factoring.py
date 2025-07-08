@@ -68,11 +68,6 @@ def old_input(wfn_type, wfn_kwargs=None):
         wfn_name = "APG"
         if wfn_kwargs is None:
             wfn_kwargs = "ngem=None"
-    elif wfn_type == "network":
-        from_imports.append(("fanpy.upgrades.numpy_network", "NumpyNetwork"))
-        wfn_name = "NumpyNetwork"
-        if wfn_kwargs is None:
-            wfn_kwargs = "num_layers=2"
     elif wfn_type == "rbm":
         from_imports.append(("fanpy.wfn.network.rbm", "RestrictedBoltzmannMachine"))
         wfn_name = "RestrictedBoltzmannMachine"
@@ -196,7 +191,6 @@ def test_make_script():
         "apig",
         "apsetg",
         "apg",
-        "network",
         "rbm",
         "basecc",
         "standardcc",
@@ -241,7 +235,6 @@ def test_import_line():
         "apig",
         "apsetg",
         "apg",
-        "network",
         "rbm",
         "basecc",
         "standardcc",

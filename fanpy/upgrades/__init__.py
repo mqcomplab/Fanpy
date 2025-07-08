@@ -1,1 +1,0 @@
-"""Upgrades for Fanpy."""
