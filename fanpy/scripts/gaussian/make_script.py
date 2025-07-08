@@ -509,7 +509,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         output += "objective.sample_size = len(pspace)\n"
         output += "wfn.pspace_norm = objective.refwfn\n"
 
-    if wfn_type in ['apg', 'apig', 'apsetg', 'apg2', 'apg3', 'apg4', 'apg5', 'apg6', 'apg7', 'doci']:
+    if wfn_type in ['apg', 'apig', 'apsetg', 'apg2', 'apg3', 'apg4', 'apg5', 'apg6', 'apg7', 'doci', 'network']:
         output += "# Normalize\n"
         output += "wfn.normalize(pspace)\n\n"
 

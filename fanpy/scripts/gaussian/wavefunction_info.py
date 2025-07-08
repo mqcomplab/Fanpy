@@ -35,6 +35,8 @@ _get_apsetg_info(wfn_kwargs)
     Returns the import line, wavefunction name, and wavefunction arguments for the "apsetg" wavefunction type.
 _get_apg_info(wfn_kwargs)
     Returns the import line, wavefunction name, and wavefunction arguments for the "apg" wavefunction type.
+_get_network_info(wfn_kwargs)
+    Returns the import line, wavefunction name, and wavefunction arguments for the "network" wavefunction type.
 _get_rbm_info(wfn_kwargs)
     Returns the import line, wavefunction name, and wavefunction arguments for the "rbm" wavefunction type.
 _get_basecc_info(wfn_kwargs)
@@ -114,6 +116,7 @@ def get_wfn_info(wfn_type: str) -> callable:
         "apig": _get_apig_info,
         "apsetg": _get_apsetg_info,
         "apg": _get_apg_info,
+        "network": _get_network_info,
         "rbm": _get_rbm_info,
         "basecc": _get_basecc_info,
         "standardcc": _get_standardcc_info,
@@ -405,6 +408,28 @@ def _get_apg_info(wfn_kwargs: Union[str, None]) -> tuple:
     wfn_name = "APG"
     if wfn_kwargs is None:
         wfn_kwargs = "ngem=None"
+    return import_line, wfn_name, wfn_kwargs
+
+
+def _get_network_info(wfn_kwargs: Union[str, None]) -> tuple:
+    """
+    Get the information about the network wavefunction.
+
+    Parameters
+    ----------
+    wfn_kwargs : str, None
+        Additional keyword arguments for the network wavefunction.
+
+    Returns
+    -------
+    results : tuple
+        A tuple containing the import line, the name of the network class, and the additional keyword arguments.
+    """
+
+    import_line = ("fanpy.upgrades.numpy_network", "NumpyNetwork")
+    wfn_name = "NumpyNetwork"
+    if wfn_kwargs is None:
+        wfn_kwargs = "num_layers=2"
     return import_line, wfn_name, wfn_kwargs
 
 

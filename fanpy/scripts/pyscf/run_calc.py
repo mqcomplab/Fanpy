@@ -96,7 +96,7 @@ def write_wfn_py(pattern: str, wfn_type: str, optimize_orbs: bool=False,
         "mps",
         "determinant-ratio",
         "ap1rog", "apr2g", "apig", "apsetg", "apg",
-        "rbm",
+        "network", "rbm",
         "basecc", "standardcc", "generalizedcc", "senioritycc", "pccd", "ccsd", "ccsdt", "ccsdtq",
         "ap1rogsd", "ap1rogsd_spin", "apsetgd", "apsetgsd", "apg1rod", "apg1rosd",
         "ccsdsen0", "ccsdqsen0", "ccsdtqsen0", "ccsdtsen2qsen0".
