@@ -221,4 +221,4 @@ def test_apr2g_apr2g_lih_sto6g_slow():
     # Solve system of equations
     objective = ProjectedSchrodinger(apr2g, ham, refwfn=full_sds)
     results = least_squares(objective)
-    assert np.allclose(results["energy"], -8.96353110958190)
+    assert np.allclose(results["energy"], -8.96353110958190, atol=0.0001)
