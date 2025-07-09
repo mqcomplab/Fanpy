@@ -9,9 +9,6 @@ https://github.com/pypa/sampleproject
 from os import path
 
 from setuptools import find_packages, setup
-from setuptools.extension import Extension
-from Cython.Build import cythonize
-import numpy
 
 here = path.abspath(path.dirname(__file__))
 
@@ -75,7 +72,7 @@ setup(
             "bandit",
             "black",
         ],
-        "test": ["tox", "pytest", "pytest-cov"],
+        "test": ["pytest", "pytest-cov",,
         "horton": ["horton"],
         "pyscf": ["pyscf"],
         "tensorflow": ["tensorflow"],
@@ -103,18 +100,4 @@ setup(
         "Source": "https://github.com/mqcomplab/Fanpy/",
     },
     zip_safe=False,
-    ext_modules= cythonize(
-            [
-        # Extension(
-        #     "fanpy.objective.schrodinger.cext",
-        #     ["fanpy/objective/schrodinger/cext.pyx"],
-        #     include_dirs=[numpy.get_include()],
-        # ),
-        # Extension(
-        #     "fanpy.wfn.geminal.cext",
-        #     ["fanpy/wfn/geminal/cext.pyx"],
-        #     include_dirs=[numpy.get_include()],
-        # ),
-        ]
-    ),
 )
