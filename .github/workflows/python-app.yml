@@ -2,7 +2,7 @@ name: Test Fanpy
 
 on:
   push:
-    branches: [main]
+    branches: [58-maint-dependency-requirements]
   pull_request:
     branches: [main]
 
@@ -29,12 +29,7 @@ jobs:
         #   so we need to specify versions for those two
         run: |
           python -m pip install --upgrade pip
-          python -m pip install Cython
-          python -m pip install numpy==1.24.4
-          python -m pip install psutil
-          python -m pip install -e .
-          python -m pip install tensorflow==2.14.0
-          python -m pip install numdifftools
+          python -m pip install -e .[test, pyscf, tensorflow]
       - name : Install PyCI
         run: |
           pwd 
