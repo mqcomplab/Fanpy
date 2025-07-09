@@ -22,18 +22,18 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 setup(
     name="fanpy",
     version="1.0.0",
-    description="A module for evaluating, differentiating, and integrating Gaussian functions.",
+    description="A module for developing and testing multideterminant wavefunctions and related ab initio methods in electronic structure theory.",
     long_description=long_description,
     # Denotes that our long_description is in Markdown; valid values are
     # text/plain, text/x-rst, and text/markdown
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/mqcomplab/Fanpy",
     # This should be your name or the name of the organization which owns the
     # project.
-    author="Taewon D. Kim",
+    author="MQCompLab",
     # This should be a valid email address corresponding to the author listed
     # above.
-    author_email="david.kim.91@gmail.com",
+    author_email="ramirandaq@gmail.com",
     # Classifiers help users find your project by categorizing it.
     #
     # For a list of valid classifiers, see https://pypi.org/classifiers/
@@ -43,7 +43,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        "Development Status :: 1 - Planning",
+        "Development Status :: 4 - Beta",
         # Indicate who your project is intended for
         "Intended Audience :: Science/Research",
         "Intended Audience :: Education",
@@ -98,9 +98,9 @@ setup(
     },
     # List additional URLs that are relevant to your project as a dict.
     project_urls={
-        "Bug Reports": "https://github.com/theochem/gbasis/issues",
-        "Organization": "https://github.com/quantumelephant/",
-        "Source": "https://github.com/theochem/gbasis/",
+        "Bug Reports": "https://github.com/mqcomplab/Fanpy/issues",
+        "Organization": "https://github.com/mqcomplab",
+        "Source": "https://github.com/mqcomplab/Fanpy/",
     },
     zip_safe=False,
     ext_modules= cythonize(
