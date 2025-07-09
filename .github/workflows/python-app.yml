@@ -2,7 +2,7 @@ name: Test Fanpy
 
 on:
   push:
-    branches: [58-maint-dependency-requirements]
+    branches: [main]
   pull_request:
     branches: [main]
 
