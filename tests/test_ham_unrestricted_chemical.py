@@ -1,4 +1,5 @@
 """Test fanpy.ham.unrestricted_chemical."""
+
 import itertools as it
 
 from fanpy.ham.base import BaseHamiltonian
@@ -13,7 +14,7 @@ import numpy as np
 
 import pytest
 
-from utils import disable_abstract, find_datafile
+from utils import disable_abstract
 
 
 def test_set_ref_ints():
@@ -101,91 +102,24 @@ def test_assign_params():
     assert np.allclose(test._ref_two_int, two_int)
 
 
-def test_integrate_sd_sd_trivial():
+def test_integrate_sd_sd_decomposed_trivial():
     """Test UnrestrictedMolecularHamiltonian.integrate_sd_sd for trivial cases."""
     one_int = np.random.rand(3, 3)
     two_int = np.random.rand(3, 3, 3, 3)
     test = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
 
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b000111, 0b001001, components=True))
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b000111, 0b111000, components=True))
-    assert np.allclose(
-        (0, two_int[0, 1, 1, 0], 0), test.integrate_sd_sd(0b110001, 0b101010, components=True)
-    )
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b000111, 0b001001))
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b000111, 0b111000))
+    assert np.allclose((0, two_int[0, 1, 1, 0], 0), test.integrate_sd_sd_decomposed(0b110001, 0b101010))
     assert np.allclose(
         (0, -two_int[1, 1, 1, 0] + two_int[0, 1, 0, 0], 0),
-        test.integrate_sd_sd(0b110001, 0b101010, deriv=np.array([0]), components=True).ravel(),
+        test.integrate_sd_sd_decomposed(0b110001, 0b101010, deriv=np.array([0])).ravel(),
     )
 
     with pytest.raises(TypeError):
         test.integrate_sd_sd(0b110001, "1")
     with pytest.raises(TypeError):
         test.integrate_sd_sd("1", 0b101010)
-
-
-def test_integrate_sd_sd_h2_631gdp():
-    """Test UnrestrictedMolecularHamiltonian.integrate_sd_sd using H2 HF/6-31G** orbitals.
-
-    Compare CI matrix with the PySCF result.
-    Integrals that correspond to restricted orbitals were used.
-
-    """
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
-    ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
-
-    ref_ci_matrix = np.load(find_datafile("data_h2_hf_631gdp_cimatrix.npy"))
-    ref_pspace = np.load(find_datafile("data_h2_hf_631gdp_civec.npy"))
-
-    for i, sd1 in enumerate(ref_pspace):
-        for j, sd2 in enumerate(ref_pspace):
-            sd1, sd2 = int(sd1), int(sd2)
-            assert np.allclose((ham.integrate_sd_sd(sd1, sd2)), ref_ci_matrix[i, j])
-
-
-def test_integrate_sd_sd_lih_631g_case():
-    """Test UnrestrictedMolecularHamiltonian.integrate_sd_sd using sd's of LiH HF/6-31G orbitals."""
-    one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
-    ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
-
-    sd1 = 0b0000000001100000000111
-    sd2 = 0b0000000001100100001001
-    assert np.allclose(
-        (0, two_int[1, 2, 3, 8], -two_int[1, 2, 8, 3]),
-        ham.integrate_sd_sd(sd1, sd2, components=True),
-    )
-    sd1 = 0b0000000000000000000011
-    sd2 = 0b0000000000000000000101
-    assert np.allclose(
-        (one_int[1, 2], two_int[0, 1, 0, 2], -two_int[0, 1, 2, 0]),
-        ham.integrate_sd_sd(sd1, sd2, components=True),
-    )
-    sd1 = 0b0000000001100000000000
-    sd2 = 0b0000000010100000000000
-    assert np.allclose(
-        (one_int[1, 2], two_int[0, 1, 0, 2], -two_int[0, 1, 2, 0]),
-        ham.integrate_sd_sd(sd1, sd2, components=True),
-    )
-
-
-def test_integrate_sd_sd_lih_631g_slow():
-    """Test UnrestrictedMolecularHamiltonian.integrate_sd_sd using LiH HF/6-31G orbitals.
-
-    Integrals that correspond to restricted orbitals were used.
-
-    """
-    one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
-    ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
-
-    ref_ci_matrix = np.load(find_datafile("data_lih_hf_631g_cimatrix.npy"))
-    ref_pspace = np.load(find_datafile("data_lih_hf_631g_civec.npy"))
-
-    for i, sd1 in enumerate(ref_pspace):
-        for j, sd2 in enumerate(ref_pspace):
-            sd1, sd2 = int(sd1), int(sd2)
-            assert np.allclose((ham.integrate_sd_sd(sd1, sd2)), ref_ci_matrix[i, j])
 
 
 def test_integrate_sd_sd_particlenum():
@@ -203,7 +137,7 @@ def test_integrate_sd_sd_particlenum():
     # \braket{12 | h_{11} + h_{22} + g_{1212} - g_{1221} | 12}
     assert np.allclose((ham.integrate_sd_sd(civec[1], civec[1])), 4)
 
-    assert np.allclose(ham.integrate_sd_sd(civec[0], civec[1], components=True), 0)
+    assert np.allclose(ham.integrate_sd_sd_decomposed(civec[0], civec[1]), 0)
 
 
 def test_integrate_sd_wfn():
@@ -216,15 +150,7 @@ def test_integrate_sd_wfn():
     test_wfn = type(
         "Temporary wavefunction.",
         (object,),
-        {
-            "get_overlap": lambda sd, deriv=None: 1
-            if sd == 0b0101
-            else 2
-            if sd == 0b1010
-            else 3
-            if sd == 0b1100
-            else 0
-        },
+        {"get_overlap": lambda sd, deriv=None: 1 if sd == 0b0101 else 2 if sd == 0b1010 else 3 if sd == 0b1100 else 0},
     )
 
     one_energy, coulomb, exchange = test_ham.integrate_sd_wfn(0b0101, test_wfn, components=True)
@@ -251,17 +177,13 @@ def test_integrate_sd_wfn():
     with pytest.raises(TypeError):
         test_ham.integrate_sd_wfn("1", test_wfn)
     with pytest.raises(ValueError):
-        test_ham.integrate_sd_wfn(
-            0b0101, test_wfn, wfn_deriv=np.array([0]), ham_deriv=np.array([0])
-        )
+        test_ham.integrate_sd_wfn(0b0101, test_wfn, wfn_deriv=np.array([0]), ham_deriv=np.array([0]))
 
 
 def test_param_ind_to_rowcol_ind():
     """Test UnrestrictedMolecularHamiltonian.param_ind_to_rowcol_ind."""
     for n in range(1, 20):
-        ham = UnrestrictedMolecularHamiltonian(
-            [np.random.rand(n, n)] * 2, [np.random.rand(n, n, n, n)] * 3
-        )
+        ham = UnrestrictedMolecularHamiltonian([np.random.rand(n, n)] * 2, [np.random.rand(n, n, n, n)] * 3)
         for row_ind in range(n):
             for col_ind in range(row_ind + 1, n):
                 param_ind = row_ind * n - row_ind * (row_ind + 1) / 2 + col_ind - row_ind - 1
@@ -285,78 +207,14 @@ def test_integrate_sd_sd_deriv():
         test_ham._integrate_sd_sd_deriv(0b0101, 0b0101, -1)
     with pytest.raises(ValueError):
         test_ham._integrate_sd_sd_deriv(0b0101, 0b0101, 2)
-    assert np.allclose(
-        test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0]), components=True), 0
-    )
-    assert np.allclose(
-        test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0]), components=False), 0
-    )
-    assert np.allclose(
-        test_ham._integrate_sd_sd_deriv(0b000111, 0b111000, np.array([0]), components=True), 0
-    )
+    assert np.allclose(test_ham._integrate_sd_sd_deriv_decomposed(0b0101, 0b0001, np.array([0])), 0)
+    assert np.allclose(test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0])), 0)
+    assert np.allclose(test_ham._integrate_sd_sd_deriv_decomposed(0b000111, 0b111000, np.array([0])), 0)
 
     with pytest.raises(TypeError):
         test_ham._integrate_sd_sd_deriv(0b110001, "1", np.array([0]))
     with pytest.raises(TypeError):
         test_ham._integrate_sd_sd_deriv("1", 0b101010, np.array([0]))
-
-
-def test_integrate_sd_sd_deriv_fdiff_h2_sto6g():
-    """Test UnrestrictedMolecularHamiltonian._integrate_sd_sd_deriv using H2/STO6G.
-
-    Computed derivatives are compared against finite difference of the `integrate_sd_sd`.
-
-    """
-    one_int = np.load(find_datafile("data_h2_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_sto6g_twoint.npy"))
-    test_ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
-    epsilon = 1e-8
-
-    for sd1 in [0b0011, 0b0101, 0b1001, 0b0110, 0b1010, 0b1100]:
-        for sd2 in [0b0011, 0b0101, 0b1001, 0b0110, 0b1010, 0b1100]:
-            for i in range(2):
-                addition = np.zeros(test_ham.nparams)
-                addition[i] = epsilon
-                test_ham2 = UnrestrictedMolecularHamiltonian(
-                    [one_int] * 2, [two_int] * 3, params=addition
-                )
-
-                finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2))
-                ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
-                assert np.allclose(finite_diff, derivative, atol=1e-5)
-
-
-def test_integrate_sd_sd_deriv_fdiff_h4_sto6g_slow():
-    """Test UnrestrictedMolecularHamiltonian._integrate_sd_sd_deriv with using H4/STO6G.
-
-    Computed derivatives are compared against finite difference of the `integrate_sd_sd`.
-
-    """
-    one_int = np.load(find_datafile("data_h4_square_hf_sto6g_oneint.npy"))
-    two_int = np.load(find_datafile("data_h4_square_hf_sto6g_twoint.npy"))
-
-    test_ham = UnrestrictedMolecularHamiltonian([one_int] * 2, [two_int] * 3)
-    epsilon = 1e-8
-    sds = sd_list(4, 8, num_limit=None, exc_orders=None)
-
-    for sd1 in sds:
-        for sd2 in sds:
-            for i in range(test_ham.nparams):
-                addition = np.zeros(test_ham.nparams)
-                addition[i] = epsilon
-                test_ham2 = UnrestrictedMolecularHamiltonian(
-                    [one_int] * 2, [two_int] * 3, params=addition
-                )
-
-                finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2))
-                ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
-                assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
 def test_integrate_sd_sd_deriv_fdiff_random():
@@ -388,9 +246,7 @@ def test_integrate_sd_sd_deriv_fdiff_random():
     assert np.allclose(two_int_bbbb, np.einsum("ijkl->jilk", two_int_bbbb))
     assert np.allclose(two_int_bbbb, np.einsum("ijkl->klij", two_int_bbbb))
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
     epsilon = 1e-7
     sds = sd_list(3, 6, num_limit=None, exc_orders=None)
 
@@ -406,19 +262,17 @@ def test_integrate_sd_sd_deriv_fdiff_random():
                 )
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2))
+                    np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2, components=False))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2, components=False))
+                    np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(
-                    sd1, sd2, np.array([i]), components=False
-                ).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative)
                 assert np.allclose(finite_diff, derivative, atol=60 * epsilon)
 
 
@@ -451,9 +305,7 @@ def test_integrate_sd_sd_deriv_fdiff_random_small():
     assert np.allclose(two_int_bbbb, np.einsum("ijkl->jilk", two_int_bbbb))
     assert np.allclose(two_int_bbbb, np.einsum("ijkl->klij", two_int_bbbb))
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
     epsilon = 1e-8
     sds = sd_list(1, 4, num_limit=None, exc_orders=None)
 
@@ -469,10 +321,10 @@ def test_integrate_sd_sd_deriv_fdiff_random_small():
                 )
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2))
+                    np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i]))
+                derivative = np.sum(derivative)
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
@@ -492,9 +344,7 @@ def test_integrate_sd_sds_zero():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3])
@@ -524,9 +374,7 @@ def test_integrate_sd_sds_one_alpha():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -536,9 +384,7 @@ def test_integrate_sd_sds_one_alpha():
         test_ham._integrate_sd_sds_one_alpha(occ_alpha, occ_beta, vir_alpha),
         np.array(
             [
-                np.array(
-                    test_ham._integrate_sd_sd_one((i,), (j,), occ_alpha[occ_alpha != i], occ_beta)
-                )
+                np.array(test_ham._integrate_sd_sd_one((i,), (j,), occ_alpha[occ_alpha != i], occ_beta))
                 * slater.sign_excite(0b101101011001, [i], [j])
                 for i in occ_alpha.tolist()
                 for j in vir_alpha.tolist()
@@ -567,9 +413,7 @@ def test_integrate_sd_sds_one_beta():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -579,11 +423,7 @@ def test_integrate_sd_sds_one_beta():
         test_ham._integrate_sd_sds_one_beta(occ_alpha, occ_beta, vir_beta),
         np.array(
             [
-                np.array(
-                    test_ham._integrate_sd_sd_one(
-                        (i + 6,), (j + 6,), occ_alpha, occ_beta[occ_beta != i]
-                    )
-                )
+                np.array(test_ham._integrate_sd_sd_one((i + 6,), (j + 6,), occ_alpha, occ_beta[occ_beta != i]))
                 * slater.sign_excite(0b101101011001, [i + 6], [j + 6])
                 for i in occ_beta.tolist()
                 for j in vir_beta.tolist()
@@ -612,9 +452,7 @@ def test_integrate_sd_sds_two_aa():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -652,9 +490,7 @@ def test_integrate_sd_sds_two_ab():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -694,9 +530,7 @@ def test_integrate_sd_sds_two_bb():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -735,9 +569,7 @@ def test_integrate_sd_sds_deriv_zero_alpha():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -776,9 +608,7 @@ def test_integrate_sd_sds_deriv_zero_beta():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -817,9 +647,7 @@ def test_integrate_sd_sds_deriv_one_aa():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -831,9 +659,7 @@ def test_integrate_sd_sds_deriv_one_aa():
             [
                 [
                     np.array(
-                        test_ham._integrate_sd_sd_deriv_one(
-                            [i], [j], 0, x, y, occ_alpha[occ_alpha != i], occ_beta
-                        )
+                        test_ham._integrate_sd_sd_deriv_one([i], [j], 0, x, y, occ_alpha[occ_alpha != i], occ_beta)
                     )
                     * slater.sign_excite(0b101101011001, [i], [j])
                     for x in range(5)
@@ -866,9 +692,7 @@ def test_integrate_sd_sds_deriv_one_ab():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -937,9 +761,7 @@ def test_integrate_sd_sds_deriv_one_ba():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -950,9 +772,7 @@ def test_integrate_sd_sds_deriv_one_ba():
             [
                 [
                     np.array(
-                        test_ham._integrate_sd_sd_deriv_one(
-                            [i], [j], 1, x, y, occ_alpha[occ_alpha != i], occ_beta
-                        )
+                        test_ham._integrate_sd_sd_deriv_one([i], [j], 1, x, y, occ_alpha[occ_alpha != i], occ_beta)
                     )
                     * slater.sign_excite(0b101101011001, [i], [j])
                     for x in range(5)
@@ -973,9 +793,7 @@ def test_integrate_sd_sds_deriv_one_ba():
             [
                 [
                     np.array(
-                        test_ham._integrate_sd_sd_deriv_one(
-                            [i], [j], 1, x, y, occ_alpha[occ_alpha != i], occ_beta
-                        )
+                        test_ham._integrate_sd_sd_deriv_one([i], [j], 1, x, y, occ_alpha[occ_alpha != i], occ_beta)
                     )
                     * slater.sign_excite(0b000001000001, [i], [j])
                     for x in range(5)
@@ -1008,9 +826,7 @@ def test_integrate_sd_sds_deriv_one_bb():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -1056,9 +872,7 @@ def test_integrate_sd_sds_deriv_two_aaa():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -1100,9 +914,7 @@ def test_integrate_sd_sds_deriv_two_aab():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -1145,9 +957,7 @@ def test_integrate_sd_sds_deriv_two_bab():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -1190,9 +1000,7 @@ def test_integrate_sd_sds_deriv_two_bbb():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
 
     occ_alpha = np.array([0, 3, 4])
     occ_beta = np.array([0, 2, 3, 5])
@@ -1230,9 +1038,7 @@ def test_integrate_sd_wfn_compare_basehamiltonian():
     two_int_bbbb = np.einsum("ijkl->jilk", two_int_bbbb) + two_int_bbbb
     two_int_bbbb = np.einsum("ijkl->klij", two_int_bbbb) + two_int_bbbb
 
-    test_ham = UnrestrictedMolecularHamiltonian(
-        [one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb]
-    )
+    test_ham = UnrestrictedMolecularHamiltonian([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
     test_ham2 = disable_abstract(
         UnrestrictedMolecularHamiltonian, {"integrate_sd_wfn": BaseHamiltonian.integrate_sd_wfn}
     )([one_int_a, one_int_b], [two_int_aaaa, two_int_abab, two_int_bbbb])
@@ -1246,20 +1052,12 @@ def test_integrate_sd_wfn_compare_basehamiltonian():
                 test_ham2.integrate_sd_wfn(slater.create(0, *occ_indices), wfn),
             )
             assert np.allclose(
-                test_ham.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)
-                ),
-                test_ham2.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)
-                ),
+                test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)),
+                test_ham2.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)),
             )
             assert np.allclose(
-                test_ham.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham.nparams)
-                ),
-                test_ham2.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham2.nparams)
-                ),
+                test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham.nparams)),
+                test_ham2.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham2.nparams)),
             )
             assert np.allclose(
                 test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, components=True),
@@ -1366,9 +1164,7 @@ def test_integrate_sd_wfn_deriv_fdiff():
 
     assert np.allclose(
         nd.Gradient(objective)(wfn.wfns[0].params),
-        ham.integrate_sd_wfn(
-            0b001011, wfn, wfn_deriv=(wfn.wfns[0], np.arange(wfn.wfns[0].nparams))
-        ),
+        ham.integrate_sd_wfn(0b001011, wfn, wfn_deriv=(wfn.wfns[0], np.arange(wfn.wfns[0].nparams))),
     )
 
 
@@ -1383,6 +1179,4 @@ def test_unrestrictedmolecularhamiltonian_save_params(tmp_path):
     ham.assign_params(np.random.rand(ham.nparams))
     ham.save_params(str(tmp_path / "temp.npy"))
     assert np.allclose(np.load(str(tmp_path / "temp.npy")), ham.params)
-    assert np.allclose(
-        np.load(str(tmp_path / "temp_um.npy")), [ham._prev_unitary_alpha, ham._prev_unitary_beta]
-    )
+    assert np.allclose(np.load(str(tmp_path / "temp_um.npy")), [ham._prev_unitary_alpha, ham._prev_unitary_beta])

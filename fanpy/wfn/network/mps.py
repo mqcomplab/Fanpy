@@ -1,4 +1,5 @@
 """Hard-coded Matrix Product State wavefunction."""
+
 import functools
 
 from fanpy.tools import slater
@@ -203,8 +204,7 @@ class MatrixProductState(BaseWavefunction):
                 raise TypeError("Given index must be an integer.")
             if not 0 <= index < self.nspatial:
                 raise ValueError(
-                    "Given index must be greater than or equal to zero or less than the number of "
-                    "spatial orbitals."
+                    "Given index must be greater than or equal to zero or less than the number of " "spatial orbitals."
                 )
 
         if index == 0:  # pylint: disable=R1705
@@ -287,9 +287,7 @@ class MatrixProductState(BaseWavefunction):
             param_index -= self.get_matrix_indices(ind_spatial)[0]
 
         matrix_shape = self.get_matrix_shape(ind_spatial)
-        ind_occ, ind_row, ind_col = np.unravel_index(  # pylint: disable=W0632
-            [param_index], matrix_shape
-        )
+        ind_occ, ind_row, ind_col = np.unravel_index([param_index], matrix_shape)  # pylint: disable=W0632
         return ind_spatial, ind_occ.item(), ind_row.item(), ind_col.item()
 
     # TODO: the parameters can probably be changed to something more elegant (like a tensor object
@@ -490,9 +488,7 @@ class MatrixProductState(BaseWavefunction):
         if __debug__:
             if not slater.is_sd_compatible(sd):
                 raise TypeError("Slater determinant must be given as an integer.")
-            if deriv is not None and not (
-                isinstance(deriv, np.ndarray) and deriv.ndim == 1 and deriv.dtype == int
-            ):
+            if deriv is not None and not (isinstance(deriv, np.ndarray) and deriv.ndim == 1 and deriv.dtype == int):
                 raise TypeError("deriv must be given as a one dimensional numpy array of integers.")
 
         # if no derivatization
@@ -512,10 +508,10 @@ class MatrixProductState(BaseWavefunction):
                 start_index = D * n
                 end_index = start_index + D
             elif k < K - 1:
-                start_index = 4 * D + 4 * D ** 2 * (k - 1) + D ** 2 * n
-                end_index = start_index + D ** 2
+                start_index = 4 * D + 4 * D**2 * (k - 1) + D**2 * n
+                end_index = start_index + D**2
             else:
-                start_index = 4 * D + 4 * D ** 2 * (k - 1) + D * n
+                start_index = 4 * D + 4 * D**2 * (k - 1) + D * n
                 end_index = start_index + D
             output[start_index:end_index] = np.ravel(deriv_block)
         return output[deriv]
@@ -541,9 +537,9 @@ class MatrixProductState(BaseWavefunction):
         """
         # assign memory allocated to cache
         if self.memory == np.inf:
-            maxsize = 2 ** 30
+            maxsize = 2**30
         elif include_derivative:
-            maxsize = int(self.memory / 8 / (self.dimension ** 2 + 1))
+            maxsize = int(self.memory / 8 / (self.dimension**2 + 1))
         else:
             maxsize = int(self.memory / 8)
 

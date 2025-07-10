@@ -179,11 +179,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         wfn_name = "APG"
         if wfn_kwargs is None:
             wfn_kwargs = "ngem=None"
-    elif wfn_type == "network":
-        from_imports.append(("fanpy.upgrades.numpy_network", "NumpyNetwork"))
-        wfn_name = "NumpyNetwork"
-        if wfn_kwargs is None:
-            wfn_kwargs = "num_layers=2"
     elif wfn_type == "rbm":
         from_imports.append(("fanpy.wfn.network.rbm", "RestrictedBoltzmannMachine"))
         wfn_name = "RestrictedBoltzmannMachine"
@@ -319,10 +314,8 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         from_imports.append(("fanpy.solver.ci", "brute"))
         solver_name = "brute"
     elif solver == "minimize":
-        # from_imports.append(("fanpy.solver.equation", "minimize"))
-        # solver_name = "minimize"
-        from_imports.append(("fanpy.upgrades.bfgs_fanpy", "bfgs_minimize"))
-        solver_name = "bfgs_minimize"
+        from_imports.append(("fanpy.solver.equation", "minimize"))
+        solver_name = "minimize"
         if solver_kwargs is None:
             solver_kwargs = "method='BFGS', jac=objective.gradient, options={'gtol': 5e-7, 'disp':True}"
     elif solver == "least_squares":
@@ -338,6 +331,15 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         solver_name = "root"
         if solver_kwargs is None:
             solver_kwargs = "method='hybr', jac=objective.jacobian, options={'xtol': 1.0e-9}"
+    elif solver == "trustregion":
+        print("WARNING: trust region is still under development and may not work as expected.")
+        from_imports.append(("fanpy.solver.equation", "minimize"))
+        solver_name = "minimize"
+        if solver_kwargs is None:
+            solver_kwargs = (
+                'method=trust-constr', 'constraint_bounds=(-1e-1, 1e-1), energy_bound=-np.inf, norm_constraint=True, '
+                "options={'gtol': 1e-8, 'xtol': 1e-8, 'maxiter': 1000}"
+            )
 
     if memory is not None:
         memory = "'{}'".format(memory)
@@ -347,30 +349,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         output += "import {}\n".format(i)
     for key, val in from_imports:
         output += "from {} import {}\n".format(key, val)
-    output += "from fanpy.upgrades import speedup_sign\n"
-    if "apg" in wfn_type or wfn_type in ['ap1rog', 'apig']:
-        output += "import fanpy.upgrades.speedup_apg\n"
-        # output += "import fanpy.upgrades.speedup_objective\n"
-    if 'ci' in wfn_type or wfn_type == 'network':
-        # output += "import fanpy.upgrades.speedup_objective\n"
-        pass
-    if solver == "trustregion":
-        output += "from fanpy.upgrades.trustregion_qmc_fanpy import minimize\n"
-        output += "from fanpy.upgrades.trf_fanpy import least_squares\n"
-        if solver_kwargs is None:
-            solver_kwargs = (
-                'constraint_bounds=(-1e-1, 1e-1), energy_bound=-np.inf, norm_constraint=True, '
-                "options={'gtol': 1e-8, 'xtol': 1e-8, 'maxiter': 1000}"
-            )
-        solver_name = "minimize"
-    elif solver == "least_squares":
-        output += "from fanpy.upgrades.trf_fanpy import least_squares\n"
-        solver_name = "least_squares"
-        if solver_kwargs is None:
-            solver_kwargs = (
-                "xtol=1.0e-10, ftol=1.0e-10, gtol=1.0e-10, "
-                "max_nfev=1000*objective.params.size, jac=objective.jacobian"
-            )
 
     output += "\n\n"
 
@@ -622,7 +600,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         output += "objective.sample_size = len(pspace)\n"
         output += "wfn.pspace_norm = objective.refwfn\n"
 
-    if wfn_type in ['apg', 'apig', 'apsetg', 'apg2', 'apg3', 'apg4', 'apg5', 'apg6', 'apg7', 'doci', 'network']:
+    if wfn_type in ['apg', 'apig', 'apsetg', 'apg2', 'apg3', 'apg4', 'apg5', 'apg6', 'apg7', 'doci']:
         output += "# Normalize\n"
         output += "wfn.normalize(pspace)\n\n"
 

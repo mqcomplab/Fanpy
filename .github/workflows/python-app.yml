@@ -1,0 +1,49 @@
+name: Test Fanpy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        # dependencies listed in setup.py 
+        # NOTE on versions:
+        #   we have not properly tested for numpy 2.0 yet,
+        #   so we need to specify versions for those two
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[test, pyscf, tensorflow]"
+      - name : Install PyCI
+        run: |
+          pwd 
+          cd ..
+          git clone https://github.com/theochem/pyci.git && cd pyci
+          make
+          python -m pip install .
+          cd ../Fanpy
+      - name: Run tests with pytest
+        run: |
+          pip install pytest pytest-cov
+          pytest --cov=fanpy tests/test_*
+      # - name: lint
+      #   run: |
+      #     pip install flake8
+      #     flake8 --max-line-length=100 --ignore=E501,E203,E266,W503,E402 fanpy/
+      #     flake8 --max-line-length=100 --ignore=E501,E203,E266,W503,E402 tests/

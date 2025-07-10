@@ -6,9 +6,8 @@ import numpy as np
 
 
 class FixedEmbeddedWavefunction(EmbeddedWavefunction):
-    """Embedding of multiple subsystems.
+    """Embedding of multiple subsystems."""
 
-    """
     def __init__(self, nelec, nelec_list, nspin, indices_list, wfns, memory=None, disjoint=True):
         """Initialize the wavefunction.
 
@@ -86,12 +85,10 @@ class FixedEmbeddedWavefunction(EmbeddedWavefunction):
 
         """
         sd_list = self.split_sd(sd)
-        if 0 in sd_list and  deriv is None:
+        if 0 in sd_list and deriv is None:
             return 0
 
-        wfn_contrib = np.array(
-            [wfn.get_overlap(sd_system, deriv=None) for sd_system, wfn in zip(sd_list, self.wfns)]
-        )
+        wfn_contrib = np.array([wfn.get_overlap(sd_system, deriv=None) for sd_system, wfn in zip(sd_list, self.wfns)])
         if deriv is None:
             return np.prod(wfn_contrib)
 
@@ -129,7 +126,7 @@ class FixedEmbeddedWavefunction(EmbeddedWavefunction):
         wfn_index = self.wfns.index(wfn)
         # NOTE: assume that parameters are not shared between wavefunctions
         output = np.prod(wfn_contrib[:wfn_index])
-        output *= np.prod(wfn_contrib[wfn_index + 1:])
+        output *= np.prod(wfn_contrib[wfn_index + 1 :])
         output *= wfn.get_overlap(sd_list[wfn_index], deriv=indices)
         return output
 
@@ -185,10 +182,10 @@ class FixedEmbeddedWavefunction(EmbeddedWavefunction):
         for wfn, sds_system in zip(self.wfns, sds_list):
             if hasattr(wfn, "get_overlaps"):
                 wfn_contrib.append(wfn.get_overlaps(sds_system, deriv=None))
-                #overlaps = np.zeros(sds_system.shape)
-                #mask = sds_system != 0
-                #overlaps[mask] = wfn.get_overlaps(sds_system[mask], deriv=None)
-                #wfn_contrib.append(overlaps)
+                # overlaps = np.zeros(sds_system.shape)
+                # mask = sds_system != 0
+                # overlaps[mask] = wfn.get_overlaps(sds_system[mask], deriv=None)
+                # wfn_contrib.append(overlaps)
             else:
                 wfn_contrib.append([wfn.get_overlap(sd, deriv=None) for sd in sds_system])
         wfn_contrib = np.array(wfn_contrib)
@@ -227,14 +224,14 @@ class FixedEmbeddedWavefunction(EmbeddedWavefunction):
         # NOTE: assume that parameters are not shared between wavefunctions
         # FIXME: how to handle zeros?
         nonzero_output = np.prod(wfn_contrib[:wfn_index], axis=0)
-        nonzero_output *= np.prod(wfn_contrib[wfn_index + 1:], axis=0)
+        nonzero_output *= np.prod(wfn_contrib[wfn_index + 1 :], axis=0)
         if hasattr(wfn, "get_overlaps"):
             nonzero_output = nonzero_output[:, None] * wfn.get_overlaps(sds_list[wfn_index], deriv=indices)
 
-            #overlaps = np.zeros(sds_system.shape)
-            #mask = sds_system != 0
-            #overlaps[mask] = wfn.get_overlaps(sds_system[mask], deriv=None)
-            #wfn_contrib.append(overlaps)
+            # overlaps = np.zeros(sds_system.shape)
+            # mask = sds_system != 0
+            # overlaps[mask] = wfn.get_overlaps(sds_system[mask], deriv=None)
+            # wfn_contrib.append(overlaps)
         else:
             nonzero_output = nonzero_output[:, None] * np.array(
                 [wfn.get_overlap(sd, deriv=indices) for sd in sds_list[wfn_index]]

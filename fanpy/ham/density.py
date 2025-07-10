@@ -10,6 +10,7 @@ density_matrix(sd_coeffs, civec, nspatial, is_chemist_notation=False, val_thresh
                orbtype='restricted')
     Returns the one and two electron density matrices.
 """
+
 from fanpy.tools import slater
 
 import numpy as np
@@ -61,20 +62,14 @@ def add_one_density(matrices, spin_i, spin_j, val, orbtype):  # pylint: disable=
             raise TypeError("All matrices must be square")
 
         if orbtype not in ["restricted", "unrestricted", "generalized"]:
-            raise ValueError(
-                "Orbital type must be one of 'restricted', 'unrestricted', and 'generalized'."
-            )
+            raise ValueError("Orbital type must be one of 'restricted', 'unrestricted', and 'generalized'.")
 
         if orbtype in ["restricted", "generalized"] and len(matrices) != 1:
             raise ValueError(
-                "Density matrix must be given as a list of one numpy array for"
-                " restricted and generalized orbitals"
+                "Density matrix must be given as a list of one numpy array for" " restricted and generalized orbitals"
             )
         if orbtype in ["unrestricted"] and len(matrices) != 2:
-            raise ValueError(
-                "Density matrix must be given as a list of two numpy arrays for"
-                " unrestricted orbitals"
-            )
+            raise ValueError("Density matrix must be given as a list of two numpy arrays for" " unrestricted orbitals")
 
     if orbtype == "restricted":
         nspatial = matrices[0].shape[0]
@@ -152,19 +147,15 @@ def add_two_density(matrices, spin_i, spin_j, spin_k, spin_l, val, orbtype):
             raise TypeError("All matrices should have the same dimension along all of the axes")
 
         if orbtype not in ["restricted", "unrestricted", "generalized"]:
-            raise ValueError(
-                "Orbital type must be one of 'restricted', 'unrestricted', and 'generalized'."
-            )
+            raise ValueError("Orbital type must be one of 'restricted', 'unrestricted', and 'generalized'.")
 
         if orbtype in ["restricted", "generalized"] and len(matrices) != 1:
             raise ValueError(
-                "Density matrix must be given as a list of one numpy array for"
-                " restricted and generalized orbitals"
+                "Density matrix must be given as a list of one numpy array for" " restricted and generalized orbitals"
             )
         if orbtype in ["unrestricted"] and len(matrices) != 3:
             raise ValueError(
-                "Density matrix must be given as a list of three numpy arrays for"
-                " unrestricted orbitals"
+                "Density matrix must be given as a list of three numpy arrays for" " unrestricted orbitals"
             )
 
     if orbtype == "restricted":
@@ -174,9 +165,9 @@ def add_two_density(matrices, spin_i, spin_j, spin_k, spin_l, val, orbtype):
         spatial_k = slater.spatial_index(spin_k, nspatial)
         spatial_l = slater.spatial_index(spin_l, nspatial)
         # if i and k have same spin and j and l have same spin
-        if slater.is_alpha(spin_i, nspatial) == slater.is_alpha(
-            spin_k, nspatial
-        ) and slater.is_alpha(spin_j, nspatial) == slater.is_alpha(spin_l, nspatial):
+        if slater.is_alpha(spin_i, nspatial) == slater.is_alpha(spin_k, nspatial) and slater.is_alpha(
+            spin_j, nspatial
+        ) == slater.is_alpha(spin_l, nspatial):
             matrices[0][spatial_i, spatial_j, spatial_k, spatial_l] += val
 
     elif orbtype == "unrestricted":
@@ -217,9 +208,7 @@ def add_two_density(matrices, spin_i, spin_j, spin_k, spin_l, val, orbtype):
 # FIXME: make input of Wavefunction and CIWavefunction instead of sd_coeffs, civec, nspatial, ...
 # TODO: generalize to arbitrary order density matrix
 # FIXME: too many branches, too many statements
-def density_matrix(
-    sd_coeffs, civec, nspatial, is_chemist_notation=False, val_threshold=0, orbtype="restricted"
-):
+def density_matrix(sd_coeffs, civec, nspatial, is_chemist_notation=False, val_threshold=0, orbtype="restricted"):
     r"""Return the first and second order density matrices.
 
     Second order density matrix uses the Physicist's notation:
@@ -277,9 +266,7 @@ def density_matrix(
     num_sds = len(sorted_sd)
 
     if __debug__ and orbtype not in ["restricted", "unrestricted", "generalized"]:
-        raise ValueError(
-            "Orbital type must be one of 'restricted', 'unrestricted', and 'generalized'."
-        )
+        raise ValueError("Orbital type must be one of 'restricted', 'unrestricted', and 'generalized'.")
 
     # initiate output
     one_densities = []

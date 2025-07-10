@@ -178,9 +178,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         wfn_name = "APG"
         if wfn_kwargs is None:
             wfn_kwargs = "ngem=None"
-    elif wfn_type == "network":
-        from_imports.append(("fanpy.upgrades.numpy_network", "NumpyNetwork"))
-        wfn_name = "NumpyNetwork"
         if wfn_kwargs is None:
             wfn_kwargs = "num_layers=2"
     elif wfn_type == "rbm":
@@ -343,13 +340,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         output += "import {}\n".format(i)
     for key, val in from_imports:
         output += "from {} import {}\n".format(key, val)
-    output += "from fanpy.upgrades import speedup_sign\n"
-    if "apg" in wfn_type or wfn_type in ['ap1rog', 'apig']:
-        output += "import fanpy.upgrades.speedup_apg\n"
-        # output += "import fanpy.upgrades.speedup_objective\n"
-    if 'ci' in wfn_type or wfn_type == 'network':
-        # output += "import fanpy.upgrades.speedup_objective\n"
-        pass
 
     output += "\n\n"
 

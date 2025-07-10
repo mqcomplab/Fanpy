@@ -9,9 +9,6 @@ https://github.com/pypa/sampleproject
 from os import path
 
 from setuptools import find_packages, setup
-from setuptools.extension import Extension
-from Cython.Build import cythonize
-import numpy
 
 here = path.abspath(path.dirname(__file__))
 
@@ -22,18 +19,18 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 setup(
     name="fanpy",
     version="1.0.0",
-    description="A module for evaluating, differentiating, and integrating Gaussian functions.",
+    description="A module for developing and testing multideterminant wavefunctions and related ab initio methods in electronic structure theory.",
     long_description=long_description,
     # Denotes that our long_description is in Markdown; valid values are
     # text/plain, text/x-rst, and text/markdown
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/mqcomplab/Fanpy",
     # This should be your name or the name of the organization which owns the
     # project.
-    author="Taewon D. Kim",
+    author="MQCompLab",
     # This should be a valid email address corresponding to the author listed
     # above.
-    author_email="david.kim.91@gmail.com",
+    author_email="ramirandaq@gmail.com",
     # Classifiers help users find your project by categorizing it.
     #
     # For a list of valid classifiers, see https://pypi.org/classifiers/
@@ -43,7 +40,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        "Development Status :: 1 - Planning",
+        "Development Status :: 4 - Beta",
         # Indicate who your project is intended for
         "Intended Audience :: Science/Research",
         "Intended Audience :: Education",
@@ -53,15 +50,21 @@ setup(
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         # Specify the Python versions you support here.
         # These classifiers are *not* checked by 'pip install'. See instead
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
     keywords="wavefunction hamiltonian optimization schrodinger equation quantum chemistry",
     packages=find_packages(exclude=["docs", "tests"]),
-    python_requires=">=3.4",
-    install_requires=["numpy", "scipy", "cma"],
+    python_requires=">=3.9",
+    install_requires=["numpy>=1.25", 
+                      "scipy>=1.9", 
+                      "cython", 
+                      "pandas", 
+                      "cma", 
+                      "psutil"],
     extras_require={
         "dev": [
             "tox",
@@ -75,7 +78,7 @@ setup(
             "bandit",
             "black",
         ],
-        "test": ["tox", "pytest", "pytest-cov"],
+        "test": ["pytest", "pytest-cov", "numdifftools"],
         "horton": ["horton"],
         "pyscf": ["pyscf"],
         "tensorflow": ["tensorflow"],
@@ -98,52 +101,9 @@ setup(
     },
     # List additional URLs that are relevant to your project as a dict.
     project_urls={
-        "Bug Reports": "https://github.com/theochem/gbasis/issues",
-        "Organization": "https://github.com/quantumelephant/",
-        "Source": "https://github.com/theochem/gbasis/",
+        "Bug Reports": "https://github.com/mqcomplab/Fanpy/issues",
+        "Organization": "https://github.com/mqcomplab",
+        "Source": "https://github.com/mqcomplab/Fanpy/",
     },
     zip_safe=False,
-    ext_modules= cythonize(
-            [
-        # Extension(
-        #     "fanpy.objective.schrodinger.cext",
-        #     ["fanpy/objective/schrodinger/cext.pyx"],
-        #     include_dirs=[numpy.get_include()],
-        # ),
-        # Extension(
-        #     "fanpy.wfn.geminal.cext",
-        #     ["fanpy/wfn/geminal/cext.pyx"],
-        #     include_dirs=[numpy.get_include()],
-        # ),
-        Extension(
-            "fanpy.upgrades.cext_apg",
-            ["fanpy/upgrades/cext_apg.pyx"],
-            include_dirs=[numpy.get_include()],
-        ),
-        Extension(
-            "fanpy.upgrades.cext_sign",
-            ["fanpy/upgrades/cext_sign.pyx"],
-            include_dirs=[numpy.get_include()],
-        ),
-        Extension(
-            "fanpy.upgrades.cext_objective",
-            ["fanpy/upgrades/cext_objective.pyx"],
-            include_dirs=[numpy.get_include()],
-        ),
-        Extension(
-            "fanpy.upgrades.cext_apg_parallel",
-            ["fanpy/upgrades/cext_apg_parallel.pyx"],
-            #extra_compile_args=['-fopenmp'],
-            #extra_link_args=['-fopenmp'],
-            include_dirs=[numpy.get_include()],
-        ),
-        Extension(
-            "fanpy.upgrades.cext_apg_parallel2",
-            ["fanpy/upgrades/cext_apg_parallel2.pyx"],
-            #extra_compile_args=['-fopenmp'],
-            #extra_link_args=['-fopenmp'],
-            include_dirs=[numpy.get_include()],
-        ),
-        ]
-    ),
 )

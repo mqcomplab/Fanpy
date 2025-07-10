@@ -1,4 +1,5 @@
 """CI Singles and Doubles Wavefunction."""
+
 from fanpy.tools.sd_list import sd_list
 from fanpy.tools import slater
 from fanpy.wfn.ci.base import CIWavefunction
@@ -10,14 +11,14 @@ class hCI(CIWavefunction):
 
     CI with restricted excitation number and seniority number.
 
-    hierarchy parameter 
+    hierarchy parameter
         :math: `h = \alpha_1 e + \alpha_2 s`,
         where, 'e' is excitation degree & 's' is the seniority number.
 
     ***Reference: Hierarchy Configuration Interaction: Combining Seniority Number
                   and Excitation Degree by Fabris Kossoski, et.al.
                   https://doi.org/10.48550/arXiv.2203.06154
-   
+
     Extra Attributes for hCI
     ----------
     h  : float
@@ -26,7 +27,7 @@ class hCI(CIWavefunction):
         parameter to control excitation order
     alpha2 :  float
         parameter to control seniority
-    
+
     Attributes
     ----------
     nelec : int
@@ -77,6 +78,8 @@ class hCI(CIWavefunction):
         Assign the reference wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign parameters of the wavefunction.
+    import_params(self, guess)
+        Transfers parameters from a guess wavefunction to the wavefunction.
     enable_cache(self)
         Load the functions whose values will be cached.
     clear_cache(self)
@@ -96,37 +99,35 @@ class hCI(CIWavefunction):
     assign_hierarchy(self, hierarchy=None)
         Assign the hierarchy number of the wavefunction.
     assign_alphas(self, alpha1, alpha2)
-        Assign the weight coefficient 'alpha1' to limit the excitation 
+        Assign the weight coefficient 'alpha1' to limit the excitation
         orders and 'alpha2' to restrict the seniority.
 
     """
+
     def __init__(
-        self, nelec, nspin, hci_version, hci_pattern,alpha1, alpha2, sds=None, memory=None, hierarchy=None, refwfn=None):
+        self, nelec, nspin, hci_version, hci_pattern, alpha1, alpha2, sds=None, memory=None, hierarchy=None, refwfn=None
+    ):
         self.assign_alphas(alpha1=alpha1, alpha2=alpha2)
         self.assign_hci_version(hci_version=hci_version)
         self.assign_hci_pattern(hci_pattern=hci_pattern)
         self.assign_hierarchy(hierarchy=hierarchy)
         self.assign_pos_hierarchies(hci_version, hci_pattern, hierarchy)
-        super().__init__(nelec, nspin, memory=memory) 
+        super().__init__(nelec, nspin, memory=memory)
         self.assign_sds(sds=sds)
         self.assign_refwfn(refwfn=refwfn)
-        
-
 
     def assign_hci_version(self, hci_version):
-        if hci_version not in ['old', 'new']:
+        if hci_version not in ["old", "new"]:
             raise TypeError("hci version must be provided either `old` or `new`")
         else:
-            self.hci_version=hci_version
-        
+            self.hci_version = hci_version
 
     def assign_hci_pattern(self, hci_pattern):
-        if hci_pattern not in ['pos_diag' , 'neg_diag' , 'vch' , 'hch']:
+        if hci_pattern not in ["pos_diag", "neg_diag", "vch", "hch"]:
             raise TypeError("hci version must be provided either `pos_diag`, `neg_diag`,`vch' or `hch`")
         else:
-            self.hci_pattern=hci_pattern
+            self.hci_pattern = hci_pattern
 
-    
     def assign_hierarchy(self, hierarchy=4.5):
         """Assign the hierachy number for hCI wavefunction.
 
@@ -134,10 +135,10 @@ class hCI(CIWavefunction):
         Parameters
         ----------
         hierarchy : {float, None}
-            Hierarchy number to restrict the space of slater determinats with                 
-            inclusion of limited excitation orders & restriction on seniority numbers. 
+            Hierarchy number to restrict the space of slater determinats with
+            inclusion of limited excitation orders & restriction on seniority numbers.
 
-            `None` means sds is set to `None` (default value: all orders of 
+            `None` means sds is set to `None` (default value: all orders of
              excitation and no seniority restrictions.).
 
         Raises
@@ -146,40 +147,39 @@ class hCI(CIWavefunction):
             If the hierarchy is not an integer, float or None.
         ValueError
             If the hierarchy is neither a positive number nor zero.
-        
+
         """
 
         if not isinstance(hierarchy, (int, float, type(None))):
             raise TypeError("`hierarchy` must be provided as an integer, float or `None`.")
-        #elif hierarchy is None:
+        # elif hierarchy is None:
         #    self.sds = None
         else:
             self.hierarchy = hierarchy
-        #return self.hierarchy
+        # return self.hierarchy
 
+    # def assign_pos_hierarchies(self):
+    def assign_pos_hierarchies(self, hci_version, hci_pattern, hierarchy):
+        if self.hci_version == "new":
 
-    #def assign_pos_hierarchies(self):
-    def assign_pos_hierarchies(self,hci_version, hci_pattern, hierarchy):
-        if self.hci_version=='new':
-            
-            if self.hci_pattern == 'pos_diag':
-                self.pos_hierarchies =np.arange(0, hierarchy+0.5,0.5)
-            
-            elif self.hci_pattern == 'neg_diag':
-                self.pos_hierarchies=np.arange(0, hierarchy+1,1)
-            
-            elif self.hci_pattern == 'hch':
-                self.pos_hierarchies=np.arange(0, hierarchy+0.5,0.5)
-            
-            elif self.hci_pattern == 'vch':
-                self.pos_hierarchies=np.arange(-1*hierarchy, hierarchy+1,1)
-        
+            if self.hci_pattern == "pos_diag":
+                self.pos_hierarchies = np.arange(0, hierarchy + 0.5, 0.5)
+
+            elif self.hci_pattern == "neg_diag":
+                self.pos_hierarchies = np.arange(0, hierarchy + 1, 1)
+
+            elif self.hci_pattern == "hch":
+                self.pos_hierarchies = np.arange(0, hierarchy + 0.5, 0.5)
+
+            elif self.hci_pattern == "vch":
+                self.pos_hierarchies = np.arange(-1 * hierarchy, hierarchy + 1, 1)
+
         else:
             self.pos_hierarchies = [self.hierarchy]
 
     def assign_alphas(self, alpha1, alpha2):
-        """ Assign the alpha1 and alpha2 parameters for defined hierachy number to restrict 
-            excitation orders and seniority, respectively. 
+        """Assign the alpha1 and alpha2 parameters for defined hierachy number to restrict
+            excitation orders and seniority, respectively.
 
         Parameters
         ----------
@@ -191,7 +191,7 @@ class hCI(CIWavefunction):
         TypeError
             If the alpha is not an integer or None.
         ValueError
-            If the alpha is a negative number or greater than 1. 
+            If the alpha is a negative number or greater than 1.
 
         """
 
@@ -200,13 +200,11 @@ class hCI(CIWavefunction):
             for alpha in alphas:
                 if not isinstance(alpha, (int, float)):
                     raise TypeError("alpha must be an integer or float.")
-                if alpha <-1 or alpha > 1:
-                    raise ValueError("`alpha` must be greater than or equal to -1 and less than or equal to 1..") 
+                if alpha < -1 or alpha > 1:
+                    raise ValueError("`alpha` must be greater than or equal to -1 and less than or equal to 1..")
 
         self.alpha1 = alpha1
         self.alpha2 = alpha2
-
-      
 
     def assign_refwfn(self, refwfn=None):
         """Assign the reference wavefunction upon which the CC operator will act.
@@ -232,25 +230,22 @@ class hCI(CIWavefunction):
             self.refwfn = slater.ground(nocc=self.nelec, norbs=self.nspin)
         elif isinstance(refwfn, int):
             if slater.total_occ(refwfn) != self.nelec:
-                raise ValueError('refwfn must have {} electrons'.format(self.nelec))
+                raise ValueError("refwfn must have {} electrons".format(self.nelec))
             # TODO: check that refwfn has the right number of spin-orbs
             self.refwfn = refwfn
         else:
             if not isinstance(refwfn, CIWavefunction):
-                raise TypeError('refwfn must be a CIWavefunction or a int object')
-            if not hasattr(refwfn, 'sds'):  # NOTE: Redundant test.
-                raise AttributeError('refwfn must have the sds attribute')
+                raise TypeError("refwfn must be a CIWavefunction or a int object")
+            if not hasattr(refwfn, "sds"):  # NOTE: Redundant test.
+                raise AttributeError("refwfn must have the sds attribute")
             if refwfn.nelec != self.nelec:
-                raise ValueError('refwfn must have {} electrons'.format(self.nelec))
+                raise ValueError("refwfn must have {} electrons".format(self.nelec))
             if refwfn.nspin != self.nspin:
-                raise ValueError('refwfn must have {} spin orbitals'.format(self.nspin))
+                raise ValueError("refwfn must have {} spin orbitals".format(self.nspin))
             self.refwfn = refwfn
 
-
-
- 
     def assign_sds(self, sds=None):
-        """Generate the list of pairs of allowed excitation orders, 'e', and seniorities, 's'. 
+        """Generate the list of pairs of allowed excitation orders, 'e', and seniorities, 's'.
         Obtain the list of allowed Slater determinants corresponding to each (e,s) pair.
         Assign the obtained list of Slater determinants in the hCI wavefunction.
 
@@ -277,72 +272,69 @@ class hCI(CIWavefunction):
             raise ValueError(
                 "Only the default list of Slater determinants is allowed. i.e. sds "
                 "is `None`. If you would like to customize your CI wavefunction, use "
-                "CIWavefunction instead.")
+                "CIWavefunction instead."
+            )
 
-        #******************* GET LISTS FOR ALLOWED (e, s) PAIRS ******************
+        # ******************* GET LISTS FOR ALLOWED (e, s) PAIRS ******************
         # Here, the way of obtaining (e, s) pairs is only for the reference systems
         # having maximum number of paired electrons, so the seniority of the reference
         # should be either 0 or 1.
-    
+
         # np.array of allowed excitation orders for a given 'nelec'
         exc_orders = range(0, self.nelec + 1, 1)
-        #print(exc_orders)
-        
+        # print(exc_orders)
+
         # Initialize the empty lists for allowed pairs [e,s]
         allowed_e = []
         allowed_s = []
         print(self.pos_hierarchies)
         for h in self.pos_hierarchies:
-            #print(h)
+            # print(h)
             for e in exc_orders:
                 # closed-shell system
-                if self.nelec % 2 == 0: 
-                    if e % 2 == 0: #if e is even
-                        S_list = range(0, min(2 * e, self.nelec)+2, 2)
-                    elif e % 2 == 1: #if e is odd
-                        S_list = range(2, min(2 * e, self.nelec)+2, 2)
+                if self.nelec % 2 == 0:
+                    if e % 2 == 0:  # if e is even
+                        S_list = range(0, min(2 * e, self.nelec) + 2, 2)
+                    elif e % 2 == 1:  # if e is odd
+                        S_list = range(2, min(2 * e, self.nelec) + 2, 2)
 
                 # open-shell system
                 elif self.nelec % 2 == 1:
-                    S_list = range(1, min(2 * e + 1, self.nelec)+2,2)
+                    S_list = range(1, min(2 * e + 1, self.nelec) + 2, 2)
 
                 # Calculate seniority number using heirarachy number formula
-               # print("iiiii", self.hierarchy, self.alpha1, self.alpha2)
-                s = (h - self.alpha1 * e)/self.alpha2
+                # print("iiiii", self.hierarchy, self.alpha1, self.alpha2)
+                s = (h - self.alpha1 * e) / self.alpha2
 
-                #print(e, s)
+                # print(e, s)
                 if s >= 0 and s.is_integer() and s in S_list:
-                    print(h,e,s)
+                    print(h, e, s)
                     allowed_e.append(int(e))
                     allowed_s.append(int(s))
-                    
-        e_s_pairs = list(zip(allowed_e, allowed_s)) 
-        #print(e_s_pairs)
 
-       
-        #****************** GET SDS LIST FOR ALLOWED (e, s) PAIRS ******************
+        e_s_pairs = list(zip(allowed_e, allowed_s))
+        # print(e_s_pairs)
+
+        # ****************** GET SDS LIST FOR ALLOWED (e, s) PAIRS ******************
         ground_state = slater.ground(self.nelec, self.nspin)
         # Start an empty list with ground state
         allowed_sds = [ground_state]
- 
+
         # Obtain list of Slater determinants for allowed (e, s) pairs
         # corresponding to given h, alpha1, alpha2
         for e, s in e_s_pairs:
-            sd_ = sd_list(self.nelec,
-                self.nspin,
-                num_limit=None,
-                exc_orders=[e],
-                spin = None,
-                seniority=s)
-            print(e,s,sd_)
+            sd_ = sd_list(
+                self.nelec, self.nspin, num_limit=None, exc_orders=[e], spin=None, seniority=s, hierarchy=True
+            )
+            print(e, s, sd_)
             # Remove ground state Slater determinant from the list before appending
-            #del sd_[0]
- 
+            # del sd_[0]
+
             # Check if list contains same Slater determinant multiple times
             if len(sd_) == len(set(sd_)):
                 # Add the allowed Slater determinants to the list
                 allowed_sds.extend(sd_)
-            else: 
+            else:
                 tmp_ = []
                 for j in sd_:
                     if j not in tmp_:
@@ -350,16 +342,15 @@ class hCI(CIWavefunction):
                 allowed_sds.extend(tmp_)
 
         if len(allowed_sds) == 1:
-            raise Warning("No compatible (e,s) pairs for given h, alpha1 & alpha2. Only ground state Slater determinant is allowed, proceeding with HF calculation.")
-        allowed_sds=list(set(allowed_sds))
-        #allowed_sds=list(allowed_sds)
+            raise Warning(
+                "No compatible (e,s) pairs for given h, alpha1 & alpha2. Only ground state Slater determinant is allowed, proceeding with HF calculation."
+            )
+        allowed_sds = list(set(allowed_sds))
+        # allowed_sds=list(allowed_sds)
         super().assign_sds(allowed_sds)
         print(allowed_sds)
         print(f"Number of total slater determinants = ", {len(allowed_sds)})
-      
 
 
-
-
-#obj = hCI(8, 16, hci_version='old', hci_pattern='neg_diag',alpha1=0.5, alpha2=0.25, sds=None, memory=None, hierarchy=1, refwfn=None)
-#print(obj.sds)
+# obj = hCI(8, 16, hci_version='old', hci_pattern='neg_diag',alpha1=0.5, alpha2=0.25, sds=None, memory=None, hierarchy=1, refwfn=None)
+# print(obj.sds)

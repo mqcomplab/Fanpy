@@ -1,4 +1,5 @@
 """Product of different wavefunctions."""
+
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.wfn.composite.lincomb import LinearCombinationWavefunction
 
@@ -85,9 +86,7 @@ class ProductWavefunction(LinearCombinationWavefunction):
             if any(not isinstance(wfn, BaseWavefunction) for wfn in wfns):
                 raise TypeError("Each wavefunction must be a instance of `BaseWavefunction`.")
             if any(wfn.nelec != wfns[0].nelec for wfn in wfns):
-                raise ValueError(
-                    "All of the wavefunctions must have the same number of electrons."
-                )
+                raise ValueError("All of the wavefunctions must have the same number of electrons.")
             if len(set(wfns)) != len(wfns):
                 raise ValueError("Same wavefunction was provided multiple times.")
         self.wfns = wfns
@@ -142,9 +141,9 @@ class ProductWavefunction(LinearCombinationWavefunction):
                 isinstance(deriv, tuple)
                 and len(deriv) == 2
                 and isinstance(deriv[0], BaseWavefunction)
-                # and isinstance(deriv[1], np.ndarray)
-                # and deriv[1].ndim == 1
-                # and np.issubdtype(deriv[1].dtype, np.integer)
+                and isinstance(deriv[1], np.ndarray)
+                and deriv[1].ndim == 1
+                and np.issubdtype(deriv[1].dtype, np.integer)
             ):
                 raise TypeError(
                     "Derivative indices must be given as a 2-tuple whose first element is the "
@@ -166,7 +165,7 @@ class ProductWavefunction(LinearCombinationWavefunction):
         wfn_index = self.wfns.index(wfn)
         # NOTE: assume that parameters are not shared between wavefunctions
         output = np.prod(wfn_contrib[:wfn_index])
-        output *= np.prod(wfn_contrib[wfn_index + 1:])
+        output *= np.prod(wfn_contrib[wfn_index + 1 :])
         output *= wfn.get_overlap(sd, deriv=indices)
         return output
 
@@ -251,7 +250,7 @@ class ProductWavefunction(LinearCombinationWavefunction):
         wfn_index = self.wfns.index(wfn)
         # NOTE: assume that parameters are not shared between wavefunctions
         output = np.prod(wfn_contrib[:wfn_index], axis=0)
-        output *= np.prod(wfn_contrib[wfn_index + 1:], axis=0)
+        output *= np.prod(wfn_contrib[wfn_index + 1 :], axis=0)
         if hasattr(wfn, "get_overlaps"):
             output = output[:, None] * wfn.get_overlaps(sds, deriv=indices)
         else:

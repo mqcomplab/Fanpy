@@ -1,4 +1,5 @@
 """Solver for CI wavefunctions."""
+
 import os
 
 from fanpy.ham.base import BaseHamiltonian
@@ -56,9 +57,7 @@ def brute(wfn, ham, save_file=""):
     if not isinstance(ham, BaseHamiltonian):
         raise TypeError("Given Hamiltonian is not an instance of BaseHamiltonian (or its child).")
     if wfn.nspin != ham.nspin:
-        raise ValueError(
-            "Wavefunction and Hamiltonian do not have the same number of spin " "orbitals"
-        )
+        raise ValueError("Wavefunction and Hamiltonian do not have the same number of spin " "orbitals")
     if not isinstance(save_file, str):
         raise TypeError("The save file must be given as a string.")
 
@@ -68,9 +67,16 @@ def brute(wfn, ham, save_file=""):
             ci_matrix[i, i + j] += ham.integrate_sd_sd(sd1, sd2)
     # ci_matrix += ci_matrix.T - np.diag(np.diag(ci_matrix))
 
-    eigval, eigvec = scipy.linalg.eigh(
-        ci_matrix, lower=False, overwrite_a=True, turbo=False, type=1
-    )
+    # Check Scipy version for compatibility with the 'turbo' argument
+    # Note: The 'turbo' argument was removed in Scipy 1.11.0 and is not available in newer versions.
+    # This check is to ensure compatibility with older versions of Scipy.
+    scipy_version = tuple(map(int, scipy.__version__.split(".")[:2]))
+
+    if scipy_version < (1, 11):
+        eigval, eigvec = scipy.linalg.eigh(ci_matrix, lower=False, overwrite_a=True, turbo=False, type=1)
+    else:
+        eigval, eigvec = scipy.linalg.eigh(ci_matrix, lower=False, overwrite_a=True, type=1)
+
     del ci_matrix
 
     if save_file != "":

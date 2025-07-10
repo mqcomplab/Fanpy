@@ -1,4 +1,5 @@
 """Standard Coupled Cluster wavefunctions."""
+
 from itertools import combinations
 from fanpy.wfn.cc.base import BaseCC
 from fanpy.tools import slater
@@ -96,8 +97,19 @@ class StandardCC(BaseCC):
         to the given indices to be created.
 
     """
-    def __init__(self, nelec, nspin, memory=None, ranks=None, indices=None,
-                 refwfn=None, params=None, exop_combinations=None, refresh_exops=None):
+
+    def __init__(
+        self,
+        nelec,
+        nspin,
+        memory=None,
+        ranks=None,
+        indices=None,
+        refwfn=None,
+        params=None,
+        exop_combinations=None,
+        refresh_exops=None,
+    ):
         """Initialize the wavefunction.
 
         Parameters
@@ -131,8 +143,15 @@ class StandardCC(BaseCC):
             annihilation to the creation operators.
 
         """
-        super().__init__(nelec, nspin, memory=memory, ranks=ranks, params=params,
-                         exop_combinations=exop_combinations, refresh_exops=refresh_exops)
+        super().__init__(
+            nelec,
+            nspin,
+            memory=memory,
+            ranks=ranks,
+            params=params,
+            exop_combinations=exop_combinations,
+            refresh_exops=refresh_exops,
+        )
         self.assign_exops(indices=indices)
         self.assign_refwfn(refwfn=refwfn)
 
@@ -161,8 +180,10 @@ class StandardCC(BaseCC):
 
         """
         if indices is not None:
-            raise TypeError('Only the occ-virt excitation operators constructed by default from '
-                            'the given reference Slater determinant are allowed')
+            raise TypeError(
+                "Only the occ-virt excitation operators constructed by default from "
+                "the given reference Slater determinant are allowed"
+            )
         else:
             exops = {}
             counter = 0
@@ -197,8 +218,8 @@ class StandardCC(BaseCC):
             self.refwfn = slater.ground(nocc=self.nelec, norbs=self.nspin)
         else:
             if not isinstance(refwfn, int):
-                raise TypeError('refwfn must be a int object')
+                raise TypeError("refwfn must be a int object")
             if slater.total_occ(refwfn) != self.nelec:
-                raise ValueError('refwfn must have {} electrons'.format(self.nelec))
+                raise ValueError("refwfn must have {} electrons".format(self.nelec))
             # TODO: check that refwfn has the right number of spin-orbs
             self.refwfn = refwfn

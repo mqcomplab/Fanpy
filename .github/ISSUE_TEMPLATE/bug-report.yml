@@ -1,0 +1,38 @@
+name: Bug report
+description: "Report a bug."
+labels: "bug"
+title: "BUG: "
+
+body:
+- type: textarea
+  attributes: 
+    label: "Describe the problem:"
+  validations:
+    required: true
+      
+- type: textarea
+  attributes:
+    label: "Code that reproduces the bug:"
+  validations:
+    required: true
+    
+- type: textarea
+  attributes:
+    label: "Traceback error:"
+    description: "Please paste the generated error here."
+  validations:
+    required: true
+    
+- type: textarea
+  attributes:
+    label: "Package versions:"
+    value: |
+      python: 
+      fanpy: 
+      numpy:
+  validations:
+    required: true
+      
+- type: textarea
+  attributes: 
+    label: "Additonal comments"

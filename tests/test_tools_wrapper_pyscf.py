@@ -15,7 +15,7 @@ def test_pyscf_hartreefock_h2_rhf_sto6g():
     pytest.importorskip("pyscf")
     from fanpy.tools.wrapper.pyscf import hartreefock
 
-    hf_data = hartreefock(find_datafile("data_h2.xyz"), "sto-6g")
+    hf_data = hartreefock(find_datafile("data/data_h2.xyz"), "sto-6g")
     check_data_h2_rhf_sto6g(
         hf_data["hf_energy"], hf_data["nuc_nuc"], hf_data["one_int"], hf_data["two_int"]
     )
@@ -26,12 +26,12 @@ def test_pyscf_hartreefock_lih_rhf_sto6g():
     pytest.importorskip("pyscf")
     from fanpy.tools.wrapper.pyscf import hartreefock, __file__ as cwd
 
-    hf_data = hartreefock(find_datafile("data_lih.xyz"), "sto-6g")
+    hf_data = hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g")
     check_data_lih_rhf_sto6g(
         hf_data["hf_energy"], hf_data["nuc_nuc"], hf_data["one_int"], hf_data["two_int"]
     )
 
-    path = find_datafile("data_lih.xyz")
+    path = find_datafile("data/data_lih.xyz")
     cwd = os.path.dirname(cwd)
     hf_data = hartreefock(os.path.relpath(path, cwd), "sto-6g")
     check_data_lih_rhf_sto6g(
@@ -41,7 +41,7 @@ def test_pyscf_hartreefock_lih_rhf_sto6g():
     with pytest.raises(ValueError):
         hartreefock("afasfasd", "sto-6g")
     with pytest.raises(NotImplementedError):
-        hartreefock(find_datafile("data_lih.xyz"), "sto-6g", is_unrestricted=True)
+        hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g", is_unrestricted=True)
 
 
 def test_generate_fci_cimatrix_h2_631gdp():
@@ -55,7 +55,7 @@ def test_generate_fci_cimatrix_h2_631gdp():
     from fanpy.tools.wrapper.pyscf import hartreefock
     from fanpy.tools.wrapper.pyscf import fci_cimatrix
 
-    hf_data = hartreefock(find_datafile("data_h2.xyz"), "6-31gss")
+    hf_data = hartreefock(find_datafile("data/data_h2.xyz"), "6-31gss")
 
     nelec = 2
     nuc_nuc = hf_data["nuc_nuc"]
@@ -93,7 +93,7 @@ def test_generate_fci_cimatrix_lih_sto6g():
     from fanpy.tools.wrapper.pyscf import hartreefock
     from fanpy.tools.wrapper.pyscf import fci_cimatrix
 
-    hf_data = hartreefock(find_datafile("data_lih.xyz"), "sto-6g")
+    hf_data = hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g")
 
     nelec = 4
     nuc_nuc = hf_data["nuc_nuc"]

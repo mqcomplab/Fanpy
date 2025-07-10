@@ -1,4 +1,5 @@
 """CI Singles and Doubles Wavefunction."""
+
 from fanpy.tools.sd_list import sd_list
 from fanpy.wfn.ci.base import CIWavefunction
 
@@ -54,6 +55,8 @@ class CISD(CIWavefunction):
         Assign memory available for the wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign parameters of the wavefunction.
+    import_params(self, guess)
+        Transfers parameters from a guess wavefunction to the wavefunction.
     enable_cache(self)
         Load the functions whose values will be cached.
     clear_cache(self)

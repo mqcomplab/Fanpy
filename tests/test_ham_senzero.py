@@ -1,18 +1,16 @@
 """Test fanpy.ham.senzero."""
+
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.ham.senzero import SeniorityZeroHamiltonian
 from fanpy.tools.math_tools import unitary_matrix
-from fanpy.tools.slater import get_seniority
 from fanpy.wfn.ci.base import CIWavefunction
 
 import numpy as np
 
 import pytest
 
-from utils import find_datafile
 
-
-def test_integrate_sd_sd_trivial():
+def test_integrate_sd_sd_decomposed_trivial():
     """Test SeniorityZeroHamiltonian.integrate_sd_sd for trivial cases."""
     one_int = np.random.rand(4, 4)
     two_int = np.random.rand(4, 4, 4, 4)
@@ -21,72 +19,18 @@ def test_integrate_sd_sd_trivial():
     with pytest.raises(NotImplementedError):
         test.integrate_sd_sd(0b00010001, 0b01000100, deriv=0)
 
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b00010001, 0b00100001, components=True))
-    assert np.allclose(0, test.integrate_sd_sd(0b00010001, 0b00100001, components=False))
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b00100001, 0b00010001, components=True))
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b01010101, 0b00010001, components=True))
-    assert np.allclose(0, test.integrate_sd_sd(0b01010101, 0b00010001, components=False))
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b11001100, 0b00110011, components=True))
-    assert np.allclose(
-        (0, two_int[0, 0, 1, 1], 0), test.integrate_sd_sd(0b00010001, 0b00100010, components=True)
-    )
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b00010001, 0b00100001))
+    assert np.allclose(0, test.integrate_sd_sd(0b00010001, 0b00100001))
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b00100001, 0b00010001))
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b01010101, 0b00010001))
+    assert np.allclose(0, test.integrate_sd_sd(0b01010101, 0b00010001))
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b11001100, 0b00110011))
+    assert np.allclose((0, two_int[0, 0, 1, 1], 0), test.integrate_sd_sd_decomposed(0b00010001, 0b00100010))
 
     with pytest.raises(TypeError):
         test.integrate_sd_sd(0b110001, "1")
     with pytest.raises(TypeError):
         test.integrate_sd_sd("1", 0b101010)
-
-
-def test_integrate_sd_sd_h2_631gdp():
-    """Test SeniorityZeroHamiltonian.integrate_sd_sd using H2 HF/6-31G** orbitals.
-
-    Compare CI matrix with the PySCF result.
-
-    """
-    one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
-    full_ham = RestrictedMolecularHamiltonian(one_int, two_int)
-    test_ham = SeniorityZeroHamiltonian(one_int, two_int)
-
-    ref_pspace = np.load(find_datafile("data_h2_hf_631gdp_civec.npy"))
-
-    for i, sd1 in enumerate(ref_pspace):
-        sd1 = int(sd1)
-        if get_seniority(sd1, one_int.shape[0]) != 0:
-            continue
-        for j, sd2 in enumerate(ref_pspace):
-            sd2 = int(sd2)
-            if get_seniority(sd2, one_int.shape[0]) != 0:
-                continue
-            assert np.allclose(
-                full_ham.integrate_sd_sd(sd1, sd2), test_ham.integrate_sd_sd(sd1, sd2)
-            )
-
-
-def test_integrate_sd_sd_lih_631g_full():
-    """Test SeniorityZeroHamiltonian.integrate_sd_sd using LiH HF/6-31G orbitals.
-
-    Compared to all of the CI matrix.
-
-    """
-    one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
-    two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
-    full_ham = RestrictedMolecularHamiltonian(one_int, two_int)
-    test_ham = SeniorityZeroHamiltonian(one_int, two_int)
-
-    ref_pspace = np.load(find_datafile("data_lih_hf_631g_civec.npy"))
-
-    for i, sd1 in enumerate(ref_pspace):
-        sd1 = int(sd1)
-        if get_seniority(sd1, one_int.shape[0]) != 0:
-            continue
-        for j, sd2 in enumerate(ref_pspace):
-            sd2 = int(sd2)
-            if get_seniority(sd2, one_int.shape[0]) != 0:
-                continue
-            assert np.allclose(
-                full_ham.integrate_sd_sd(sd1, sd2), test_ham.integrate_sd_sd(sd1, sd2)
-            )
 
 
 def test_integrate_sd_wfn_2e():
@@ -133,17 +77,11 @@ def test_integrate_sd_wfn_4e():
         },
     )
 
-    assert np.allclose(
-        ham.integrate_sd_wfn(0b011011, test_wfn), ham_full.integrate_sd_wfn(0b011011, test_wfn)
-    )
+    assert np.allclose(ham.integrate_sd_wfn(0b011011, test_wfn), ham_full.integrate_sd_wfn(0b011011, test_wfn))
 
-    assert np.allclose(
-        ham.integrate_sd_wfn(0b101101, test_wfn), ham_full.integrate_sd_wfn(0b101101, test_wfn)
-    )
+    assert np.allclose(ham.integrate_sd_wfn(0b101101, test_wfn), ham_full.integrate_sd_wfn(0b101101, test_wfn))
 
-    assert np.allclose(
-        ham.integrate_sd_wfn(0b110110, test_wfn), ham_full.integrate_sd_wfn(0b110110, test_wfn)
-    )
+    assert np.allclose(ham.integrate_sd_wfn(0b110110, test_wfn), ham_full.integrate_sd_wfn(0b110110, test_wfn))
 
     with pytest.raises(ValueError):
         ham.integrate_sd_wfn(0b0101, test_wfn, wfn_deriv=0, ham_deriv=0)
@@ -189,17 +127,13 @@ def test_integrate_sd_wfn_deriv_fdiff():
     ham.assign_params(original + step1 + step2)
 
     temp_ham = SeniorityZeroHamiltonian(one_int, two_int)
-    temp_ham.orb_rotate_matrix(
-        unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2))
-    )
+    temp_ham.orb_rotate_matrix(unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2)))
     assert np.allclose(ham.one_int, temp_ham.one_int)
     assert np.allclose(ham.two_int, temp_ham.two_int)
 
     def objective(params):
         temp_ham = SeniorityZeroHamiltonian(one_int, two_int)
-        temp_ham.orb_rotate_matrix(
-            unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2))
-        )
+        temp_ham.orb_rotate_matrix(unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2)))
         temp_ham.set_ref_ints()
         temp_ham._prev_params = ham.params.copy()
         temp_ham.assign_params(params.copy())

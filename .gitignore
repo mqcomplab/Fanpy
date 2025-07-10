@@ -51,5 +51,4 @@ qaworkdir
 *.ipynb_checkpoints
 
 # Ignore Cython generated files
-fanpy/upgrades/*.c
 fanpy/eqn/schrodinger/*.c

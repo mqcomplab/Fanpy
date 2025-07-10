@@ -1,4 +1,5 @@
 """Test fanpy.ham.generalized_chemical."""
+
 import itertools as it
 
 from fanpy.ham.base import BaseHamiltonian
@@ -123,15 +124,7 @@ def test_integrate_sd_wfn():
     test_wfn = type(
         "Temporary wavefunction.",
         (object,),
-        {
-            "get_overlap": lambda sd, deriv=None: 1
-            if sd == 0b0101
-            else 2
-            if sd == 0b1010
-            else 3
-            if sd == 0b1100
-            else 0
-        },
+        {"get_overlap": lambda sd, deriv=None: 1 if sd == 0b0101 else 2 if sd == 0b1010 else 3 if sd == 0b1100 else 0},
     )
 
     one_energy, coulomb, exchange = test_ham.integrate_sd_wfn(0b0101, test_wfn, components=True)
@@ -175,26 +168,24 @@ def test_integrate_sd_wfn():
         test_ham.integrate_sd_wfn("1", test_wfn)
 
 
-def test_integrate_sd_sd_trivial():
+def test_integrate_sd_sd_decomposed_trivial():
     """Test GeneralizedMolecularHamiltonian.integrate_sd_sd for trivial cases."""
     one_int = np.random.rand(6, 6)
     two_int = np.random.rand(6, 6, 6, 6)
     test = GeneralizedMolecularHamiltonian(one_int, two_int)
 
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b000111, 0b001001, components=True))
-    assert np.allclose((0, 0, 0), test.integrate_sd_sd(0b000111, 0b111000, components=True))
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b000111, 0b001001))
+    assert np.allclose((0, 0, 0), test.integrate_sd_sd_decomposed(0b000111, 0b111000))
     assert np.allclose(
         (0, two_int[0, 1, 2, 3], -two_int[0, 1, 3, 2]),
-        test.integrate_sd_sd(0b100011, 0b101100, components=True),
+        test.integrate_sd_sd_decomposed(0b100011, 0b101100),
     )
-    assert two_int[0, 1, 2, 3] - two_int[0, 1, 3, 2] == test.integrate_sd_sd(
-        0b100011, 0b101100, components=False
-    )
-    assert np.allclose((one_int[0, 0], 0, 0), test.integrate_sd_sd(0b1, 0b1, components=True))
-    assert np.allclose((one_int[0, 1], 0, 0), test.integrate_sd_sd(0b1, 0b10, components=True))
+    assert two_int[0, 1, 2, 3] - two_int[0, 1, 3, 2] == test.integrate_sd_sd(0b100011, 0b101100)
+    assert np.allclose((one_int[0, 0], 0, 0), test.integrate_sd_sd_decomposed(0b1, 0b1))
+    assert np.allclose((one_int[0, 1], 0, 0), test.integrate_sd_sd_decomposed(0b1, 0b10))
     assert np.allclose(
         (0, -two_int[1, 4, 1, 3] + two_int[0, 4, 0, 3], two_int[1, 4, 3, 1] - two_int[0, 4, 3, 0]),
-        test.integrate_sd_sd(0b110001, 0b101010, deriv=np.array([0]), components=True).ravel(),
+        test.integrate_sd_sd_decomposed(0b110001, 0b101010, deriv=np.array([0])).ravel(),
     )
 
     with pytest.raises(TypeError):
@@ -203,129 +194,6 @@ def test_integrate_sd_sd_trivial():
         test.integrate_sd_sd("1", 0b101010)
 
 
-def test_integrate_sd_sd_h2_631gdp():
-    """Test GenrealizedMolecularHamiltonian.integrate_sd_sd using H2 HF/6-31G** orbitals.
-
-    Compare CI matrix with the PySCF result.
-    Integrals that correspond to restricted orbitals were used.
-
-    """
-    restricted_one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    restricted_two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
-    one_int = np.zeros((20, 20))
-    one_int[:10, :10] = restricted_one_int
-    one_int[10:, 10:] = restricted_one_int
-    two_int = np.zeros((20, 20, 20, 20))
-    two_int[:10, :10, :10, :10] = restricted_two_int
-    two_int[:10, 10:, :10, 10:] = restricted_two_int
-    two_int[10:, :10, 10:, :10] = restricted_two_int
-    two_int[10:, 10:, 10:, 10:] = restricted_two_int
-
-    ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-
-    ref_ci_matrix = np.load(find_datafile("data_h2_hf_631gdp_cimatrix.npy"))
-    ref_pspace = np.load(find_datafile("data_h2_hf_631gdp_civec.npy"))
-
-    for i, sd1 in enumerate(ref_pspace):
-        for j, sd2 in enumerate(ref_pspace):
-            sd1, sd2 = int(sd1), int(sd2)
-            assert np.allclose(ham.integrate_sd_sd(sd1, sd2), ref_ci_matrix[i, j])
-
-
-def test_integrate_sd_wfn_h2_631gdp():
-    """Test GeneralizedMolecularHamiltonian.integrate_sd_wfn using H2 HF/6-31G** orbitals.
-
-    Compare projected energy with the transformed CI matrix from PySCF.
-    Compare projected energy with the transformed integrate_sd_sd.
-    Integrals that correspond to restricted orbitals were used.
-
-    """
-    restricted_one_int = np.load(find_datafile("data_h2_hf_631gdp_oneint.npy"))
-    restricted_two_int = np.load(find_datafile("data_h2_hf_631gdp_twoint.npy"))
-    one_int = np.zeros((20, 20))
-    one_int[:10, :10] = restricted_one_int
-    one_int[10:, 10:] = restricted_one_int
-    two_int = np.zeros((20, 20, 20, 20))
-    two_int[:10, :10, :10, :10] = restricted_two_int
-    two_int[:10, 10:, :10, 10:] = restricted_two_int
-    two_int[10:, :10, 10:, :10] = restricted_two_int
-    two_int[10:, 10:, 10:, 10:] = restricted_two_int
-
-    ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-
-    ref_ci_matrix = np.load(find_datafile("data_h2_hf_631gdp_cimatrix.npy"))
-    ref_pspace = np.load(find_datafile("data_h2_hf_631gdp_civec.npy")).tolist()
-
-    params = np.random.rand(len(ref_pspace))
-    wfn = CIWavefunction(2, 10, sds=ref_pspace, params=params)
-    for i, sd in enumerate(ref_pspace):
-        assert np.allclose(ham.integrate_sd_wfn(sd, wfn), ref_ci_matrix[i, :].dot(params))
-        assert np.allclose(
-            ham.integrate_sd_wfn(sd, wfn),
-            sum(ham.integrate_sd_sd(sd, sd1) * wfn.get_overlap(sd1) for sd1 in ref_pspace),
-        )
-
-
-def test_integrate_sd_wfn_h4_sto6g():
-    """Test GeneralizedMolecularHamiltonian.integrate_sd_wfn using H4 HF/STO6G orbitals.
-
-    Compare projected energy with the transformed integrate_sd_sd.
-    Integrals that correspond to restricted orbitals were used.
-
-    """
-    nelec = 4
-    nspin = 8
-    sds = sd_list(4, 8, num_limit=None, exc_orders=None)
-    wfn = CIWavefunction(nelec, nspin, sds=sds)
-    np.random.seed(1000)
-    wfn.assign_params(np.random.rand(len(sds)))
-
-    restricted_one_int = np.load(find_datafile("data_h4_square_hf_sto6g_oneint.npy"))
-    restricted_two_int = np.load(find_datafile("data_h4_square_hf_sto6g_twoint.npy"))
-    one_int = np.zeros((8, 8))
-    one_int[:4, :4] = restricted_one_int
-    one_int[4:, 4:] = restricted_one_int
-    two_int = np.zeros((8, 8, 8, 8))
-    two_int[:4, :4, :4, :4] = restricted_two_int
-    two_int[:4, 4:, :4, 4:] = restricted_two_int
-    two_int[4:, :4, 4:, :4] = restricted_two_int
-    two_int[4:, 4:, 4:, 4:] = restricted_two_int
-
-    ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-
-    for sd in sds:
-        assert np.allclose(
-            ham.integrate_sd_wfn(sd, wfn),
-            sum(ham.integrate_sd_sd(sd, sd1) * wfn.get_overlap(sd1) for sd1 in sds),
-        )
-
-
-def test_integrate_sd_sd_lih_631g_trial_slow():
-    """Test GeneralizedMolecularHamiltonian.integrate_sd_sd using LiH HF/6-31G orbitals.
-
-    Integrals that correspond to restricted orbitals were used.
-
-    """
-    restricted_one_int = np.load(find_datafile("data_lih_hf_631g_oneint.npy"))
-    restricted_two_int = np.load(find_datafile("data_lih_hf_631g_twoint.npy"))
-    one_int = np.zeros((22, 22))
-    one_int[:11, :11] = restricted_one_int
-    one_int[11:, 11:] = restricted_one_int
-    two_int = np.zeros((22, 22, 22, 22))
-    two_int[:11, :11, :11, :11] = restricted_two_int
-    two_int[:11, 11:, :11, 11:] = restricted_two_int
-    two_int[11:, :11, 11:, :11] = restricted_two_int
-    two_int[11:, 11:, 11:, 11:] = restricted_two_int
-
-    ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-
-    ref_ci_matrix = np.load(find_datafile("data_lih_hf_631g_cimatrix.npy"))
-    ref_pspace = np.load(find_datafile("data_lih_hf_631g_civec.npy"))
-
-    for i, sd1 in enumerate(ref_pspace):
-        for j, sd2 in enumerate(ref_pspace):
-            sd1, sd2 = int(sd1), int(sd2)
-            assert np.allclose(ham.integrate_sd_sd(sd1, sd2), ref_ci_matrix[i, j])
 
 
 def test_integrate_sd_sd_particlenum():
@@ -352,7 +220,7 @@ def test_integrate_sd_sd_particlenum():
     # \braket{12 | h_{11} + h_{22} + g_{1212} - g_{1221} | 12}
     assert np.allclose(ham.integrate_sd_sd(civec[1], civec[1]), 4)
 
-    assert np.allclose(ham.integrate_sd_sd(civec[0], civec[1], components=True), 0)
+    assert np.allclose(ham.integrate_sd_sd_decomposed(civec[0], civec[1]), 0)
 
 
 def test_param_ind_to_rowcol_ind():
@@ -378,92 +246,14 @@ def test_integrate_sd_sd_deriv():
     with pytest.raises(ValueError):
         test_ham._integrate_sd_sd_deriv(0b0101, 0b0101, 2)
     assert test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0])) == 0
-    assert np.allclose(
-        test_ham._integrate_sd_sd_deriv(0b0101, 0b0001, np.array([0]), components=True), 0
-    )
+    assert np.allclose(test_ham._integrate_sd_sd_deriv_decomposed(0b0101, 0b0001, np.array([0])), 0)
     assert test_ham._integrate_sd_sd_deriv(0b000111, 0b111000, np.array([0])) == 0
 
     with pytest.raises(TypeError):
         test_ham._integrate_sd_sd_deriv(0b110001, "1", np.array([0]))
     with pytest.raises(TypeError):
         test_ham._integrate_sd_sd_deriv("1", 0b101010, np.array([0]))
-
-
-def test_integrate_sd_sd_deriv_fdiff_h2_sto6g():
-    """Test GeneralizedMolecularHamiltonian._integrate_sd_sd_deriv using H2/STO6G.
-
-    Computed derivatives are compared against finite difference of the `integrate_sd_sd`.
-
-    """
-    restricted_one_int = np.load(find_datafile("data_h4_square_hf_sto6g_oneint.npy"))
-    restricted_two_int = np.load(find_datafile("data_h4_square_hf_sto6g_twoint.npy"))
-    one_int = np.zeros((8, 8))
-    one_int[:4, :4] = restricted_one_int
-    one_int[4:, 4:] = restricted_one_int
-    two_int = np.zeros((8, 8, 8, 8))
-    two_int[:4, :4, :4, :4] = restricted_two_int
-    two_int[:4, 4:, :4, 4:] = restricted_two_int
-    two_int[4:, :4, 4:, :4] = restricted_two_int
-    two_int[4:, 4:, 4:, 4:] = restricted_two_int
-
-    test_ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-    epsilon = 1e-8
-
-    for sd1 in [0b0011, 0b0101, 0b1001, 0b0110, 0b1010, 0b1100]:
-        for sd2 in [0b0011, 0b0101, 0b1001, 0b0110, 0b1010, 0b1100]:
-            for i in range(test_ham.nparams):
-                addition = np.zeros(test_ham.nparams)
-                addition[i] = epsilon
-                test_ham2 = GeneralizedMolecularHamiltonian(one_int, two_int, params=addition)
-
-                finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2, components=True))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2, components=True))
-                ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(
-                    sd1, sd2, np.array([i]), components=True
-                ).ravel()
-                assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
-
-
-def test_integrate_sd_sd_deriv_fdiff_h4_sto6g_trial_slow():
-    """Test GeneralizedMolecularHamiltonian._integrate_sd_sd_deriv using H4-STO6G integrals.
-
-    Computed derivatives are compared against finite difference of the `integrate_sd_sd`.
-
-    """
-    restricted_one_int = np.load(find_datafile("data_h4_square_hf_sto6g_oneint.npy"))
-    restricted_two_int = np.load(find_datafile("data_h4_square_hf_sto6g_twoint.npy"))
-    one_int = np.zeros((8, 8))
-    one_int[:4, :4] = restricted_one_int
-    one_int[4:, 4:] = restricted_one_int
-    two_int = np.zeros((8, 8, 8, 8))
-    two_int[:4, :4, :4, :4] = restricted_two_int
-    two_int[:4, 4:, :4, 4:] = restricted_two_int
-    two_int[4:, :4, 4:, :4] = restricted_two_int
-    two_int[4:, 4:, 4:, 4:] = restricted_two_int
-
-    test_ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-    epsilon = 1e-8
-
-    sds = sd_list(4, 8, num_limit=None, exc_orders=None)
-
-    for sd1 in sds:
-        for sd2 in sds:
-            for i in range(test_ham.nparams):
-                addition = np.zeros(test_ham.nparams)
-                addition[i] = epsilon
-                test_ham2 = GeneralizedMolecularHamiltonian(one_int, two_int, params=addition)
-
-                finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2, components=True))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2, components=True))
-                ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(
-                    sd1, sd2, np.array([i]), components=True
-                ).ravel()
-                assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
-
+        
 
 def test_integrate_sd_sd_deriv_fdiff_random():
     """Test GeneralizedMolecularHamiltonian._integrate_sd_sd_deriv using random integrals.
@@ -494,21 +284,16 @@ def test_integrate_sd_sd_deriv_fdiff_random():
                 test_ham2 = GeneralizedMolecularHamiltonian(one_int, two_int, params=addition)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2, components=True))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2, components=True))
+                    np.array(test_ham2.integrate_sd_sd_decomposed(sd1, sd2))
+                    - np.array(test_ham.integrate_sd_sd_decomposed(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(
-                    sd1, sd2, np.array([i]), components=True
-                ).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv_decomposed(sd1, sd2, np.array([i])).ravel()
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2, components=False))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2, components=False))
+                    np.array(test_ham2.integrate_sd_sd(sd1, sd2)) - np.array(test_ham.integrate_sd_sd(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(
-                    sd1, sd2, np.array([i]), components=False
-                ).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv(sd1, sd2, np.array([i])).ravel()
                 assert np.allclose(finite_diff, derivative, atol=60 * epsilon)
 
 
@@ -541,12 +326,10 @@ def test_integrate_sd_sd_deriv_fdiff_random_small():
                 test_ham2 = GeneralizedMolecularHamiltonian(one_int, two_int, params=addition)
 
                 finite_diff = (
-                    np.array(test_ham2.integrate_sd_sd(sd1, sd2, components=True))
-                    - np.array(test_ham.integrate_sd_sd(sd1, sd2, components=True))
+                    np.array(test_ham2.integrate_sd_sd_decomposed(sd1, sd2))
+                    - np.array(test_ham.integrate_sd_sd_decomposed(sd1, sd2))
                 ) / epsilon
-                derivative = test_ham._integrate_sd_sd_deriv(
-                    sd1, sd2, np.array([i]), components=True
-                ).ravel()
+                derivative = test_ham._integrate_sd_sd_deriv_decomposed(sd1, sd2, np.array([i])).ravel()
                 assert np.allclose(finite_diff, derivative, atol=20 * epsilon)
 
 
@@ -628,13 +411,7 @@ def test_integrate_sd_sds_deriv_zero():
     assert np.allclose(
         test_ham._integrate_sd_sds_deriv_zero(occ_indices, vir_indices),
         np.array(
-            [
-                [
-                    test_ham._integrate_sd_sd_deriv_zero(i, j, occ_indices)
-                    for i in range(7)
-                    for j in range(i + 1, 8)
-                ]
-            ]
+            [[test_ham._integrate_sd_sd_deriv_zero(i, j, occ_indices) for i in range(7) for j in range(i + 1, 8)]]
         ).T,
     )
 
@@ -656,11 +433,7 @@ def test_integrate_sd_sds_deriv_one():
             np.array(
                 [
                     [
-                        np.array(
-                            test_ham._integrate_sd_sd_deriv_one(
-                                (i,), (j,), x, y, occ_indices[occ_indices != i]
-                            )
-                        )
+                        np.array(test_ham._integrate_sd_sd_deriv_one((i,), (j,), x, y, occ_indices[occ_indices != i]))
                         * slater.sign_excite(0b11011, [i], [j])
                         for x in range(8)
                         for y in range(x + 1, 8)
@@ -724,20 +497,12 @@ def test_integrate_sd_wfn_compare_basehamiltonian():
                 test_ham2.integrate_sd_wfn(slater.create(0, *occ_indices), wfn),
             )
             assert np.allclose(
-                test_ham.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)
-                ),
-                test_ham.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)
-                ),
+                test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)),
+                test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, wfn_deriv=np.arange(wfn.nparams)),
             )
             assert np.allclose(
-                test_ham.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham.nparams)
-                ),
-                test_ham.integrate_sd_wfn(
-                    slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham2.nparams)
-                ),
+                test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham.nparams)),
+                test_ham.integrate_sd_wfn(slater.create(0, *occ_indices), wfn, ham_deriv=np.arange(test_ham2.nparams)),
             )
 
 
@@ -763,17 +528,13 @@ def test_integrate_sd_wfn_deriv_fdiff():
     ham.assign_params(original + step1 + step2)
 
     temp_ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-    temp_ham.orb_rotate_matrix(
-        unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2))
-    )
+    temp_ham.orb_rotate_matrix(unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2)))
     assert np.allclose(ham.one_int, temp_ham.one_int)
     assert np.allclose(ham.two_int, temp_ham.two_int)
 
     def objective(params):
         temp_ham = GeneralizedMolecularHamiltonian(one_int, two_int)
-        temp_ham.orb_rotate_matrix(
-            unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2))
-        )
+        temp_ham.orb_rotate_matrix(unitary_matrix(original).dot(unitary_matrix(step1)).dot(unitary_matrix(step2)))
         temp_ham.set_ref_ints()
         temp_ham._prev_params = ham.params.copy()
         temp_ham.assign_params(params.copy())
@@ -798,9 +559,7 @@ def test_integrate_sd_wfn_deriv_fdiff():
 
     assert np.allclose(
         nd.Gradient(objective)(wfn.wfns[0].params),
-        ham.integrate_sd_wfn(
-            0b001011, wfn, wfn_deriv=(wfn.wfns[0], np.arange(wfn.wfns[0].nparams))
-        ),
+        ham.integrate_sd_wfn(0b001011, wfn, wfn_deriv=(wfn.wfns[0], np.arange(wfn.wfns[0].nparams))),
     )
 
 

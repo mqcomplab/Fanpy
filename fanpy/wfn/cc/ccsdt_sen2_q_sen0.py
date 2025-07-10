@@ -1,4 +1,5 @@
 """Coupled Cluster SD with seniority 1 Triples and seniority 0 Quadruples."""
+
 from itertools import combinations
 from fanpy.tools import slater
 from fanpy.wfn.cc.ccsdtq_sen0 import CCSDTQsen0
@@ -102,6 +103,7 @@ class CCSDTsen2Qsen0(CCSDTQsen0):
         to the given indices to be created.
 
     """
+
     def assign_exops(self, indices=None):
         """Assign the excitation operators that will be used to construct the CC operator.
 
@@ -127,8 +129,10 @@ class CCSDTsen2Qsen0(CCSDTQsen0):
 
         """
         if indices is not None:
-            raise TypeError('Only the excitation operators constructed by default from '
-                            'the given reference Slater determinant are allowed')
+            raise TypeError(
+                "Only the excitation operators constructed by default from "
+                "the given reference Slater determinant are allowed"
+            )
         else:
             exops = {}
             counter = 0
@@ -147,26 +151,36 @@ class CCSDTsen2Qsen0(CCSDTQsen0):
                         counter += 1
 
             # Seniority 2 triples
-            for occ_alpha1 in ex_from[:len(ex_from) // 2]:
-                for occ2 in [oorb for oorb in ex_from
-                             if oorb not in [occ_alpha1, occ_alpha1 + self.nspatial]]:
-                    for virt_alpha1 in ex_to[:len(ex_to) // 2]:
-                        for virt2 in [vorb for vorb in ex_to
-                                      if vorb not in [virt_alpha1, virt_alpha1 + self.nspatial]]:
-                            exop = [occ_alpha1, occ_alpha1 + self.nspatial, occ2,
-                                    virt_alpha1, virt_alpha1 + self.nspatial, virt2]
+            for occ_alpha1 in ex_from[: len(ex_from) // 2]:
+                for occ2 in [oorb for oorb in ex_from if oorb not in [occ_alpha1, occ_alpha1 + self.nspatial]]:
+                    for virt_alpha1 in ex_to[: len(ex_to) // 2]:
+                        for virt2 in [vorb for vorb in ex_to if vorb not in [virt_alpha1, virt_alpha1 + self.nspatial]]:
+                            exop = [
+                                occ_alpha1,
+                                occ_alpha1 + self.nspatial,
+                                occ2,
+                                virt_alpha1,
+                                virt_alpha1 + self.nspatial,
+                                virt2,
+                            ]
                             exops[tuple(exop)] = counter
                             counter += 1
 
             # Seniority 0 quadruples
-            for occ_alpha1 in ex_from[:len(ex_from) // 2]:
-                for occ_alpha2 in ex_from[ex_from.index(occ_alpha1) + 1:len(ex_from) // 2]:
-                    for virt_alpha1 in ex_to[:len(ex_to) // 2]:
-                        for virt_alpha2 in ex_to[ex_to.index(virt_alpha1) + 1:len(ex_to) // 2]:
-                            exop = [occ_alpha1, occ_alpha1 + self.nspatial,
-                                    occ_alpha2, occ_alpha2 + self.nspatial,
-                                    virt_alpha1, virt_alpha1 + self.nspatial,
-                                    virt_alpha2, virt_alpha2 + self.nspatial]
+            for occ_alpha1 in ex_from[: len(ex_from) // 2]:
+                for occ_alpha2 in ex_from[ex_from.index(occ_alpha1) + 1 : len(ex_from) // 2]:
+                    for virt_alpha1 in ex_to[: len(ex_to) // 2]:
+                        for virt_alpha2 in ex_to[ex_to.index(virt_alpha1) + 1 : len(ex_to) // 2]:
+                            exop = [
+                                occ_alpha1,
+                                occ_alpha1 + self.nspatial,
+                                occ_alpha2,
+                                occ_alpha2 + self.nspatial,
+                                virt_alpha1,
+                                virt_alpha1 + self.nspatial,
+                                virt_alpha2,
+                                virt_alpha2 + self.nspatial,
+                            ]
                             exops[tuple(exop)] = counter
                             counter += 1
             self.exops = exops

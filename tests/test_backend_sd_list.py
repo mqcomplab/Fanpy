@@ -1,4 +1,5 @@
 """Test fanpy.sd_list."""
+
 from fanpy.tools import sd_list
 
 import pytest
@@ -6,27 +7,27 @@ import pytest
 
 def test_satisfies_conditions():
     """Test sd_list.satisfies_conditions."""
-    assert sd_list.satisfies_conditions(0b1111, 2, None, None)
+    assert sd_list.satisfies_conditions(0b1111, 2, None, None, None)
 
-    assert not sd_list.satisfies_conditions(0b0001, 2, -1, None)
-    assert not sd_list.satisfies_conditions(0b0001, 2, -0.5, None)
-    assert not sd_list.satisfies_conditions(0b0001, 2, 0, None)
-    assert sd_list.satisfies_conditions(0b0001, 2, 0.5, None)
-    assert not sd_list.satisfies_conditions(0b0001, 2, 1, None)
+    assert not sd_list.satisfies_conditions(0b0001, 2, -1, None, None)
+    assert not sd_list.satisfies_conditions(0b0001, 2, -0.5, None, None)
+    assert not sd_list.satisfies_conditions(0b0001, 2, 0, None, None)
+    assert sd_list.satisfies_conditions(0b0001, 2, 0.5, None, None)
+    assert not sd_list.satisfies_conditions(0b0001, 2, 1, None, None)
 
-    assert sd_list.satisfies_conditions(0b1100, 2, -1, None)
-    assert not sd_list.satisfies_conditions(0b1100, 2, -0.5, None)
-    assert not sd_list.satisfies_conditions(0b1100, 2, 0, None)
-    assert not sd_list.satisfies_conditions(0b1100, 2, 0.5, None)
-    assert not sd_list.satisfies_conditions(0b1100, 2, 1, None)
+    assert sd_list.satisfies_conditions(0b1100, 2, -1, None, None)
+    assert not sd_list.satisfies_conditions(0b1100, 2, -0.5, None, None)
+    assert not sd_list.satisfies_conditions(0b1100, 2, 0, None, None)
+    assert not sd_list.satisfies_conditions(0b1100, 2, 0.5, None, None)
+    assert not sd_list.satisfies_conditions(0b1100, 2, 1, None, None)
 
-    assert sd_list.satisfies_conditions(0b1110, 2, None, 2)
-    assert sd_list.satisfies_conditions(0b1110, 2, None, 1)
-    assert not sd_list.satisfies_conditions(0b1110, 2, None, 0)
+    assert sd_list.satisfies_conditions(0b1110, 2, None, 2, None)
+    assert sd_list.satisfies_conditions(0b1110, 2, None, 1, None)
+    assert not sd_list.satisfies_conditions(0b1110, 2, None, 0, None)
 
-    assert sd_list.satisfies_conditions(0b1110, 2, -0.5, 1)
-    assert not sd_list.satisfies_conditions(0b1110, 2, 0.5, 1)
-    assert not sd_list.satisfies_conditions(0b1110, 2, -0.5, 0)
+    assert sd_list.satisfies_conditions(0b1110, 2, -0.5, 1, None)
+    assert not sd_list.satisfies_conditions(0b1110, 2, 0.5, 1, None)
+    assert not sd_list.satisfies_conditions(0b1110, 2, -0.5, 0, None)
 
 
 def test_ci_sd_list():

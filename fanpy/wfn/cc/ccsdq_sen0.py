@@ -1,6 +1,5 @@
 """Coupled Cluster SD with seniority 0 Quadruples."""
-from itertools import combinations
-from fanpy.tools import slater
+
 from fanpy.wfn.cc.ccsdtq_sen0 import CCSDTQsen0
 
 
@@ -100,6 +99,7 @@ class CCSDQsen0(CCSDTQsen0):
         to the given indices to be created.
 
     """
+
     def assign_ranks(self, ranks=None):
         """Assign the ranks of the excitation operators.
 
@@ -116,8 +116,8 @@ class CCSDQsen0(CCSDTQsen0):
 
         """
         if ranks is not None:
-            raise ValueError('Only the default, rank = [1, 2, 4], is allowed')
+            raise ValueError("Only the default, rank = [1, 2, 4], is allowed")
         # FIXME: MOVE TO SOMEWHERE ELSE
         if self.nelec <= 3:
-            raise ValueError('Only wavefunctions with more than 3 electrons can be considered')
+            raise ValueError("Only wavefunctions with more than 3 electrons can be considered")
         self.ranks = [1, 2, 4]

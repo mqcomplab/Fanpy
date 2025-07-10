@@ -38,7 +38,6 @@ Wavefunctions
 
 * Network Wavefunction
 
-  * :class:`KerasNetwork <fanpy.wfn.network.keras_network.KerasNetwork>`
   * :class:`MatrixProductState <fanpy.wfn.network.mps.MatrixProductState>`
 
 * Quasiparticle Wavefunction
@@ -178,7 +177,6 @@ Scripts
       fanpy.wfn.composite.nonorth.NonorthWavefunction
       fanpy.wfn.composite.jacobi.JacobiWavefunction
       fanpy.wfn.composite.lincomb.LinearCombinationWavefunction
-      fanpy.wfn.network.keras_network.KerasNetwork
       fanpy.wfn.network.mps.MatrixProductState
       fanpy.wfn.quasiparticle.base.BaseQuasiparticle
       fanpy.wfn.quasiparticle.det_ratio.DeterminantRatio

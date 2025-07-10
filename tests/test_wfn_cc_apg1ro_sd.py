@@ -48,7 +48,6 @@ def check_sign(occ_indices, exops):
         sd = slater.excite(sd, *exop)
     return sign
 
-
 def test_generate_possible_exops():
     """Test APG1roSD.generate_possible_exops."""
     test = TempAPG1roSD()
@@ -64,46 +63,46 @@ def test_generate_possible_exops():
     sign = check_sign([0, 1, 4], [[0, 2], [1, 3], [4, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][0],
-        [test.get_ind((0, 2)), test.get_ind((1, 3)), test.get_ind((4, 6)), sign if sign == 1 else 255],
+        [test.get_ind((0, 2)), test.get_ind((1, 3)), test.get_ind((4, 6)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[0, 2], [1, 6], [4, 3]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][1],
-        [test.get_ind((0, 2)), test.get_ind((1, 6)), test.get_ind((4, 3)), sign if sign == 1 else 255],
+        [test.get_ind((0, 2)), test.get_ind((1, 6)), test.get_ind((4, 3)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[0, 3], [1, 2], [4, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][2],
-        [test.get_ind((0, 3)), test.get_ind((1, 2)), test.get_ind((4, 6)), sign if sign == 1 else 255],
+        [test.get_ind((0, 3)), test.get_ind((1, 2)), test.get_ind((4, 6)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[0, 3], [1, 6], [4, 2]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][3],
-        [test.get_ind((0, 3)), test.get_ind((1, 6)), test.get_ind((4, 2)), sign if sign == 1 else 255],
+        [test.get_ind((0, 3)), test.get_ind((1, 6)), test.get_ind((4, 2)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[0, 6], [1, 2], [4, 3]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][4],
-        [test.get_ind((0, 6)), test.get_ind((1, 2)), test.get_ind((4, 3)), sign if sign == 1 else 255],
+        [test.get_ind((0, 6)), test.get_ind((1, 2)), test.get_ind((4, 3)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[0, 6], [1, 3], [4, 2]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][3][5],
-        [test.get_ind((0, 6)), test.get_ind((1, 3)), test.get_ind((4, 2)), sign if sign == 1 else 255],
+        [test.get_ind((0, 6)), test.get_ind((1, 3)), test.get_ind((4, 2)), sign if sign == 1 else 0],
     )
 
     sign = check_sign([0, 1, 4], [[1, 2], [0, 4, 3, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][0],
-        [test.get_ind((1, 2)), test.get_ind((0, 4, 3, 6)), sign if sign == 1 else 255],
+        [test.get_ind((1, 2)), test.get_ind((0, 4, 3, 6)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[1, 3], [0, 4, 2, 6]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1],
-        [test.get_ind((1, 3)), test.get_ind((0, 4, 2, 6)), sign if sign == 1 else 255],
+        [test.get_ind((1, 3)), test.get_ind((0, 4, 2, 6)), sign if sign == 1 else 0],
     )
     sign = check_sign([0, 1, 4], [[1, 6], [0, 4, 2, 3]]) / base_sign
     assert np.allclose(
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][2],
-        [test.get_ind((1, 6)), test.get_ind((0, 4, 2, 3)), sign if sign == 1 else 255],
+        [test.get_ind((1, 6)), test.get_ind((0, 4, 2, 3)), sign if sign == 1 else 0],
     )

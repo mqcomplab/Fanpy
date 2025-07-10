@@ -12,7 +12,6 @@ import numpy as np
 
 import pytest
 
-
 def test_binomial():
     """Test binomial."""
     assert binomial(4, 0) == 1
