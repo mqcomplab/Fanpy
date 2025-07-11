@@ -542,7 +542,6 @@ class BaseCC(BaseWavefunction):
             Product of the CC selected amplitudes.
 
         """
-        print("indices_multi = ", indices_multi)
         if not deriv:
             output = 0
             for indices_sign in indices_multi.values():
@@ -581,7 +580,6 @@ class BaseCC(BaseWavefunction):
             Hessian matrix of shape (nparams, nparams)
         """
         output = np.zeros((self.nparams, self.nparams))
-        print("indices_multi = ", indices_multi)
         for indices_sign in indices_multi.values():
             indices, signs = indices_sign[:, :-1], indices_sign[:, -1]
             signs = signs.astype(np.int8)
