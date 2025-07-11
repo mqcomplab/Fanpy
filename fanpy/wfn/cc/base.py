@@ -566,6 +566,54 @@ class BaseCC(BaseWavefunction):
                 selected_params[bool_indices] = old_params
         return output
 
+    def product_amplitudes_multi_double_derivative(self, indices_multi):
+        """Compute the second derivative of the CC amplitudes that corresponds to the given indices.
+
+        Parameters
+        ----------
+        indices_multi : dict
+            Dictionary of excitation operator combinations and signs.
+     
+        Returns
+        -------
+        output : np.ndarray
+            Hessian matrix of shape (nparams, nparams)
+        """
+        output = np.zeros((self.nparams, self.nparams))
+        for indices_sign in indices_multi.values():
+            indices, signs = indices_sign[:, :-1], indices_sign[:, -1]
+            signs = signs.astype(np.int8)
+            signs[signs < 1] = -1
+     
+            # Loop over each row (one path)
+            for path, sign in zip(indices, signs):
+                unique_inds = set(path)
+                for a in unique_inds:
+                    for b in unique_inds:
+                        # Count occurrences in the path
+                        if a == b:
+                            if list(path).count(a) < 2:
+                                continue  # skip if index does not appear at least twice
+                        # Mask out a and b once each
+                        masked = []
+                        used_a = used_b = False
+                        for ind in path:
+                            if ind == a and not used_a:
+                                used_a = True
+                                continue
+                            if ind == b and not used_b:
+                                used_b = True
+                                continue
+                            masked.append(ind)
+                        if len(masked) < len(path) - 2:
+                            continue  # safeguard for edge cases
+                        prod = np.prod(self.params[masked]) if masked else 1.0
+                        output[a, b] += sign * prod
+     
+        return output
+
+
+
     def load_cache(self):
         """Load the functions whose values will be cached.
 
@@ -606,6 +654,10 @@ class BaseCC(BaseWavefunction):
         def _olp_deriv(sd1):
             """Cached _olp_deriv method without caching the instance."""
             return self._olp_deriv(sd1)
+        @functools.lru_cache(maxsize=0, typed=False)
+        def _olp_double_deriv(sd1):
+            """Cached _olp_double_derivative method."""
+            return self._olp_double_derivative(sd1)
 
         # create cache
         if not hasattr(self, "_cache_fns"):
@@ -614,7 +666,8 @@ class BaseCC(BaseWavefunction):
         # store the cached function
         self._cache_fns["overlap"] = _olp
         self._cache_fns["overlap derivative"] = _olp_deriv
-
+        self._cache_fns["overlap double derivative"] = _olp_double_deriv
+        
     def _olp(self, sd):
         r"""Calculate the matrix element of the CC operator between the Slater determinants.
 
@@ -722,6 +775,49 @@ class BaseCC(BaseWavefunction):
         else:
             return temp_olp(sd, self.refwfn)
 
+    def _olp_double_derivative(self, sd):
+        """Calculate the double derivative of the overlap with the Slater determinant.
+    
+        Parameters
+        ----------
+        sd : int
+            Occupation vector of the left Slater determinant given as a bitstring.
+    
+        Returns
+        -------
+        hessian : np.ndarray
+            Hessian matrix (nparams, nparams)
+        """
+
+        def temp_olp_double_deriv(sd1, sd2):
+            if sd1 == sd2:
+                return np.zeros((self.nparams, self.nparams))
+            c_inds, a_inds = slater.diff_orbs(sd1, sd2)
+            if isinstance(a_inds, np.ndarray):
+                a_inds = a_inds.tolist()
+            if isinstance(c_inds, np.ndarray):
+                c_inds = c_inds.tolist()
+            sign = slater.sign_excite(sd2, a_inds, c_inds)
+     
+            if tuple(a_inds + c_inds) not in self.exop_combinations:
+                self.generate_possible_exops(a_inds, c_inds)
+     
+            indices_multi = self.exop_combinations[tuple(a_inds + c_inds)]
+            hessian = self.product_amplitudes_multi_double_derivative(indices_multi)
+            return sign * hessian
+     
+        if isinstance(self.refwfn, CIWavefunction):
+            val = np.zeros((self.nparams, self.nparams))
+            for refsd in self.refwfn.sd_vec:
+                val += temp_olp_double_deriv(sd, refsd) * self.refwfn.get_overlap(refsd)
+            return val
+        else:
+            return temp_olp_double_deriv(sd, self.refwfn)
+
+
+
+        
+
     def get_overlap(self, sd, deriv=None):
         r"""Return the overlap of the wavefunction with a Slater determinant.
 
@@ -771,6 +867,11 @@ class BaseCC(BaseWavefunction):
             val = self._cache_fns["overlap derivative"](sd)
             return val[deriv]
 
+    def get_overlap_double_derivative(self, sd):
+        """Return the double derivative of the overlap w.r.t. all CC parameters."""
+        return self._cache_fns["overlap double derivative"](sd)
+
+        
     def generate_possible_exops(self, a_inds, c_inds):
         """Assign possible excitation operators from the given creation and annihilation operators.
 
@@ -901,3 +1002,4 @@ class BaseCC(BaseWavefunction):
         for i, indices in inds_multi.items():
             inds_multi[i] = np.array(indices, dtype=dtype).reshape(-1, i + 1)
         self.exop_combinations[tuple(a_inds + c_inds)] = inds_multi
+        
