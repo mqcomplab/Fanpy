@@ -208,7 +208,7 @@ class FANPT:
 
     def optimize(
         self,
-        guess_params=None,
+        guess_params,
         final_order=None,
         lambda_i=None,
         lambda_f=None,
@@ -220,7 +220,7 @@ class FANPT:
 
         Arguments
         ---------
-            guess_params : np.ndarray, optional
+            guess_params : np.ndarray
                 Initial guess for wave function parameters.
             final_order : int, optional
                 Final order of the FANPT calculation. Defaults to 1.
@@ -240,9 +240,6 @@ class FANPT:
         """
 
         # Assign attributes
-        if guess_params is None:
-            guess_params = self.fanci_interface.objective.active_params
-
         final_order = final_order or self.final_order
         lambda_i = lambda_i or self.lambda_i
         lambda_f = lambda_f or self.lambda_f
