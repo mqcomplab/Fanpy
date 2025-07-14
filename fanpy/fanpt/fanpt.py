@@ -209,6 +209,7 @@ class FANPT:
     def optimize(
         self,
         guess_params,
+        guess_energy,
         final_order=None,
         lambda_i=None,
         lambda_f=None,
@@ -222,6 +223,8 @@ class FANPT:
         ---------
             guess_params : np.ndarray
                 Initial guess for wave function parameters.
+            guess_energy : float
+                Initial guess for electronic energy.
             final_order : int, optional
                 Final order of the FANPT calculation. Defaults to 1.
             lambda_i : float, optional
@@ -238,6 +241,9 @@ class FANPT:
             params: np.ndarray
             Solution of the FANPT calculation.
         """
+
+        # Format guess_params to FanPT including energy as parameter
+        guess_params = np.append(guess_params, guess_energy)
 
         # Assign attributes
         final_order = final_order or self.final_order
