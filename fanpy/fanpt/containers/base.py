@@ -196,7 +196,6 @@ class FANPTContainer(metaclass=ABCMeta):
             self.dd_ovlp_s = self.fanci_objective.compute_overlap_double_deriv(
                 self.wfn_params, "S"
             )
-        print("double_derivative_shape", self.dd_ovlp_s.shape)
         # Update Hamilonian in the fanci_objective.
         self.fanci_interface.pyci_ham = self.ham
 
