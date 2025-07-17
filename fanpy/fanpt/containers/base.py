@@ -5,7 +5,6 @@ from fanpy.fanpt.utils import linear_comb_ham
 
 import pyci
 
-
 class FANPTContainer(metaclass=ABCMeta):
     r"""Container for the matrices and vectors required ot perform a FANPT calculation.
 
@@ -114,6 +113,7 @@ class FANPTContainer(metaclass=ABCMeta):
         f_pot_ci_op=None,
         ovlp_s=None,
         d_ovlp_s=None,
+        dd_ovlp_s=None,
     ):
         r"""Initialize the FANPT container.
 
@@ -190,7 +190,12 @@ class FANPTContainer(metaclass=ABCMeta):
             self.d_ovlp_s = d_ovlp_s
         else:
             self.d_ovlp_s = self.fanci_objective.compute_overlap_deriv(self.wfn_params, "S")
-
+        if dd_ovlp_s:
+            self.dd_ovlp_s = dd_ovlp_s
+        else:
+            self.dd_ovlp_s = self.fanci_objective.compute_overlap_double_deriv(
+                self.wfn_params, "S"
+            )
         # Update Hamilonian in the fanci_objective.
         self.fanci_interface.pyci_ham = self.ham
 
