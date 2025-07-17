@@ -141,7 +141,7 @@ class FANPTConstantTerms:
 
     def gen_constant_terms(self):
         r"""Generate the constant terms.
-
+    
         Returns
         -------
         constant_terms : np.ndarray
@@ -158,11 +158,38 @@ class FANPTConstantTerms:
                     r_vector += (
                         comb * self.previous_responses[o - 1][-1] * self.previous_responses[self.order - o - 1][:-1]
                     )
+    
                 constant_terms = -self.order * np.dot(
                     self.fanpt_container.d2_g_lambda_wfnparams, self.previous_responses[-1][:-1]
                 ) - np.dot(self.fanpt_container.d2_g_e_wfnparams, r_vector)
+    
+                if self.order == 2:
+                    #second derivative contribution w.r.t. p_k, p_l
+                    constant_terms -= np.einsum(
+                        "mkl,k,l->m", self.fanpt_container.d2_g_wfnparams2, self.previous_responses[0][:-1], self.previous_responses[0][:-1]
+                        
+                    )
+                    
+                elif self.order == 3:
+                    #second derivative contribution w.r.t. p_k, p_l
+                    constant_terms -= 3*np.einsum(
+                        "mkl,k,l->m", self.fanpt_container.d2_g_wfnparams2, self.previous_responses[1][:-1], self.previous_responses[0][:-1]
+                        
+                    )
+                    #third derivative contribution w.r.t. energy, p_k, p_l
+                    constant_terms -= 3*self.previous_responses[0][-1] * np.einsum(
+                        "mkl,k,l->m", self.fanpt_container.d3_g_e_wfnparams2, self.previous_responses[1][:-1], self.previous_responses[0][:-1]
+                        
+                    )
+                    #third derivative contribution w.r.t. lambda, p_k, p_l
+                    constant_terms -= 3*np.einsum(
+                        "mkl,k,l->m", self.fanpt_container.d3_g_lambda_wfnparams2, self.previous_responses[0][:-1], self.previous_responses[0][:-1]
+                        
+                    )
+                    
             else:
                 constant_terms = -self.order * np.dot(
                     self.fanpt_container.d2_g_lambda_wfnparams, self.previous_responses[-1]
                 )
+    
         self.constant_terms = constant_terms
