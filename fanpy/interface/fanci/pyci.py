@@ -885,6 +885,10 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         # Run optimizer
         results = optimizer(*opt_args, **opt_kwargs)
+
+        # Add the energy to the results dictionary
+        results["energy"] = results.x[-1]
+
         return results
 
     def print(self, *args, **kwargs):
