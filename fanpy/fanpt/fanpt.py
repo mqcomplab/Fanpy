@@ -307,4 +307,7 @@ class FANPT:
             if not self.energy_active:
                 fanci_objective.freeze_parameter(-1)
 
+        # Add the energy to the results dictionary
+        results["energy"] = fanpt_params[-1]
+
         return results
