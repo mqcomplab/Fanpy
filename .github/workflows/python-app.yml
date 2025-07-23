@@ -2,7 +2,7 @@ name: Test Fanpy
 
 on:
   push:
-    branches: [main]
+    branches: [92-bug-ci-tests-fail-on-forks-with-different-name]
   pull_request:
     branches: [main]
 
@@ -37,7 +37,7 @@ jobs:
           git clone https://github.com/theochem/pyci.git && cd pyci
           make
           python -m pip install .
-          cd ../Fanpy
+          cd -
       - name: Run tests with pytest
         run: |
           pip install pytest pytest-cov
