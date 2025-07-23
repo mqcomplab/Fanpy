@@ -2,7 +2,7 @@ name: Test Fanpy
 
 on:
   push:
-    branches: [main]
+    branches: [92-bug-ci-tests-fail-on-forks-with-different-name]
   pull_request:
     branches: [main]
 
@@ -30,6 +30,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[test, pyscf, tensorflow]"
+          fanpy_dir=$(pwd)
       - name : Install PyCI
         run: |
           pwd 
@@ -37,7 +38,8 @@ jobs:
           git clone https://github.com/theochem/pyci.git && cd pyci
           make
           python -m pip install .
-          cd -
+          cd $fanpy_dir
+          pwd
       - name: Run tests with pytest
         run: |
           pip install pytest pytest-cov
