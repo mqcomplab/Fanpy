@@ -2,7 +2,7 @@ name: Test Fanpy
 
 on:
   push:
-    branches: [92-bug-ci-tests-fail-on-forks-with-different-name]
+    branches: [main]
   pull_request:
     branches: [main]
 
