@@ -4,7 +4,7 @@ Based of the original class from FanCI code.
 """
 
 from fanpy.tools import slater
-from fanpy.solver.least_squares_fanci import least_squares
+
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
@@ -1533,6 +1533,10 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
 
         # Run optimizer
         results = optimizer(*opt_args, **opt_kwargs)
+
+        # Add the energy to the results dictionary
+        results["energy"] = results.x[-1]
+
         return results
 
     def print(self, *args, **kwargs):

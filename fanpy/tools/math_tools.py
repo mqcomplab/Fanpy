@@ -25,18 +25,21 @@ from scipy.linalg import expm
 from scipy.special import comb
 
 
+import math
+from scipy.special import comb
+
 def binomial(n, k):
-    r"""Return the binomial coefficient :math:`\binom{n}{k}`.
+    r"""Return the binomial coefficient :math:`\\binom{n}{k}`.
 
     .. math::
 
-        \binom{n}{k} = \frac{n!}{k! (n-k)!}
+        \\binom{n}{k} = \\frac{n!}{k! (n-k)!}
 
     Parameters
     ----------
-    n : int
+    n : int or float
         n in (n choose k).
-    k : int
+    k : int or float
         k in (n choose k).
 
     Returns
@@ -44,7 +47,20 @@ def binomial(n, k):
     result : int
         Number of ways to select :math:`k` objects out of :math:`n` objects.
 
+    Notes
+    -----
+    If `n` or `k` is a float, its floor is taken with a message.
     """
+    if not isinstance(n, int):
+        old_n = n
+        n = math.floor(n)
+        print(f"[INFO] 'n' was float ({old_n}), floored to {n}.")
+    
+    if not isinstance(k, int):
+        old_k = k
+        k = math.floor(k)
+        print(f"[INFO] 'k' was float ({old_k}), floored to {k}.")
+
     return comb(n, k, exact=True)
 
 
