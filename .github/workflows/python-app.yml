@@ -33,11 +33,13 @@ jobs:
       - name : Install PyCI
         run: |
           pwd 
-          cd ..
+          mkdir dependencies
+          cd dependencies
           git clone https://github.com/theochem/pyci.git && cd pyci
           make
           python -m pip install .
-          cd ../Fanpy
+          cd ../../
+          pwd
       - name: Run tests with pytest
         run: |
           pip install pytest pytest-cov
