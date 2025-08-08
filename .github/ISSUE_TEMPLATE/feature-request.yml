@@ -1,6 +1,7 @@
 name: Feature Request
 description: "Suggest a feature."
 labels: "enhancement"
+type: "Feature"
 title: "ENH: "
 
 body:
