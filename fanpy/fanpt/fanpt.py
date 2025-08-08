@@ -255,10 +255,17 @@ class FANPT:
         print(f"Solving FanPT problem using the ideal Hamiltonian")
         self.fanci_interface.update_objective(self.ham0)
         fanci_objective = self.fanci_interface.objective
+        if not self.energy_active:
+            # unfreeze the energy parameter if it is not active
+            fanci_objective.unfreeze_parameter(-1)
 
         # Get initial guess for parameters at initial lambda value.
         results = fanci_objective.optimize(guess_params, **solver_kwargs)
         guess_params[fanci_objective.mask] = results.x
+
+         # Rebuild active parameters mask according to energy_active
+        if not self.energy_active:
+            fanci_objective.freeze_parameter(-1)
 
         # Solve FANPT equations
         for l in np.linspace(lambda_i, lambda_f, steps, endpoint=False):
@@ -295,6 +302,9 @@ class FANPT:
             # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
             self.fanci_interface.update_objective(fanpt_updater.new_ham)
             fanci_objective = self.fanci_interface.objective
+            if not self.energy_active:
+                # unfreeze the energy parameter if it is not active
+                fanci_objective.unfreeze_parameter(-1)
 
             # Solve the fanci problem with fanpt_params as initial guess.
             # Take the params given by fanci and use them as initial params in the FANPT calculation for the next lambda.
