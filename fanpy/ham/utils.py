@@ -123,6 +123,11 @@ def ham_factory(integrate_sd_sd_decomposed, integrals, nspin, orders=(1, 2), int
                 If ham_deriv has any indices than is less than 0 or greater than or equal to
                 nparams.
 
+            Note
+            ----
+            The TypeError and ValueError are only raised if the integrate_sd_wfn is None.
+            Otherwise, it depends on the user defined integrate_sd_wfn if these errors are
+            raised. 
             """
             # pylint: disable=C0103
             if integrate_sd_wfn is None:
