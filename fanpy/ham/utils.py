@@ -166,10 +166,9 @@ def ham_factory(integrate_sd_sd_decomposed, integrals, nspin, orders=(1, 2), int
 
             Returns
             -------
-            integral : {float, np.ndarray}
-                If `components` is False, then the value of the integral is returned.
-                If `components` is True, then the value of the one electron, coulomb, and exchange
-                components are returned.
+            integral : np.ndarray
+                The value of the one electron, coulomb, and exchange components 
+                are returned.
 
             """
             return integrate_sd_sd_decomposed(sd1, sd2, self.integrals)
@@ -194,7 +193,7 @@ def ham_factory(integrate_sd_sd_decomposed, integrals, nspin, orders=(1, 2), int
             Returns
             -------
             integral : float
-                The value of the integral is returned.
+                The value of the integral is returned. Sum of one electron, coulomb, and exchange components. 
             """
 
             decomposed_integral = self.integrate_sd_sd_decomposed(sd1, sd2)
