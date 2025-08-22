@@ -1,6 +1,6 @@
 name: Bug report
 description: "Report a bug."
-labels: "bug"
+labels: ["bug", "triage"]
 type: "Bug"
 title: "BUG: "
 
