@@ -2,7 +2,7 @@ name: Other Tasks
 description: "Miscellaneous tasks and issues."
 labels: ["triage"]
 type: "Task"
-title: ""
+title: "Example task"
 
 body:
 - type: textarea
