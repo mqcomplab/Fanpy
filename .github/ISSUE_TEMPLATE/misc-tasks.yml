@@ -1,0 +1,12 @@
+name: Other Tasks
+description: "Miscellaneous tasks and issues."
+labels: ["triage"]
+type: "Task"
+title: ""
+
+body:
+- type: textarea
+  attributes:
+    label: "Describe the task or issue:"
+  validations:
+    required: true
