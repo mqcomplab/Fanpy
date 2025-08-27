@@ -116,23 +116,20 @@ def wrap_skopt(func):
         Returns
         -------
         Dictionary with the following keys and values:
-        success : bool
-            True if optimization succeeded.
         params : np.ndarray
             Parameters at the end of the optimization.
-        message : str
-            Message returned by the optimizer.
         internal : OptimizeResults
             Returned value of the `scipy.optimize.root`.
 
+        Notes
+        -----
+        Skopt results do not have `success` or `message` attributes. Hence, they are not included in the output dictionary. 
         """
         kwargs.setdefault("dimensions", [(i - 0.5, i + 0.5) for i in objective.active_params])
         results = func(objective.objective, **kwargs)
 
         output = {}
-        # output["success"] = results.success
         output["params"] = results.x
-        # output["message"] = results.message
         output["internal"] = results
 
         return output
