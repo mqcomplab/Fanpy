@@ -78,7 +78,7 @@ setup(
             "bandit",
             "black",
         ],
-        "test": ["pytest", "pytest-cov", "numdifftools"],
+        "test": ["pytest", "pytest-cov", "numdifftools", "scikit-optimize"],
         "horton": ["horton"],
         "pyscf": ["pyscf"],
         "tensorflow": ["tensorflow"],
