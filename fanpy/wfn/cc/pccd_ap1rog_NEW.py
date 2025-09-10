@@ -676,15 +676,17 @@ class PCCD(BaseCC):
 
         Parameters
         ----------
-        sd1 : int
+        sd : int
             Occupation vector of the left Slater determinant given as a bitstring.
-        sd2 : int
-            Occupation vector of the right Slater determinant given as a bitstring.
-
+        
         Returns
         -------
-        olp : {float, complex}
-            Derivative of the overlap with respect to the given parameter.
+        olp double derivative: 2D numpy array with Hessian elements :math:`H_{ab}`.
+
+        .. math::
+
+        H_{ab} = \frac{\partial^2}{\partial t_a \partial t_b}
+            \left[ \langle \mathrm{SD} \mid \Psi_{\mathrm{CC}} \rangle \right]
 
         """
 
@@ -771,9 +773,6 @@ class PCCD(BaseCC):
                         selected_rows.append(row_ind)
 
                 indices_multi[exc_order] = indices_sign[selected_rows]
-                # FIXME:
-                # print(selected_rows)
-                # print(indices_multi[exc_order])
 
             hessian = self.product_amplitudes_multi_double_derivative(indices_multi)
             val = sign * hessian
