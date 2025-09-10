@@ -27,14 +27,18 @@ class hCI(CIWavefunction):
                   and Excitation Degree by Fabris Kossoski, et.al.
                   https://doi.org/10.48550/arXiv.2203.06154
 
-    Extra Attributes for hCI
-    ----------
-    h  : float
-        hierarchy number
-    alpha1 :  float
-        parameter to control excitation order
-    alpha2 :  float
-        parameter to control seniority
+    Extra Attributes (hCI)
+    ----------------------
+    hci_version : {'old', 'new'}
+        Version flag that controls how determinants are grouped into hierarchies.
+    
+    hci_pattern : {'pos_diag', 'neg_diag', 'hch', 'vch'}
+        Partitioning scheme of the (excitation, seniority) plane used to select determinants.
+    
+    hierarchy : float
+        Target hierarchy index. For ``'old'`` it is used directly; for ``'new'`` it
+        seeds the construction of the admissible hierarchy set (``pos_hierarchies``).
+
 
     Attributes
     ----------
@@ -104,11 +108,23 @@ class hCI(CIWavefunction):
 
     Extra Methods
     -------------
-    assign_hierarchy(self, hierarchy=None)
-        Assign the hierarchy number of the wavefunction.
-    assign_alphas(self, alpha1, alpha2)
-        Assign the weight coefficient 'alpha1' to limit the excitation
-        orders and 'alpha2' to restrict the seniority.
+    assign_hci_version(hci_version)
+        Set the hCI wavefunction version, which controls how determinants are grouped
+        into hierarchies for the current pattern.
+    
+    assign_pattern(hci_pattern)
+        Set the hCI pattern used to organize determinants across hierarchies.
+    
+    assign_alphas()
+        Derive and store the α-coefficients for the hierarchy relation associated
+        with the current pattern.
+    
+    assign_hierarchy(hierarchy)
+        Set the target hierarchy index used when selecting determinants.
+    
+    assign_pos_hierarchies()
+        Compute and store the admissible hierarchy indices implied by the current
+        version, pattern, and settings.
 
     """
 
@@ -119,22 +135,81 @@ class hCI(CIWavefunction):
         self.assign_hci_pattern(hci_pattern=hci_pattern)
         self.assign_alphas()  # now derives from hci_pattern via ALPHA_BY_PATTERN
         self.assign_hierarchy(hierarchy=hierarchy)
-        self.assign_pos_hierarchies(hci_version, hci_pattern, hierarchy)
+        self.assign_pos_hierarchies()
         super().__init__(nelec, nspin, memory=memory)
         self.assign_sds(sds=sds)
         self.assign_refwfn(refwfn=refwfn)
 
     def assign_hci_version(self, hci_version):
-        if hci_version not in ["old", "new"]:
-            raise TypeError("hci version must be provided either `old` or `new`")
-        else:
-            self.hci_version = hci_version
+        """
+        Set the hCI wavefunction *version*, which controls how determinants are
+        grouped into hierarchies for a given ``hci_pattern``.
+    
+        Versions
+        --------
+        "old"
+            Append determinants belonging **only** to the hierarchy explicitly
+            specified by the current pattern (i.e., the exact hierarchy index).
+        "new"
+            Append determinants selected by the pattern’s modulo-based hierarchy
+            rule (see :meth:`assign_pos_hierarchies` for the precise selection
+            logic).
+    
+        Parameters
+        ----------
+        hci_version : {'old', 'new', None}
+            Version to use. If ``None``, the current setting is left unchanged.
+    
+        Raises
+        ------
+        TypeError
+            If ``hci_version`` is not one of ``'old'``, ``'new'``, or ``None``.
+        """
+
+
+        if hci_version is None:
+            hci_version = "new"
+    
+        if hci_version not in ("old", "new"):
+            raise TypeError("hci_version must be 'old', 'new', or None (None defaults to 'new').")
+
+        self.hci_version = hci_version
 
     def assign_hci_pattern(self, hci_pattern):
-        if hci_pattern not in ["pos_diag", "neg_diag", "vch", "hch"]:
-            raise TypeError("hci pattern must be provided either `pos_diag`, `neg_diag`,`vch' or `hch`")
-        else:
-            self.hci_pattern = hci_pattern
+        """
+        Set the hCI **pattern** used to organize determinants across hierarchies.
+    
+        Parameters
+        ----------
+        hci_pattern : {'pos_diag', 'neg_diag', 'vch', 'hch'}
+            Selection topology in the (excitation order ``e``, seniority ``s``) plane:
+            - 'pos_diag' : positive-diagonal relation between ``e`` and ``s``.
+            - 'neg_diag' : negative-diagonal relation between ``e`` and ``s``.
+            - 'vch'      : vertical chess horse relation between ``e`` and ``s``.
+            - 'hch'      : horizontal chess horse relation between ``e`` and ``s``.
+    
+        Raises
+        ------
+        TypeError
+            If ``hci_pattern`` is not one of the supported values.
+    
+        Notes
+        -----
+        This sets ``self.hci_pattern`` and is consumed by methods like
+        :meth:`assign_alphas` and :meth:`assign_pos_hierarchies`.
+        """
+
+
+        if hci_pattern is None:
+            raise TypeError("hci_pattern cannot be None.")
+    
+        key = str(hci_pattern).strip().lower()
+    
+        if key not in ALPHA_BY_PATTERN:
+            valid = ", ".join(sorted(ALPHA_BY_PATTERN.keys()))
+            raise TypeError(f"Unknown hci_pattern {key!r}. Valid options: {valid}")
+    
+        self.hci_pattern = key
 
     def assign_hierarchy(self, hierarchy=4.5):
         """Assign the hierachy number for hCI wavefunction.
@@ -160,32 +235,60 @@ class hCI(CIWavefunction):
 
         if not isinstance(hierarchy, (int, float, type(None))):
             raise TypeError("`hierarchy` must be provided as an integer, float or `None`.")
-        # elif hierarchy is None:
-        #    self.sds = None
+
         else:
             self.hierarchy = hierarchy
 
-    # def assign_pos_hierarchies(self):
-    def assign_pos_hierarchies(self, hci_version, hci_pattern, hierarchy):
+    def assign_pos_hierarchies(self):
+        """
+        Compute and store the set of **admissible hierarchy indices** for determinant
+        selection, based on the current ``hci_version``, ``hci_pattern``, and
+        ``hierarchy`` value.
+    
+        Behavior
+        --------
+        If ``hci_version == 'new'``:
+            - ``'pos_diag'``:   ``[0, 0.5, 1.0, ..., hierarchy]``  (step = 0.5)
+            - ``'hch'``:        ``[0, 0.5, 1.0, ..., hierarchy]``  (step = 0.5)
+            - ``'neg_diag'``:   ``[0, 1, 2, ..., hierarchy]``      (step = 1)
+            - ``'vch'``:        ``[-hierarchy, ..., -1, 0, 1, ..., hierarchy]`` (step = 1)
+    
+            These ranges are constructed with ``numpy.arange`` and are inclusive of
+            the upper bound (via ``+0.5`` or ``+1`` padding) to ensure the terminal
+            value is present.
+    
+        If ``hci_version != 'new'`` (i.e., ``'old'``):
+            - Use only the explicitly requested hierarchy index:
+              ``pos_hierarchies = [self.hierarchy]``.
+    
+        Notes
+        -----
+        This method assumes ``self.hci_version``, ``self.hci_pattern``, and
+        ``self.hierarchy`` have already been assigned.
+        """
+
         if self.hci_version == "new":
 
             if self.hci_pattern == "pos_diag":
-                self.pos_hierarchies = np.arange(0, hierarchy + 0.5, 0.5)
+                self.pos_hierarchies = np.arange(0, self.hierarchy + 0.5, 0.5)
 
             elif self.hci_pattern == "neg_diag":
-                self.pos_hierarchies = np.arange(0, hierarchy + 1, 1)
+                self.pos_hierarchies = np.arange(0, self.hierarchy + 1, 1)
 
             elif self.hci_pattern == "hch":
-                self.pos_hierarchies = np.arange(0, hierarchy + 0.5, 0.5)
+                self.pos_hierarchies = np.arange(0, self.hierarchy + 0.5, 0.5)
 
             elif self.hci_pattern == "vch":
-                self.pos_hierarchies = np.arange(-1 * hierarchy, hierarchy + 1, 1)
+                self.pos_hierarchies = np.arange(-1 * self.hierarchy, self.hierarchy + 1, 1)
 
         else:
             self.pos_hierarchies = [self.hierarchy]
 
     def assign_alphas(self):
-        """Derive alpha1/alpha2 from the chosen hci_pattern."""
+        """
+        Derive alpha1/alpha2 from the chosen hci_pattern.
+        """
+
         if not hasattr(self, "hci_pattern"):
             raise AttributeError("hci_pattern must be assigned before assign_alphas().")
     
@@ -222,6 +325,7 @@ class hCI(CIWavefunction):
             If refwfn does not have the right number of spin orbitals.
 
         """
+        
         if refwfn is None:
             self.refwfn = slater.ground(nocc=self.nelec, norbs=self.nspin)
         elif isinstance(refwfn, int):
@@ -325,6 +429,5 @@ class hCI(CIWavefunction):
         allowed_sds = list(set(allowed_sds))
         print(f"[pattern={self.hci_pattern}] alpha1={self.alpha1:.3g}, alpha2={self.alpha2:.3g} | total determinants={len(allowed_sds)}")
         super().assign_sds(allowed_sds)
-
 
 
