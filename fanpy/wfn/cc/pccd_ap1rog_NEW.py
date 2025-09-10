@@ -672,7 +672,12 @@ class PCCD(BaseCC):
 
 
     def _olp_double_derivative(self, sd):
-        """Calculate the derivative of the overlap with the Slater determinant.
+        """Calculate the double derivative of the overlap with the Slater determinant.
+
+        .. math::
+
+        H_{ab} = \frac{\partial^2}{\partial t_a \partial t_b}
+            \left[ \langle \mathrm{SD} \mid \Psi_{\mathrm{CC}} \rangle \right]
 
         Parameters
         ----------
@@ -682,11 +687,6 @@ class PCCD(BaseCC):
         Returns
         -------
         olp double derivative: 2D numpy array with Hessian elements :math:`H_{ab}`.
-
-        .. math::
-
-        H_{ab} = \frac{\partial^2}{\partial t_a \partial t_b}
-            \left[ \langle \mathrm{SD} \mid \Psi_{\mathrm{CC}} \rangle \right]
 
         """
 
