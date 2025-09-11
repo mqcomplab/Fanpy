@@ -129,7 +129,7 @@ class hCI(CIWavefunction):
     """
 
     def __init__(
-        self, nelec, nspin, hci_version=None, hci_pattern, sds=None, memory=None, hierarchy=None, refwfn=None
+            self, nelec, nspin, hci_pattern, hierarchy, hci_version=None, sds=None, memory=None, refwfn=None
     ):
         """
         Initialize the hCI wavefunction.
@@ -459,3 +459,4 @@ class hCI(CIWavefunction):
         super().assign_sds(allowed_sds)
 
 
+hCI = hCI(4, 8, hci_pattern= "pos_diag", hci_version=None, sds=None, memory=None, hierarchy=1.5, refwfn=None)
