@@ -129,8 +129,9 @@ class hCI(CIWavefunction):
     """
 
     def __init__(
-        self, nelec, nspin, hci_version, hci_pattern, sds=None, memory=None, hierarchy=None, refwfn=None
+        self, nelec, nspin, hci_version=None, hci_pattern, sds=None, memory=None, hierarchy=None, refwfn=None
     ):
+        
         self.assign_hci_version(hci_version=hci_version)
         self.assign_hci_pattern(hci_pattern=hci_pattern)
         self.assign_alphas()  # now derives from hci_pattern via ALPHA_BY_PATTERN
@@ -158,7 +159,7 @@ class hCI(CIWavefunction):
         Parameters
         ----------
         hci_version : {'old', 'new', None}
-            Version to use. If ``None``, the current setting is left unchanged.
+            Version to use. If ``None``, the version is set to "new".
     
         Raises
         ------
@@ -427,7 +428,7 @@ class hCI(CIWavefunction):
                 "No compatible (e,s) pairs for given h, alpha1 & alpha2. Only ground state Slater determinant is allowed, proceeding with HF calculation."
             )
         allowed_sds = list(set(allowed_sds))
-        print(f"[pattern={self.hci_pattern}] alpha1={self.alpha1:.3g}, alpha2={self.alpha2:.3g} | total determinants={len(allowed_sds)}")
+        print(f"[version={self.hci_version} pattern={self.hci_pattern}] alpha1={self.alpha1:.3g}, alpha2={self.alpha2:.3g} | total determinants={len(allowed_sds)}")
         super().assign_sds(allowed_sds)
 
 
