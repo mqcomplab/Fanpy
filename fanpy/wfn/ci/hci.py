@@ -78,7 +78,7 @@ class hCI(CIWavefunction):
 
     Methods
     -------
-    __init__(self, nelec, nspin, memory=None, params=None, sds=None, spin=None, seniority=None):
+    __init__(self, nelec, nspin, hci_version, hci_pattern, sds, memory, hierarchy, refwfn):
         Initialize the wavefunction.
     assign_nelec(self, nelec)
         Assign the number of electrons.
@@ -131,7 +131,34 @@ class hCI(CIWavefunction):
     def __init__(
         self, nelec, nspin, hci_version=None, hci_pattern, sds=None, memory=None, hierarchy=None, refwfn=None
     ):
+        """
+        Initialize the hCI wavefunction.
+    
+        Sets the version/pattern, derives (alpha1, alpha2) from the pattern,
+        assigns the target hierarchy, computes the admissible hierarchy set, then
+        initializes the base class and optional determinants/reference.
+    
+        Parameters
+        ----------
+        nelec : int
+            Number of electrons.
+        nspin : int
+            Number of spin orbitals.
+        hci_version : {'old', 'new', None}, optional
+            Hierarchy selection version; if ``None`` defaults to ``'new'``.
+        hci_pattern : str
+            Pattern key (must exist in ``ALPHA_BY_PATTERN``), e.g. ``'pos_diag'``,
+            ``'neg_diag'``, ``'hch'``, ``'vch'``.
+        sds : iterable of int or None, optional
+            Preselected Slater determinants to include.
+        memory : any, optional
+            Memory/resource handle passed to the base class.
+        hierarchy : float or int or None, optional
+            Target hierarchy index.
+        refwfn : object or None, optional
+            Reference wavefunction/state.
         
+        """
         self.assign_hci_version(hci_version=hci_version)
         self.assign_hci_pattern(hci_pattern=hci_pattern)
         self.assign_alphas()  # now derives from hci_pattern via ALPHA_BY_PATTERN
