@@ -126,6 +126,8 @@ class hCI(CIWavefunction):
         Compute and store the admissible hierarchy indices implied by the current
         version, pattern, and settings.
 
+    assign_e_s_pairs()
+        Generates list of allowed (e,s) pairs for a given pattern and hierarchy
     """
 
     def __init__(
