@@ -153,7 +153,7 @@ class hCI(CIWavefunction):
             Preselected Slater determinants to include.
         memory : any, optional
             Memory/resource handle passed to the base class.
-        hierarchy : float or int or None, optional
+        hierarchy : float
             Target hierarchy index.
         refwfn : object or None, optional
             Reference wavefunction/state.
@@ -372,29 +372,52 @@ class hCI(CIWavefunction):
                 raise ValueError("refwfn must have {} spin orbitals".format(self.nspin))
             self.refwfn = refwfn
 
-    def assign_sds(self, sds=None):
-        """Generate the list of pairs of allowed excitation orders, 'e', and seniorities, 's'.
-        Obtain the list of allowed Slater determinants corresponding to each (e,s) pair.
-        Assign the obtained list of Slater determinants in the hCI wavefunction.
 
-        Ignores user input and uses the Slater determinants for the FCI wavefunction (within the
-        given spin).
-
-        Parameters
-        ----------
-        sds : iterable of int
-            List of Slater determinants (in the form of integers that describe the occupation as a
-            bitstring)
-
-        Raises
-        ------
-        ValueError
-            If the sds is not `None` (default value).
-
+    def assign_e_s_pairs(self):
+        """Return the list of allowed (e, s) pairs implied by the current settings.
+    
+        Uses self.pos_hierarchies, self.alpha1, self.alpha2, and self.nelec to
+        derive valid excitation/seniority combinations following the hierarchy
+        relation:  h = alpha1 * e + alpha2 * s.
+    
         Notes
         -----
-        Needs to have `nelec`, `nspin`, `spin`, `seniority`.
-
+        Assumes the system is referenced to a maximum-pairing configuration
+        (reference seniority 0 or 1).
+        """
+        # np.array of allowed excitation orders for a given 'nelec'
+        exc_orders = range(0, self.nelec + 1, 1)
+    
+        allowed_e = []
+        allowed_s = []
+    
+        for h in self.pos_hierarchies:
+            for e in exc_orders:
+                # closed-shell system
+                if self.nelec % 2 == 0:
+                    if e % 2 == 0:  # even e
+                        S_list = range(0, min(2 * e, self.nelec) + 2, 2)
+                    else:           # odd e
+                        S_list = range(2, min(2 * e, self.nelec) + 2, 2)
+                # open-shell system
+                else:
+                    S_list = range(1, min(2 * e + 1, self.nelec) + 2, 2)
+    
+                # Seniority from hierarchy relation
+                s = (h - self.alpha1 * e) / self.alpha2
+    
+                if s >= 0 and s.is_integer() and s in S_list:
+                    allowed_e.append(int(e))
+                    allowed_s.append(int(s))
+    
+        return list(zip(allowed_e, allowed_s))
+    
+    
+    def assign_sds(self, sds=None):
+        """Assign the list of Slater determinants consistent with allowed (e, s) pairs.
+    
+        Ignores user input and uses the Slater determinants implied by the current
+        hierarchy/pattern (within the given spin constraints).
         """
         if __debug__ and sds is not None:
             raise ValueError(
@@ -402,61 +425,39 @@ class hCI(CIWavefunction):
                 "is `None`. If you would like to customize your CI wavefunction, use "
                 "CIWavefunction instead."
             )
-
-        # ******************* GET LISTS FOR ALLOWED (e, s) PAIRS ******************
-        # Here, the way of obtaining (e, s) pairs is only for the reference systems
-        # having maximum number of paired electrons, so the seniority of the reference
-        # should be either 0 or 1.
-
-        # np.array of allowed excitation orders for a given 'nelec'
-        exc_orders = range(0, self.nelec + 1, 1)
-
-        # Initialize the empty lists for allowed pairs [e,s]
-        allowed_e = []
-        allowed_s = []
-        for h in self.pos_hierarchies:
-            for e in exc_orders:
-                # closed-shell system
-                if self.nelec % 2 == 0:
-                    if e % 2 == 0:  # if e is even
-                        S_list = range(0, min(2 * e, self.nelec) + 2, 2)
-                    elif e % 2 == 1:  # if e is odd
-                        S_list = range(2, min(2 * e, self.nelec) + 2, 2)
-
-                # open-shell system
-                elif self.nelec % 2 == 1:
-                    S_list = range(1, min(2 * e + 1, self.nelec) + 2, 2)
-
-                # Calculate seniority number using heirarachy number formula
-                s = (h - self.alpha1 * e) / self.alpha2
-
-                if s >= 0 and s.is_integer() and s in S_list:
-                    allowed_e.append(int(e))
-                    allowed_s.append(int(s))
-
-        e_s_pairs = list(zip(allowed_e, allowed_s))
-
-
-        # ****************** GET SDS LIST FOR ALLOWED (e, s) PAIRS ******************
+    
+        # ---------- allowed (e, s) pairs ----------
+        e_s_pairs = self.assign_e_s_pairs()
+    
+        # ---------- determinants from (e, s) ----------
         ground_state = slater.ground(self.nelec, self.nspin)
-        # Start an empty list with ground state
         allowed_sds = [ground_state]
-
-        # Obtain list of Slater determinants for allowed (e, s) pairs
-        # corresponding to given h, alpha1, alpha2
+    
         for e, s in e_s_pairs:
             sd_ = sd_list(
-                self.nelec, self.nspin, num_limit=None, exc_orders=[e], spin=None, seniority=s, hierarchy=True
+                self.nelec,
+                self.nspin,
+                num_limit=None,
+                exc_orders=[e],
+                spin=None,
+                seniority=s,
+                hierarchy=True,
             )
-
-            allowed_sds.extend((sd_))
+            allowed_sds.extend(sd_)
+    
         if len(allowed_sds) == 1:
             raise Warning(
-                "No compatible (e,s) pairs for given h, alpha1 & alpha2. Only ground state Slater determinant is allowed, proceeding with HF calculation."
+                "No compatible (e,s) pairs for given h, alpha1 & alpha2. Only ground state "
+                "Slater determinant is allowed, proceeding with HF calculation."
             )
+    
+        # unique + assign via base
         allowed_sds = list(set(allowed_sds))
-        print(f"[version={self.hci_version} pattern={self.hci_pattern}] alpha1={self.alpha1:.3g}, alpha2={self.alpha2:.3g} | total determinants={len(allowed_sds)}")
+        print(
+            f"[version={self.hci_version} pattern={self.hci_pattern}] "
+            f"alpha1={self.alpha1:.3g}, alpha2={self.alpha2:.3g} | total determinants={len(allowed_sds)}"
+        )
         super().assign_sds(allowed_sds)
+    
 
 
-hCI = hCI(4, 8, hci_pattern= "pos_diag", hci_version=None, sds=None, memory=None, hierarchy=1.5, refwfn=None)
