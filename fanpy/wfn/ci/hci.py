@@ -418,7 +418,17 @@ class hCI(CIWavefunction):
     
         Ignores user input and uses the Slater determinants implied by the current
         hierarchy/pattern (within the given spin constraints).
+        Parameters
+        ----------
+        sds : iterable of int
+            List of Slater determinants (in the form of integers that describe the occupation as a
+            bitstring)
+        Raises
+        ------
+        ValueError
+            If the sds is not `None` (default value).
         """
+        
         if __debug__ and sds is not None:
             raise ValueError(
                 "Only the default list of Slater determinants is allowed. i.e. sds "
