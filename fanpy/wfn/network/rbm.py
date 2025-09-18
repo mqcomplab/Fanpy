@@ -1,4 +1,8 @@
-"""Restricted Boltzmann Machine wavefunction."""
+"""
+Restricted Boltzmann Machine (RBM) wavefunction implemented by David.
+
+The code implements a RBM with a feedforward architecture.
+"""
 
 from fanpy.tools import slater
 from fanpy.wfn.base import BaseWavefunction
