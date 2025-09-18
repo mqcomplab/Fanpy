@@ -375,13 +375,19 @@ class hCI(CIWavefunction):
             self.refwfn = refwfn
 
 
-    def assign_e_s_pairs(self):
-        """Return the list of allowed (e, s) pairs implied by the current settings.
-    
+    def calculate_e_s_pairs(self):
+        """    
         Uses self.pos_hierarchies, self.alpha1, self.alpha2, and self.nelec to
         derive valid excitation/seniority combinations following the hierarchy
         relation:  h = alpha1 * e + alpha2 * s.
-    
+
+        Returns
+        -------
+        list[list[int]]
+            A list of [e, s] pairs, where each pair represents a valid combination
+            of excitation order (e) and seniority (s) satisfying the hierarchy
+            relation for the given system.
+        
         Notes
         -----
         Assumes the system is referenced to a maximum-pairing configuration
@@ -439,7 +445,7 @@ class hCI(CIWavefunction):
             )
     
         # ---------- allowed (e, s) pairs ----------
-        e_s_pairs = self.assign_e_s_pairs()
+        e_s_pairs = self.calculate_e_s_pairs()
     
         # ---------- determinants from (e, s) ----------
         ground_state = slater.ground(self.nelec, self.nspin)
@@ -470,6 +476,4 @@ class hCI(CIWavefunction):
             f"alpha1={self.alpha1:.3g}, alpha2={self.alpha2:.3g} | total determinants={len(allowed_sds)}"
         )
         super().assign_sds(allowed_sds)
-    
-
 
