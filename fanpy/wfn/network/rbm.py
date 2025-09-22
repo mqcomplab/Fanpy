@@ -1,7 +1,5 @@
 """
-Restricted Boltzmann Machine (RBM) wavefunction implemented by David.
-
-The code implements a RBM with a feedforward architecture.
+Feed-forward Neural Network implemented by David.
 """
 
 from fanpy.tools import slater
@@ -11,6 +9,48 @@ import numpy as np
 
 
 class RestrictedBoltzmannMachine(BaseWavefunction):
+    r"""
+    L-Layered Feed-Forward Neural Network as a wavefunction.
+
+
+    Parameters
+    ----------
+    nelec : int
+        Number of electrons in the system.
+    nspin : int
+        Number of spin orbitals.
+    nbath : int
+        Number of hidden (bath) units in the Neural Network.
+    params : {np.ndarray, list of np.ndarray, None}, optional
+        Initial parameters for the Neural Network. If None, default template 
+        parameters are assigned.
+    memory : Memory, optional
+        Memory handler for caching overlaps and derivatives.
+    num_layers : int, default=1
+        Number of hidden layers in the Neural Network.
+    orders : tuple of int, default=(1, 2)
+        Orders of input correlations used in the first layer. 
+        E.g. (1, 2) includes one-body and two-body correlations.
+
+    Notes
+    -----
+    - The overlap for the Neural Network wavefunction is defined as:
+      
+      .. math::
+          \langle m | \Psi \rangle =
+          \sigma_L \left(w_0^{(L-1)} + \sum_{j_{L-1}=1}^{K_{L-1}} w_{j_{L-1}}^{(L-1)} ... \sigma_2 \
+           \left(w_0^{(1)} + \sum_{j_1=1}^{K_1} w_{j_2j_1}^{(1)}\sigma_1 \left(w_0^{(0)} + \sum_{i=1}^N w_{j_1i}^{(0)}x_i\right)\right)... \right)
+
+      where :math:`x_j` are spin-orbital occupation numbers and 
+      :math:`\sigma` is the chosen activation function.
+
+    - Parameters are stored as a list of weight tensors matching 
+      `params_shape`.
+    - No explicit biases are included.
+
+    - More details: Chapter 5 from David's Thesis at
+	https://macsphere.mcmaster.ca/bitstream/11375/25837/2/kim_taewon_2020september_phd.pdf
+    """
     def __init__(self, nelec, nspin, nbath, params=None, memory=None, num_layers=1, orders=(1, 2)):
         super().__init__(nelec, nspin, memory=memory)
         self.nbath = nbath
@@ -62,7 +102,8 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
 
         Notes
         -----
-        Instance must have attribut `model`.
+        Instance must have attribute `model`.
+        Shapes depend on `orders` and `num_layers`.
 
         """
         # NOTE: first layer is K x B
@@ -226,6 +267,13 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         return self._olp_deriv(sd)[deriv]
 
     def _olp(self, sd):
+	"""Evaluate the overlap of the wavefunction with a single Slater determinant.
+
+        This function wraps `_olp_helper` by taking the product across all 
+        hidden-unit activations and applying the global scaling factor. The 
+        resulting scalar is the amplitude of the RBM wavefunction for the 
+        given determinant.
+	"""
         output = np.prod(self._olp_helper(sd) * self.output_scale)
 
         # if abs(output) > self.olp_threshold:
@@ -234,7 +282,24 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         return output
 
     def _olp_helper(self, sd, cache=False):
-        """Return output of the network (before the product layer)."""
+        """Return output of the network (before the product layer).
+
+        Parameters
+        ----------
+        sd : int
+            Integer representation of the Slater determinant. Occupied orbitals
+            are extracted via `slater.occ_indices(sd)`.
+        cache : bool, optional
+            If True, intermediate activations and linear combinations are stored
+            in `self.forward_cache_act` and `self.forward_cache_lin` for use in
+            derivative computations.
+
+        Returns
+        -------
+        output : np.ndarray of shape (nbath,)
+            The hidden-layer activations after the last nonlinearity, but before
+            the product over hidden units.
+	"""
         occ_indices = np.array(slater.occ_indices(sd))
         occ_mask = np.zeros(self.nspin, dtype=bool)
         occ_mask[occ_indices] = True
@@ -288,6 +353,32 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         return output
 
     def _olp_deriv(self, sd):
+        r"""Compute the gradient of the overlap with respect to network parameters.
+ 
+        Parameters
+        ----------
+        sd : int
+            Integer representation of the Slater determinant. Occupied orbitals
+            are extracted via `slater.occ_indices(sd)`.
+
+        Returns
+        -------
+        grad : np.ndarray
+            One-dimensional array containing the derivatives of 
+            :math:`\langle m | \Psi \rangle` with respect to all network 
+            parameters, flattened and concatenated layer by layer.
+        
+        Notes
+        -----
+        - Backpropagation uses cached activations (`forward_cache_act`) and 
+          pre-activations (`forward_cache_lin`) from `_olp_helper`.
+        - The gradient includes contributions from the product structure by
+          multiplying each hidden-unit derivative with the product of all
+          remaining units.
+        - The parameter ordering in the flattened output matches the ordering
+          in `self._params`.
+
+        """
         grads = []
         # FIXME: hard coded
         dy_da_prev = np.identity(self.nbath)
@@ -330,6 +421,39 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         return np.hstack(output)
 
     def get_overlaps(self, sds, deriv=None):
+        """Evaluate wavefunction overlaps for a list of Slater determinants,
+        with optional derivatives with respect to selected parameters.
+	
+ 	This function evaluates overlaps for multiple Slater determinants simulataneously,
+        using a vectorized forward pass.
+
+        Parameters
+        ----------
+        sds : list of int
+            Slater determinants encoded as integers. Each determinant is
+            converted into its occupied orbital indices.
+        deriv : list of parameter identifiers or None, optional
+            Subset of parameters with respect to which derivatives are
+            requested. If None (default), only overlaps are returned.
+        Returns
+        -------
+        overlaps : np.ndarray, shape (len(sds),)
+            Overlap values :math:`\langle m | \Psi \rangle` for each Slater
+            determinant.
+        derivs : dict, optional
+            If `deriv` is provided, returns a mapping from parameter
+            identifiers to arrays of shape `(len(sds), ...)` giving the
+            derivatives of the overlaps with respect to the requested
+            parameters.
+
+        Notes
+        -----
+        - Forward propagation is vectorized over all Slater determinants.
+        - Cached quantities (`forward_cache_act`, `forward_cache_lin`) are
+          filled during the pass and reused by the derivative routine.
+        - The memory footprint can be large for higher-order correlations,
+          since all determinants are expanded into tensor inputs.
+        """
         if len(sds) == 0:
             return np.array([])
         occ_indices = np.array([slater.occ_indices(sd) for sd in sds])
@@ -424,6 +548,34 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         return np.hstack(output)[:, deriv]
 
     def normalize(self, pspace=None):
+        r"""
+        Normalize the RBM wavefunction.
+
+        This rescales `self.output_scale` so that the wavefunction has unit 
+        norm with respect to the chosen projection space:
+
+        .. math::
+
+            \sum_{m \in \mathcal{P}} |\langle m | \Psi \rangle|^2 = 1,
+
+        where :math:`\mathcal{P}` is either the user-provided `pspace` or 
+        the default `self.pspace_norm`.
+
+        Parameters
+        ----------
+        pspace : list of int or None, optional
+            List of Slater determinants (encoded as integers) over which 
+            the norm is computed. If None, defaults to `self.pspace_norm`.
+
+        Notes
+        -----
+        - The scaling factor is applied equally to all hidden-unit 
+          contributions via `self.output_scale`.
+        - The normalization is approximate if the projection space does not 
+          span the full Hilbert space.
+        - Cached overlaps and derivatives are cleared after rescaling.
+        """
+
         if pspace is not None:
             norm = sum(self.get_overlap(sd) ** 2 for sd in pspace)
             print(norm, sorted([abs(self.get_overlap(sd)) for sd in pspace], reverse=True)[:5], "norm")
