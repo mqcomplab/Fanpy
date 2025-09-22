@@ -267,7 +267,7 @@ class RestrictedBoltzmannMachine(BaseWavefunction):
         return self._olp_deriv(sd)[deriv]
 
     def _olp(self, sd):
-	"""Evaluate the overlap of the wavefunction with a single Slater determinant.
+        """Evaluate the overlap of the wavefunction with a single Slater determinant.
 
         This function wraps `_olp_helper` by taking the product across all 
         hidden-unit activations and applying the global scaling factor. The 
