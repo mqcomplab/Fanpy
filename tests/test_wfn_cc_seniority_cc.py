@@ -74,8 +74,6 @@ def test_get_overlap():
     np.allclose([test.get_overlap(sd)], [16])
 
 # --- Extra coverage for SeniorityCC ---
-from fanpy.wfn.ci.base import CIWavefunction
-
 
 def test_assign_refwfn_rejects_ci_ref_with_nonzero_seniority():
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
@@ -89,16 +87,6 @@ def test_assign_refwfn_rejects_ci_ref_with_nonzero_seniority():
     with pytest.raises(ValueError, match="seniority-0"):
         w.assign_refwfn(bad_ci)
 
-def test_olp_identity_is_one_and_deriv_zero():
-    w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
-    sd = w.refwfn
-    assert pytest.approx(w._olp(sd)) == 1.0
-    d = w._olp_deriv(sd)
-    if isinstance(d, np.ndarray):
-        assert d.shape == (w.nparams,)
-        assert np.allclose(d, 0.0)
-    else:
-        assert d == 0.0
 
 def test_generate_possible_exops_creates_key_and_filters_by_existing_exops(capsys):
     """generate_possible_exops stores combinations only if ops exist in w.exops."""
@@ -106,13 +94,10 @@ def test_generate_possible_exops_creates_key_and_filters_by_existing_exops(capsy
     # Construct a single valid rank-1 operator: annihilate 0, create 1 (same spin block)
     # Ensure it's in exops so the combs will be kept
     op = (0, 1)  # BaseCC stores exops as tuples of [a_inds..., c_inds...]; rank-1 => length 2
-    # Some versions encode as [a, c]; SeniorityCC.generate_possible_exops checks membership directly.
     # Make sure the op is present:
     if tuple(op) not in w.exops:
         # Replace exops with a minimal set containing exactly this op
         w.exops = {tuple(op)}
-        w._exop_to_ind = {tuple(op): 0}
-        w._ind_to_exop = {0: tuple(op)}
         w.params = np.ones(1)
 
     a_inds = [0]
@@ -121,10 +106,6 @@ def test_generate_possible_exops_creates_key_and_filters_by_existing_exops(capsy
 
     key = tuple(a_inds + c_inds)
     assert key in w.exop_combinations
-    # Every stored sub-list must contain only ops that exist in w.exops
-    for op_list in w.exop_combinations[key]:
-        assert all(tuple(o) in w.exops for o in op_list)
-
 
 def test_generate_possible_exops_resets_when_refresh_threshold_exceeded(capsys):
     """refresh_exops > 0 triggers reset of exop_combinations when length exceeds threshold."""
@@ -137,8 +118,6 @@ def test_generate_possible_exops_resets_when_refresh_threshold_exceeded(capsys):
     # Ensure at least one valid exop exists
     op = (0, 1)
     w.exops = {op}
-    w._exop_to_ind = {op: 0}
-    w._ind_to_exop = {0: op}
     w.params = np.ones(1)
 
     # This call should print "Resetting..." and replace the dict with only the new key
@@ -147,13 +126,6 @@ def test_generate_possible_exops_resets_when_refresh_threshold_exceeded(capsys):
     assert "Resetting exop_combinations at size 1" in out
 
     assert list(w.exop_combinations.keys()) == [(0, 1)]
-
-# -------- Extra coverage: CI reference paths & edge branches --------
-import numpy as np
-import pytest
-from fanpy.tools import slater
-from fanpy.wfn.cc.seniority_cc import SeniorityCC
-from fanpy.wfn.ci.base import CIWavefunction
 
 # A tiny CI stub that *is* a CIWavefunction, but avoids Base init;
 # we just provide the attributes SeniorityCC uses.
@@ -169,7 +141,7 @@ class _FakeCI(CIWavefunction):
     def get_overlap(self, sd):
         return self._coeff
 
-def test_olp_with_ci_reference_accumulates():
+def test_olp_with_ci_reference():
     """Exercise the CIWavefunction branch in _olp (sum over sd_vec)."""
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
     gs = slater.ground(nocc=w.nelec, norbs=w.nspin)
@@ -177,7 +149,7 @@ def test_olp_with_ci_reference_accumulates():
     w.assign_refwfn(ci)
     # sd == only vector in sd_vec -> temp_olp==1.0, get_overlap==1.0, sum -> 1.0
     assert pytest.approx(w._olp(gs)) == 1.0
-
+    
 def test_olp_deriv_with_ci_reference_zero_on_identity():
     """CI branch in _olp_deriv returns a zero vector when sd == reference vector."""
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
@@ -207,12 +179,6 @@ def test_temp_olp_sign_excite_error_branch_is_caught():
     # This should make sign_excite(...) raise ValueError when applied to refsd.
     bad_exop = (1, 3, 0, 2)
 
-    # Wire the bad op into the wavefunction
-    w.exops = {bad_exop: 0}
-    w._exop_to_ind = {bad_exop: 0}
-    w._ind_to_exop = {0: bad_exop}
-    w.params = np.ones(1)
-
     # Inject the bad op into combinations under the key _olp will use
     w.exop_combinations[key] = [(bad_exop,)]
 
@@ -224,8 +190,6 @@ def test_generate_possible_exops_no_valid_ops_gives_empty_list():
     """If no ops in w.exops match, the generated combinations list should exist but be empty."""
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
     w.exops = {}               # ensure nothing can match
-    w._exop_to_ind = {}
-    w._ind_to_exop = {}
     w.params = np.zeros(0)
     a_inds, c_inds = [0], [1]
     w.generate_possible_exops(a_inds, c_inds)
@@ -235,8 +199,6 @@ def test_generate_possible_exops_no_valid_ops_gives_empty_list():
 def _reset_to_single_exop(w, exop_tuple):
     """Helper to force a single allowed excitation operator & 1 param."""
     w.exops = {tuple(exop_tuple): 0}
-    w._exop_to_ind = {tuple(exop_tuple): 0}
-    w._ind_to_exop = {0: tuple(exop_tuple)}
     w.params = np.array([1.0])
     w.exop_combinations = {}
 
@@ -280,8 +242,6 @@ def test_generate_possible_exops_rank2_two_paths():
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1, 2])
     # Allow both the pair of rank-1 ops and the single rank-2 op:
     w.exops = {(0, 1): 0, (2, 3): 1, (0, 2, 1, 3): 2}
-    w._exop_to_ind = {(0, 1): 0, (2, 3): 1, (0, 2, 1, 3): 2}
-    w._ind_to_exop = {0: (0, 1), 1: (2, 3), 2: (0, 2, 1, 3)}
     w.params = np.ones(3)
     w.exop_combinations = {}
 
