@@ -20,6 +20,13 @@ def make_minimal(nelec=2, nspin=6, *, version="new", pattern="pos_diag", hierarc
         hCI pattern for partitioning (e.g. "pos_diag", "neg_diag", "hch").
     hierarchy : float, optional
         Hierarchy value controlling truncation.
+
+    Returns
+    -------
+    hCI
+        An initialized hCI wavefunction object configured with the given parameters
+        and default settings (no custom determinants, memory limits, or reference
+        wavefunction).
     """
     w = hCI(
         nelec=nelec,
@@ -77,8 +84,13 @@ def test_assign_alphas_from_known_pattern_and_bounds():
     w = object.__new__(hCI)
     w.assign_hci_pattern("pos_diag")
     w.assign_alphas()
-    assert hasattr(w, "alpha1") and hasattr(w, "alpha2")
-    assert -1 <= w.alpha1 <= 1 and -1 <= w.alpha2 <= 1  # hard-coded guard
+    #check attributes exist
+    assert hasattr(w, "alpha1")
+    assert hasattr(w, "alpha2")
+
+    #check value bounds
+    assert -1 <= w.alpha1 <= 1
+    assert -1 <= w.alpha2 <= 1
 
 
 # ---------- assign_hierarchy ----------
@@ -110,7 +122,19 @@ def test_assign_hierarchy_accepts_int_float_none():
     ]
 )
 def test_pos_hierarchies_new_non_vch(pattern, hierarchy, expect):
-    """assign_pos_hierarchies() should compute correct sequence for new-version non-VCH patterns."""
+    """assign_pos_hierarchies() should compute correct sequence for new-version non-VCH patterns.
+
+    Attributes
+    ----------
+    w.hci_version : str
+        Specifies which formulation of hCI is used; here forced to "new".
+    w.hci_pattern : str
+        Partitioning scheme of the Hilbert space (e.g., "pos_diag", "neg_diag", "hch").
+    w.hierarchy : float
+        Numerical value controlling the truncation level of excitations/seniority sectors.
+    w.pos_hierarchies : list of float
+        Computed positive hierarchy values consistent with the chosen version and pattern.
+    """
     w = object.__new__(hCI)
     w.assign_hci_version("new")
     w.assign_hci_pattern(pattern)
@@ -149,7 +173,7 @@ def test_assign_refwfn_default_is_ground_state():
 def test_assign_refwfn_int_wrong_electron_count_raises():
     """assign_refwfn() should raise if determinant has wrong electron count."""
     w = make_minimal(nelec=2, nspin=6)
-    bad_ref = (1 << 0) | (1 << 1) | (1 << 2)  # 3 electrons
+    bad_ref = 0b000111  # 3 electrons
     with pytest.raises(ValueError, match=r"refwfn must have 2 electrons"):
         w.assign_refwfn(bad_ref)
 
@@ -178,15 +202,6 @@ def test_calculate_e_s_pairs_closed_shell_pos_diag_expected():
     w = make_minimal(nelec=2, nspin=6, version="new", pattern="pos_diag", hierarchy=2.0)
     pairs = w.calculate_e_s_pairs()
     assert set(pairs) == {(0, 0), (1, 2), (2, 0), (2, 2)}
-
-
-# ---------- assign_sds ----------
-def test_assign_sds_rejects_custom_list():
-    """Duplicate test ensuring custom SDS lists raise ValueError."""
-    w = make_minimal()
-    with pytest.raises(ValueError, match=re.escape("Only the default list of Slater determinants is allowed")):
-        w.assign_sds(sds=[1, 2, 3])
-
 
 def test_assign_sds_raises_warning_when_pairs_empty(monkeypatch):
     """assign_sds() should raise Warning if calculate_e_s_pairs() returns empty list."""
