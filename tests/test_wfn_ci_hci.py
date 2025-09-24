@@ -126,14 +126,12 @@ def test_pos_hierarchies_new_non_vch(pattern, hierarchy, expect):
 
     Attributes
     ----------
-    w.hci_version : str
-        Specifies which formulation of hCI is used; here forced to "new".
-    w.hci_pattern : str
+    pattern : str
         Partitioning scheme of the Hilbert space (e.g., "pos_diag", "neg_diag", "hch").
-    w.hierarchy : float
+    hierarchy : float
         Numerical value controlling the truncation level of excitations/seniority sectors.
-    w.pos_hierarchies : list of float
-        Computed positive hierarchy values consistent with the chosen version and pattern.
+    expect : list of float
+        possible hierarchies computed positive hierarchy values consistent with the chosen version and pattern.
     """
     w = object.__new__(hCI)
     w.assign_hci_version("new")
