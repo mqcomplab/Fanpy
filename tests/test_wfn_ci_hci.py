@@ -124,7 +124,7 @@ def test_assign_hierarchy_accepts_int_float_none():
 def test_pos_hierarchies_new_non_vch(pattern, hierarchy, expect):
     """assign_pos_hierarchies() should compute correct sequence for new-version non-VCH patterns.
 
-    Attributes
+    Parameters
     ----------
     pattern : str
         Partitioning scheme of the Hilbert space (e.g., "pos_diag", "neg_diag", "hch").
