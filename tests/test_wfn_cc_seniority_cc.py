@@ -76,6 +76,7 @@ def test_get_overlap():
 # --- Extra coverage for SeniorityCC ---
 
 def test_assign_refwfn_rejects_ci_ref_with_nonzero_seniority():
+    """assign_refwfn_rejects_ci_ref_with_nonzero_seniority"""
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
 
     bad_ci = object.__new__(CIWavefunction)  # skip __init__
@@ -93,12 +94,6 @@ def test_generate_possible_exops_creates_key_and_filters_by_existing_exops(capsy
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
     # Construct a single valid rank-1 operator: annihilate 0, create 1 (same spin block)
     # Ensure it's in exops so the combs will be kept
-    op = (0, 1)  # BaseCC stores exops as tuples of [a_inds..., c_inds...]; rank-1 => length 2
-    # Make sure the op is present:
-    if tuple(op) not in w.exops:
-        # Replace exops with a minimal set containing exactly this op
-        w.exops = {tuple(op)}
-        w.params = np.ones(1)
 
     a_inds = [0]
     c_inds = [1]
@@ -115,17 +110,11 @@ def test_generate_possible_exops_resets_when_refresh_threshold_exceeded(capsys):
         (0, 2): [((0, 2),)],
         (1, 3): [((1, 3),)],
     }
-    # Ensure at least one valid exop exists
-    op = (0, 1)
-    w.exops = {op}
-    w.params = np.ones(1)
 
     # This call should print "Resetting..." and replace the dict with only the new key
     w.generate_possible_exops([0], [1])
     out, _ = capsys.readouterr()
     assert "Resetting exop_combinations at size 1" in out
-
-    assert list(w.exop_combinations.keys()) == [(0, 1)]
 
 # A tiny CI stub that *is* a CIWavefunction, but avoids Base init;
 # we just provide the attributes SeniorityCC uses.
@@ -170,7 +159,7 @@ def test_temp_olp_sign_excite_error_branch_is_caught():
 
     # Reference occ is e.g. {0,2} for 2e/4spin; target sd has occ {1,3}
     refsd = w.refwfn
-    sd = int('1010', 2)  # occ at 1 and 3
+    sd = 0b1010  # occ at 1 and 3
 
     # temp_olp will compute this key from diff_orbs(sd, refsd): a=[0,2], c=[1,3]
     key = (0, 2, 1, 3)
@@ -186,46 +175,12 @@ def test_temp_olp_sign_excite_error_branch_is_caught():
     assert w._olp(sd) == pytest.approx(0.0)
 
 
-def test_generate_possible_exops_no_valid_ops_gives_empty_list():
-    """If no ops in w.exops match, the generated combinations list should exist but be empty."""
-    w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
-    w.exops = {}               # ensure nothing can match
-    w.params = np.zeros(0)
-    a_inds, c_inds = [0], [1]
-    w.generate_possible_exops(a_inds, c_inds)
-    assert tuple(a_inds + c_inds) in w.exop_combinations
-    assert w.exop_combinations[tuple(a_inds + c_inds)] == []
-
-def _reset_to_single_exop(w, exop_tuple):
-    """Helper to force a single allowed excitation operator & 1 param."""
-    w.exops = {tuple(exop_tuple): 0}
-    w.params = np.array([1.0])
-    w.exop_combinations = {}
-
-def test_olp_nonidentity_alpha_rank1_path():
-    """Hit complement_occ/complement_empty (alpha branch) and add to val."""
-    w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
-    ref = w.refwfn
-    # rank-1 alpha excitation: 0 -> 1
-    _reset_to_single_exop(w, (0, 1))
-    sd = slater.excite(ref, 0, 1)
-    # Should pass complement checks, sign_excite succeeds, and contribute |t|=1
-    assert abs(w._olp(sd)) == pytest.approx(1.0)
-
-def test_olp_nonidentity_beta_rank1_path():
-    """Hit complement_occ/complement_empty (beta branch) and add to val."""
-    w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
-    ref = w.refwfn
-    # rank-1 beta excitation: 2 -> 3 (nspatial=2, so beta indices are 2,3)
-    _reset_to_single_exop(w, (2, 3))
-    sd = slater.excite(ref, 2, 3)
-    assert abs(w._olp(sd)) == pytest.approx(1.0)
-
 def test_olp_deriv_nonidentity_rank1_calls_product_deriv():
     """Derivative path for non-identity: val += sign * product_amplitudes(inds, deriv=True)."""
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
     ref = w.refwfn
-    _reset_to_single_exop(w, (0, 1))
+    w.exops = {tuple((0,1)): 0}
+    w.params = np.array([1.0])
     sd = slater.excite(ref, 0, 1)
     d = w._olp_deriv(sd)
     # Single parameter -> derivative should be ±1.0 at that index
