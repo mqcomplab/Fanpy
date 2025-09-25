@@ -119,15 +119,67 @@ def test_generate_possible_exops_resets_when_refresh_threshold_exceeded(capsys):
 # A tiny CI stub that *is* a CIWavefunction, but avoids Base init;
 # we just provide the attributes SeniorityCC uses.
 class _FakeCI(CIWavefunction):
+    """Minimal fake CI wavefunction used for testing or lightweight overlap evaluations.
+
+    This class implements just enough of the CIWavefunction interface to be used in
+    unit tests or simple overlap calculations. It stores a set of Slater determinants
+    (`sd_vec`) and a fixed overlap coefficient.
+
+    Parameters
+    ----------
+    nelec : int
+        Number of electrons in the system.
+    nspin : int
+        Total number of spin orbitals.
+    sd_vec : iterable of int
+        Sequence of Slater determinant bitstrings representing the CI expansion.
+    coeff : float, optional
+        Constant overlap value to return for any determinant (default = 1.0).
+
+    Attributes
+    ----------
+    nelec : int
+        Number of electrons.
+    nspin : int
+        Number of spin orbitals.
+    _seniority : int
+        Seniority of the reference (always 0 here for testing).
+    sds : tuple of int
+        Tuple of determinants used in this fake CI wavefunction.
+    sd_vec : list of int
+        Copy of `sd_vec` stored as a list for potential modification.
+    _coeff : float
+        Constant overlap value to return.
+
+    Methods
+    -------
+    get_overlap(sd)
+        Return the constant overlap value for any given determinant.
+
+    """
+
     def __init__(self, nelec, nspin, sd_vec, coeff=1.0):
         # don't call super().__init__
         self.nelec = nelec
         self.nspin = nspin
-        self._seniority = 0   # backing field for read-only property
-        self.sds = tuple(sd_vec)  # assign_refwfn checks presence of 'sds'
+        self._seniority = 0
+        self.sds = tuple(sd_vec)
         self.sd_vec = list(sd_vec)
         self._coeff = coeff
+
     def get_overlap(self, sd):
+        """Return the overlap of this fake CI wavefunction with a determinant.
+
+        Parameters
+        ----------
+        sd : int
+            Slater determinant bitstring for which the overlap is requested.
+
+        Returns
+        -------
+        float
+            Constant overlap value (`self._coeff`).
+        """
         return self._coeff
 
 def test_olp_with_ci_reference():
