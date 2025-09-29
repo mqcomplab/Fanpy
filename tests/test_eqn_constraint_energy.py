@@ -39,6 +39,7 @@ class DummyHamiltonian(BaseHamiltonian):
     
 
 def test_energy_constraint_simple():
+    """Test the energy constraint in simple mode. The reference energy does not change."""
     wfn = DummyWavefunction(4, 8)
     ham = DummyHamiltonian(8)
     const = EnergyConstraint(wfn, ham, ref_energy=-1.0, simple=True)
@@ -46,3 +47,25 @@ def test_energy_constraint_simple():
     const.ref_energy = 0.0
     assert const.objective(wfn.params) == -0.5 
     assert const.ref_energy == 0.0 # ref energy should not change in simple mode
+
+def test_energy_constraint_dynamic():
+    """Test the energy constraint in dynamic mode. The reference energy changes 
+    if the calculated energy is lower than the reference or if the energy 
+    difference does not change significantly.    
+    """
+    wfn = DummyWavefunction(4, 8)
+    ham = DummyHamiltonian(8)
+    # change ref E if diff < 0
+    const = EnergyConstraint(wfn, ham, ref_energy=0.0, base=10, simple=False)
+    assert np.allclose(const.objective(wfn.params), -0.5) 
+    assert np.allclose(const.ref_energy, -5.0) # E_ref,n+1 = E_ref,n + base * diff 
+    assert len(const.energy_diff_history) == 1 # check if ediff history is updated
+
+    # change ref E if diff does not change significantly
+    const = EnergyConstraint(wfn, ham, ref_energy=-1.0, base=10, simple=False)
+    for _ in range(4):
+        const.objective(wfn.params)
+    assert -1.0 != const.ref_energy # ref energy should change
+    assert np.allclose(const.ref_energy, -0.55) # change in ref e is Energy - 10**(ediff order -1)
+    # check if ediff history is reset
+    assert len(const.energy_diff_history) == 0
