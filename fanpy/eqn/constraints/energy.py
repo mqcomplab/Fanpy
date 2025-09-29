@@ -7,12 +7,8 @@ class EnergyConstraint(EnergyOneSideProjection):
     """Energy constraint.
     This class implements an energy constraint based on a reference energy.
     The objective function is the difference between the calculated energy and the reference energy.
-    If the calculated energy is lower than the reference energy, the reference energy is adjusted downwards
-    to be closer to the calculated energy.
-    If the calculated energy is higher than the reference energy, the objective function is simply the energy
-    difference.
-    If the energy difference does not change significantly over a number of calls, the reference energy is
-    adjusted downwards to be closer to the calculated energy.
+    The prupose of this "constraint" is to keep a downward pressure on the energy, and avoid getting stuck in local minima.
+    
 
     Attributes
     ----------
@@ -89,6 +85,10 @@ class EnergyConstraint(EnergyOneSideProjection):
 
     def objective(self, params):
         """Calculate the difference between calculated energy and reference energy. The reference energy is adjusted if needed.
+        The reference energy is adjusted if:
+
+        1. The calculated energy is lower than the reference energy.
+        2. The energy difference does not change significantly over a number of calls.
 
         Parameters
         ----------
@@ -98,7 +98,7 @@ class EnergyConstraint(EnergyOneSideProjection):
         Returns
         -------
         float
-            Objective function value.
+            Difference between calculated energy and reference energy.
         """
 
         if self.energy_variable:
