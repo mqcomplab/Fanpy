@@ -78,18 +78,12 @@ def test_get_overlap():
 def test_assign_refwfn_rejects_ci_ref_with_nonzero_seniority():
     """assign_refwfn_rejects_ci_ref_with_nonzero_seniority"""
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
-
-    bad_ci = object.__new__(CIWavefunction)  # skip __init__
-    bad_ci.nelec = w.nelec
-    bad_ci.nspin = w.nspin
-    bad_ci.sds = ()             # attribute must exist (assign_refwfn checks it)
-    bad_ci._seniority = 2       # backing field for the read-only property
-
+    bad_ci = CIWavefunction(nelec=w.nelec, nspin=w.nspin, spin=1, seniority=2)
     with pytest.raises(ValueError, match="seniority-0"):
         w.assign_refwfn(bad_ci)
 
 
-def test_generate_possible_exops_creates_key_and_filters_by_existing_exops(capsys):
+def test_generate_possible_exops_creates_key_and_filters_by_existing_exops():
     """generate_possible_exops stores combinations only if ops exist in w.exops."""
     w = SeniorityCC(nelec=2, nspin=4, ranks=[1])
     # Construct a single valid rank-1 operator: annihilate 0, create 1 (same spin block)
