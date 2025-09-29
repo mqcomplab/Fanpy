@@ -7,8 +7,8 @@ import numpy as np
 class DummyWavefunction(BaseWavefunction):
     """A dummy wavefunction for testing purposes."""
 
-    def __init__(self, nspin, nelec):
-        super().__init__(nspin, nelec)
+    def __init__(self, nelec, nspin):
+        super().__init__(nelec, nspin)
         self.params = np.array([0.0])
 
     def assign_params(self, params):
@@ -43,7 +43,8 @@ def test_energy_constraint_simple():
     wfn = DummyWavefunction(4, 8)
     ham = DummyHamiltonian(8)
     const = EnergyConstraint(wfn, ham, ref_energy=-1.0, simple=True)
-    assert const.objective(wfn.params) == 0.5 # difference is 0.5 (-0.5 - -1.0)
+    # E_calc = -0.5, E_ref = -1.0, so difference is 0.5 = (-0.5 - -1.0)
+    assert const.objective(wfn.params) == 0.5
     const.ref_energy = 0.0
     assert const.objective(wfn.params) == -0.5 
     assert const.ref_energy == 0.0 # ref energy should not change in simple mode
@@ -57,7 +58,7 @@ def test_energy_constraint_dynamic():
     ham = DummyHamiltonian(8)
     # change ref E if diff < 0
     const = EnergyConstraint(wfn, ham, ref_energy=0.0, base=10, simple=False)
-    assert np.allclose(const.objective(wfn.params), -0.5) 
+    assert np.allclose(const.objective(wfn.params), -0.5) # check Ediff
     assert np.allclose(const.ref_energy, -5.0) # E_ref,n+1 = E_ref,n + base * diff 
     assert len(const.energy_diff_history) == 1 # check if ediff history is updated
 
@@ -66,6 +67,6 @@ def test_energy_constraint_dynamic():
     for _ in range(4):
         const.objective(wfn.params)
     assert -1.0 != const.ref_energy # ref energy should change
-    assert np.allclose(const.ref_energy, -0.55) # change in ref e is Energy - 10**(ediff order -1)
+    assert np.allclose(const.ref_energy, -0.55) # E_ref,n+1 = E - diff / base
     # check if ediff history is reset
     assert len(const.energy_diff_history) == 0
