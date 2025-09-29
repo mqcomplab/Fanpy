@@ -80,7 +80,6 @@ class EnergyConstraint(EnergyOneSideProjection):
         self.queue_size = queue_size
         self.base = base
         self.min_diff = min_diff
-        self.energy_variable = None
         self.simple = simple
 
     def objective(self, params):
@@ -101,10 +100,7 @@ class EnergyConstraint(EnergyOneSideProjection):
             Difference between calculated energy and reference energy.
         """
 
-        if self.energy_variable:
-            energy = self.energy_variable.params[0]
-        else:
-            energy = super().objective(params)
+        energy = super().objective(params)
         energy_diff = energy - self.ref_energy
         if self.simple:
             return energy_diff
