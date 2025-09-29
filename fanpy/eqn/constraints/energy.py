@@ -142,7 +142,4 @@ class EnergyConstraint(EnergyOneSideProjection):
             )
             self.energy_diff_history = deque([])
 
-        # if all(abs(energy - i) < 1e-3 for i in self.energy_history):
-        #     self.ref_energy = energy - 1e-3
-
         return energy_diff
