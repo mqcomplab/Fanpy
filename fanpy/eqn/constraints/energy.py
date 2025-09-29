@@ -105,15 +105,15 @@ class EnergyConstraint(EnergyOneSideProjection):
         if self.simple:
             return energy_diff
 
+        self.energy_diff_history.append(energy_diff)
+        if len(self.energy_diff_history) > self.queue_size:
+            self.energy_diff_history.popleft()
+
         # if calculated energy is lower than the reference, bring down reference energy
         if energy_diff <= 0:
             print("Energy lower than reference. Adjusting reference energy: {}" "".format(self.ref_energy))
             self.ref_energy += self.base * energy_diff
             return energy_diff
-
-        self.energy_diff_history.append(energy_diff)
-        if len(self.energy_diff_history) > self.queue_size:
-            self.energy_diff_history.popleft()
 
         if len(self.energy_diff_history) != self.queue_size or any(i <= 0 for i in self.energy_diff_history):
             return energy_diff
