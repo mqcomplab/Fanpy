@@ -4,21 +4,36 @@ from fanpy.eqn.energy_oneside import EnergyOneSideProjection
 
 
 class EnergyConstraint(EnergyOneSideProjection):
-    # def __init__(self, wfn, ham, tmpfile="", param_selection=None, refwfn=None, ref_energy=-100.0):
-    #     super().__init__(wfn, ham, tmpfile=tmpfile, param_selection=param_selection)
-    #     self.assign_refwfn(refwfn)
-    #     self.ref_energy = ref_energy
+    """Energy constraint.
+    This class implements an energy constraint based on a reference energy.
+    The objective function is the difference between the calculated energy and the reference energy.
+    The prupose of this "constraint" is to keep a downward pressure on the energy, and avoid getting stuck in local minima.
+    
 
-    # def objective(self, params):
-    #     energy = super().objective(params)
-    #     energy_diff = energy - self.ref_energy
+    Attributes
+    ----------
+    ref_energy : float
 
-    #     # if calculated energy is lower than the reference, bring down reference energy
-    #     if energy_diff <= 0:
-    #         print("Computed energy below reference. Adjusting reference down.")
-    #         self.ref_energy -= 2 * abs(energy_diff)
+        Reference energy.
+    energy_diff_history : deque
+        History of energy differences.
+    queue_size : int
+        Number of energy differences to keep in history.
+    base : float
+        Base for logarithm to determine if energy difference is changing significantly.
+    min_diff : float
+        Minimum energy difference to consider for adjusting reference energy.
+    energy_variable : Variable
+        Variable representing the energy, if any.
+    simple : bool
+        If True, the objective function is simply the energy difference without any adjustments.
+    
+    Methods
+    -------
+    objective(params)
+        Calculate the objective function value based on the energy difference and adjust reference energy if needed.
+    """
 
-    #     return energy_diff
     def __init__(
         self,
         wfn,
@@ -32,6 +47,32 @@ class EnergyConstraint(EnergyOneSideProjection):
         min_diff=1e-1,
         simple=False,
     ):
+        """Initialize EnergyConstraint instance.
+
+        Parameters
+        ----------
+        wfn : Wavefunction
+            Wavefunction to be optimized.
+        ham : Hamiltonian
+            Hamiltonian of the system.
+        tmpfile : str, optional
+            Temporary file for storing intermediate results. Default is "".
+        param_selection : list, optional
+            List of parameter indices to optimize. Default is None, which means all parameters are optimized.
+        refwfn : Wavefunction, optional
+            Reference wavefunction for overlap calculation. Default is None.
+        ref_energy : float, optional
+            Reference energy for the constraint. Default is -100.0.
+        queue_size : int, optional
+            Number of energy differences to keep in history. Default is 4.
+        base : float, optional
+            Base for logarithm to determine if energy difference is changing significantly. Default is np.e.
+        min_diff : float, optional
+            Minimum energy difference to consider for adjusting reference energy. Default is 1e-1.
+        simple : bool, optional
+            If True, the objective function is simply the energy difference without any adjustments. Default is False
+        """
+
         super().__init__(wfn, ham, tmpfile=tmpfile, param_selection=param_selection, refwfn=refwfn)
         self.assign_refwfn(refwfn)
         self.ref_energy = ref_energy
@@ -39,27 +80,40 @@ class EnergyConstraint(EnergyOneSideProjection):
         self.queue_size = queue_size
         self.base = base
         self.min_diff = min_diff
-        self.energy_variable = None
         self.simple = simple
 
     def objective(self, params):
-        if self.energy_variable:
-            energy = self.energy_variable.params[0]
-        else:
-            energy = super().objective(params)
+        """Calculate the difference between calculated energy and reference energy. The reference energy is adjusted if needed.
+        The reference energy is adjusted if:
+
+        1. The calculated energy is lower than the reference energy.
+        2. The energy difference does not change significantly over a number of calls.
+
+        Parameters
+        ----------
+        params : np.ndarray
+            Parameters for the wavefunction.
+
+        Returns
+        -------
+        float
+            Difference between calculated energy and reference energy.
+        """
+
+        energy = super().objective(params)
         energy_diff = energy - self.ref_energy
         if self.simple:
             return energy_diff
+
+        self.energy_diff_history.append(energy_diff)
+        if len(self.energy_diff_history) > self.queue_size:
+            self.energy_diff_history.popleft()
 
         # if calculated energy is lower than the reference, bring down reference energy
         if energy_diff <= 0:
             print("Energy lower than reference. Adjusting reference energy: {}" "".format(self.ref_energy))
             self.ref_energy += self.base * energy_diff
             return energy_diff
-
-        self.energy_diff_history.append(energy_diff)
-        if len(self.energy_diff_history) > self.queue_size:
-            self.energy_diff_history.popleft()
 
         if len(self.energy_diff_history) != self.queue_size or any(i <= 0 for i in self.energy_diff_history):
             return energy_diff
@@ -83,8 +137,5 @@ class EnergyConstraint(EnergyOneSideProjection):
                 "Adjusting reference energy: {}".format(self.ref_energy)
             )
             self.energy_diff_history = deque([])
-
-        # if all(abs(energy - i) < 1e-3 for i in self.energy_history):
-        #     self.ref_energy = energy - 1e-3
 
         return energy_diff
