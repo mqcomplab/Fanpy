@@ -6,6 +6,9 @@ from fanpy.scripts.utils import check_inputs, parser
 
 def make_script(  # pylint: disable=R1710,R0912,R0915
     wfn_type,
+    geom, 
+    basis,
+    hf_units="B",
     optimize_orbs=False,
     pspace_exc=(1, 2),
     objective="projected",
@@ -32,6 +35,12 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         Type of wavefunction.
         One of `ci_pairs`, `cisd`, `fci`, `doci`, `mps`, `determinant-ratio`, `ap1rog`, `apr2g`,
         `apig`, `apsetg`, or `apg`.
+    geom " : list
+        Geometry of the molecule for pyscf. E.g. `[['H', [0, 0, 0]], ['H', [0, 0, 0.74]]]`
+    basis : str
+        Basis set for the HF calculation in pyscf.
+    hf_units : str
+        Units for the geometry in pyscf. Default is Bohr ('B').
     optimize_orbs : bool
         If True, orbitals are optimized.
         If False, orbitals are not optimized.
@@ -94,6 +103,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
 
     """
     # check inputs
+    # TODO: the inputs should be checked in the parser
     # check_inputs(
     #     wfn_type,
     #     pspace_exc,
@@ -114,8 +124,9 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     # )
 
     imports = ["numpy as np", "os", "sys"]
-    from_imports = []
+    from_imports = [('pyscf', "gto, scf"), ("fanpy.interface.pyscf", "PYSCF")]
 
+    # TODO: use wfn info from the gaussian part of make scripts
     wfn_type = wfn_type.lower()
     if wfn_type == "ci_pairs":
         from_imports.append(("fanpy.wfn.ci.ci_pairs", "CIPairs"))
@@ -352,7 +363,36 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
 
     output += "\n\n"
 
+    # PySCF Calculation
+    output += "print('# PySCF calculation')\n"
+    output += f"mol = gto.M(atom = [{geom[0]}, \n"
+    for atom in geom[1:-1]:
+        output += f"                      {atom}, \n"
+    output += f"                      {geom[-1]}], \n"
+    output += f"            unit = '{hf_units}', \n"
+    output += f"            basis = '{basis}') \n"
     output += "# Number of electrons\n"
+    output += "\n"
+    output += "myhf = scf.HF(mol) \n"
+    output += "myhf.kernel() \n"
+    output += "\n"
+    output += "new_guess, _, stable, _ = myhf.stability(return_status=True) \n"
+    output += "\n"
+    output += "if not stable: \n"
+    output += "    print('HF stability failed, trying Newton method...') \n"
+    output += "    myhf = myhf.newton().run(new_guess, myhf.mo_occ) \n"
+    output += "    _, _, stable, _ =  myhf.stability(return_status=True) \n"
+    output += "\n"
+    output += "if not stable: \n"
+    output += "    raise RuntimeError('HF stability failed') \n"
+    output += "\n"
+    output += "interface = PYSCF(myhf) \n"
+    output += "\n"
+
+    # Fanpy calculation    
+    output += "print('>> >> Fanpy') \n"
+    output += "\n"
+
     output += "print('Number of Electrons: {}'.format(interface.nelec))\n"
     output += "\n"
 
