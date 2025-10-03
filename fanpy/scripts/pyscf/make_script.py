@@ -5,10 +5,10 @@ import textwrap
 from fanpy.scripts.utils import check_inputs, parser
 
 def make_script(  # pylint: disable=R1710,R0912,R0915
-    wfn_type,
     geom, 
+    wfn_type,
     basis,
-    hf_units="B",
+    hf_units="Angstrom",
     optimize_orbs=False,
     pspace_exc=(1, 2),
     objective="projected",
