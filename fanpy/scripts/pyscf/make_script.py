@@ -127,7 +127,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     imports = ["numpy as np", "os", "sys"]
     from_imports = [('pyscf', "gto, scf"), ("fanpy.interface.pyscf", "PYSCF")]
 
-    # TODO: use wfn info from the gaussian part of make scripts
     wfn_info = get_wfn_info(wfn_type)
     import_line, wfn_name, wfn_kwargs = wfn_info(wfn_kwargs)
     from_imports.append(import_line)
