@@ -1,7 +1,7 @@
 """Test fanpy.script.make_script."""
 
 import pytest
-from fanpy.scripts.gaussian.wavefunction_info import get_wfn_info
+from fanpy.scripts.wavefunction_info import get_wfn_info
 
 
 def old_input(wfn_type, wfn_kwargs=None):

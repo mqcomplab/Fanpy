@@ -16,7 +16,7 @@ parser : argparse.ArgumentParser
 
 """
 import argparse
-from fanpy.scripts.gaussian.wavefunction_info import get_wfn_info
+from fanpy.scripts.wavefunction_info import get_wfn_info
 
 def check_inputs(  # pylint: disable=R0912,R0915
     nelec,
