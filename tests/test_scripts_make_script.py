@@ -67,25 +67,27 @@ def test_make_script_projected_solvers(tmp_path):
     )
     subprocess.check_output(["python", script_path])
 
-    #FIXME: these tests don't run as the system is underdetermined
     # root default solver kwargs
-    # make_script(
-    #     2, oneint, twoint, "fci", wfn_kwargs="seniority=None", objective="projected", solver="root", filename=script_path
-    # )
-    # subprocess.check_output(["python", script_path])
+    oneint_root = find_datafile("data/data_h4_square_hf_sto6g_oneint.npy")
+    twoint_root = find_datafile("data/data_h4_square_hf_sto6g_twoint.npy")
+    make_script(
+        4, oneint_root, twoint_root, "cisd", pspace_exc=[1, 2, 3, 4], objective="projected", solver="root", filename=script_path
+    )
+    subprocess.check_output(["python", script_path])
 
     # root with empty solver kwargs
-    # make_script(
-    #     2,
-    #     oneint,
-    #     twoint,
-    #     "cisd",
-    #     objective="projected",
-    #     solver="root",
-    #     filename=script_path,
-    #     solver_kwargs="",
-    # )
-    # subprocess.check_output(["python", script_path])
+    make_script(
+        4,
+        oneint_root,
+        twoint_root,
+        "cisd",
+        objective="projected",
+        pspace_exc=[1, 2, 3, 4],
+        solver="root",
+        filename=script_path,
+        solver_kwargs="",
+    )
+    subprocess.check_output(["python", script_path])
 
 
 def test_make_script_one_energy_trustregion(tmp_path):
