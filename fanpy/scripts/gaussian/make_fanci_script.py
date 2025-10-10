@@ -29,6 +29,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     filename=None,
     memory=None,
     constraint=None,
+    fanpt_kwargs=None
 ):
     """Make a script for running calculations.
 
@@ -176,13 +177,16 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     #         solver_kwargs = "method='BFGS', options={'gtol': 5e-7, 'disp':True}"
     #     solver_kwargs = ", ".join(["mode='bfgs', use_jac=True", solver_kwargs])
     elif solver == "fanpt":
-        from_imports.append(("fanci.fanpt_wrapper", "reduce_to_fock, solve_fanpt"))
+        from_imports.append(("fanpy.fanpt.fanpt", "FANPT"))
         if solver_kwargs is None:
             solver_kwargs = (
-                "fill=fill, energy_active=True, resum=False, ref_sd=0, final_order=1, "
-                "lambda_i=0.0, lambda_f=1.0, steps=50, "
-                "solver_kwargs={'mode':'lstsq', 'use_jac':True, 'xtol':1.0e-8, 'ftol':1.0e-8, "
-                "'gtol':1.0e-5, 'max_nfev':fanci_wfn.nactive, 'verbose':2, 'vtol':1e-5}"
+                "mode='lstsq', use_jac=True, xtol=1.0e-8, ftol=1.0e-8, "
+                "gtol=1.0e-5, max_nfev=objective.active_nparams, verbose=2"
+            )
+        if fanpt_kwargs is None:
+            fanpt_kwargs = (
+                "energy_active=True, resum=False, ref_sd=0, final_order=1, "
+                "lambda_i=0.0, lambda_f=1.0, steps=50"
             )
 
     if objective == "projected":
@@ -284,12 +288,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
             textwrap.wrap(ham_final, width=100, subsequent_indent=" " * len(ham_final))
         )
         output += "\n"
-        ham_init = "fock = {}(one_int, reduce_to_fock(two_int))".format(ham_name)
-        output += "\n".join(
-            textwrap.wrap(ham_init, width=100, subsequent_indent=" " * len(ham_init))
-        )
-        output += "\n"
-        output += "print('Hamiltonian: Fock Hamiltonian to {}')\n".format(ham_name)
 
     if load_ham_um is not None:
         output += "# Load unitary matrix of the Hamiltonian\n"
@@ -383,12 +381,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "\n"
 
     output += "# Initialize objective\n"
-    if solver != "fanpt":
-        output += "pyci_ham = pyci.hamiltonian(nuc_nuc, ham.one_int, ham.two_int)\n"
-    else:
-        output += "pyci_ham = pyci.hamiltonian(nuc_nuc, ham.one_int, ham.two_int)\n"
-        output += "pyci_fock = pyci.hamiltonian(nuc_nuc, fock.one_int, fock.two_int)\n"
-    seniority = 'wfn.seniority' if wfn_type != 'pccd' else '0'
 
     if objective == "projected":
         if save_chk != "":
@@ -409,12 +401,14 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "\n"
 
     # set up interface
+    if solver == "fanpt":
+        output += "fanpt = FANPT(objective, nuc_nuc, {})\n".format(fanpt_kwargs)
     output += 'pyci_interface = interface.pyci.PYCI(objective, nuc_nuc) \n'
 
     output += "# Solve\n"
     if solver == "fanpt":
-        results1 = "fanci_results = solve_fanpt("
-        results2 = "fanci_wfn, pyci_fock, pyci_ham, np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
+        results1 = "results = fanpt.optimize(wfn.params, energy_val,"
+        results2 = "{})\n".format(solver_kwargs)
     elif objective == "projected_stochastic":
         results1 = "results = pyci_interface.objective.optimize_stochastic("
         results2 = "100, np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
