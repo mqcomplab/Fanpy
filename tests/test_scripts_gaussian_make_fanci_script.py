@@ -71,8 +71,8 @@ def test_make_script_projected_solvers(tmp_path):
     oneint_root = find_datafile("data/data_h4_square_hf_sto6g_oneint.npy")
     twoint_root = find_datafile("data/data_h4_square_hf_sto6g_twoint.npy")
     make_script(
-        4, oneint_root, twoint_root, "cisd", pspace_exc=[1, 2, 3, 4], objective="projected", solver="root", filename=script_path
-    )
+        4, oneint_root, twoint_root, "cisd", wfn_kwargs = "spin=0", pspace_exc=[1, 2, 3, 4], objective="projected", solver="root", filename=script_path
+    ) # spin needs to be 0 so that system is not underdetermined
     subprocess.check_output(["python", script_path])
 
     # root with empty solver kwargs
@@ -81,12 +81,13 @@ def test_make_script_projected_solvers(tmp_path):
         oneint_root,
         twoint_root,
         "cisd",
+        wfn_kwargs="spin=0",
         objective="projected",
         pspace_exc=[1, 2, 3, 4],
         solver="root",
         filename=script_path,
         solver_kwargs="",
-    )
+    ) # spin needs to be 0 so that system is not underdetermined
     subprocess.check_output(["python", script_path])
 
 
