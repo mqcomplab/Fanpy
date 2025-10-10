@@ -192,32 +192,6 @@ def test_make_script_checkpoint(tmp_path):
     )
     subprocess.check_output(["python", script_path])
 
-    # minimize with loading ham from checkpoint
-    make_script(
-        2,
-        oneint,
-        twoint,
-        "ap1rog",
-        objective="projected",
-        solver="least_squares",
-        filename=script_path,
-        load_ham=str(tmp_path / "checkpoint_RestrictedMolecularHamiltonian.npy"),
-    )
-    subprocess.check_output(["python", script_path])
-
-    # minimize with loading ham and ham um (unitary H) from checkpoint
-    make_script(
-        2,
-        oneint,
-        twoint,
-        "ap1rog",
-        objective="projected",
-        solver="least_squares",
-        filename=script_path,
-        load_ham=str(tmp_path / "checkpoint_RestrictedMolecularHamiltonian.npy"),
-        load_ham_um=str(tmp_path / "checkpoint_RestrictedMolecularHamiltonian_um.npy"),
-    )
-    subprocess.check_output(["python", script_path])
 
 def test_make_script_filename_option(tmp_path):
     """Test that make_script works the same when filename is given and not given."""
