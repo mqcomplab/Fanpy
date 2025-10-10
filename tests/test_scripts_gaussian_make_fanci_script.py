@@ -51,6 +51,32 @@ def test_make_script_objectives(tmp_path, objective):
     subprocess.check_output(["python", script_path])
 
 
+def test_make_script_fanpt(tmp_path):
+    """Test fanpy.scripts.utils.make_script with fanpt."""
+    script_path = str(tmp_path / "script.py")
+    make_script(
+        2,
+        oneint,
+        twoint,
+        "ap1rog",
+        objective="projected",
+        solver="fanpt",
+        filename=script_path,
+    )
+    subprocess.check_output(["python", script_path])
+
+    make_script(
+        2, 
+        oneint,
+        twoint,
+        "ap1rog",
+        objective="projected",
+        solver="fanpt",
+        filename=script_path,
+        fanpt_kwargs="energy_active=False, final_order=4, steps=100"
+    )
+    subprocess.check_output(["python", script_path])
+
 def test_make_script_projected_solvers(tmp_path):
     """Test fanpy.scripts.utils.make_script with projected objective and different solvers."""
     script_path = str(tmp_path / "script.py")
@@ -211,3 +237,30 @@ def test_make_script_filename_option(tmp_path):
     )
     with open(script_path, "r") as f:
         assert f.read() == script
+
+# test if errors are raised when they should be
+def test_make_script_errors(tmp_path):
+    """Test that make_script raises errors when it should."""
+    script_path = str(tmp_path / "script.py")
+    
+    with pytest.raises(ValueError):
+        make_script(
+            2,
+            oneint,
+            twoint,
+            "ap1rog",
+            objective="projected",
+            solver="least_squares",
+            filename=script_path,
+            optimize_orbs=True,  # orbital optimization not supported currently
+        )
+    with pytest.raises(ValueError):
+        make_script(
+            2,
+            oneint,
+            twoint,
+            "ap1rog",
+            objective="variational", # this is not supported at the moment
+            solver="least_squares",
+            filename=script_path,
+        )
