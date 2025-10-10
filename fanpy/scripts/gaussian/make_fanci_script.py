@@ -183,8 +183,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
                 "solver_kwargs={'mode':'lstsq', 'use_jac':True, 'xtol':1.0e-8, 'ftol':1.0e-8, "
                 "'gtol':1.0e-5, 'max_nfev':fanci_wfn.nactive, 'verbose':2, 'vtol':1e-5}"
             )
-    else:
-        raise ValueError("Unsupported solver")
 
     if objective == "projected":
         from_imports.append(("fanpy.eqn.projected", "ProjectedSchrodinger"))
