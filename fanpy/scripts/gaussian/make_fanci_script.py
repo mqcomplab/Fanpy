@@ -133,8 +133,8 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         ham_noise=ham_noise,
         wfn_noise=wfn_noise,
     )
-
-    imports = ["numpy as np", "os", "sys", "pyci"]
+    # imports and kwargs for script 
+    imports = ["numpy as np", "os", "sys", "pyci", "fanpy.interface as interface"]
     from_imports = [("fanpy.wfn.utils", "convert_to_fanci")]
 
     wfn_type = wfn_type.lower()
@@ -156,7 +156,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         if solver_kwargs is None:
             solver_kwargs = (
                 "xtol=5.0e-7, ftol=1.0e-9, gtol=5.0e-7, "
-                "max_nfev=fanci_wfn.nactive, verbose=2"
+                "max_nfev=objective.active_nparams, verbose=2"
             )
         solver_kwargs = ", ".join(["mode='lstsq', use_jac=True", solver_kwargs])
     elif solver == "root":  # pragma: no branch
@@ -185,6 +185,11 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
             )
     else:
         raise ValueError("Unsupported solver")
+
+    if objective == "projected":
+        from_imports.append(("fanpy.eqn.projected", "ProjectedSchrodinger"))
+    else:
+        raise ValueError("Unsupported objective. The PyCI interface only supports the projected objective only.")
 
     if nproj == 0:
         from_imports.append(("scipy.special", "comb"))
@@ -366,12 +371,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "# Projection space\n"
     output += "print('Projection space by excitation')\n"
     output += "fill = 'excitation'\n"
-    if nproj == 0:
-        output += "nproj = int(comb(nspin // 2, nelec - nelec // 2) * comb(nspin // 2, nelec // 2))\n"
-    elif nproj < 0:
-        output += f"nproj = int(wfn.nparams * {-nproj}) + 1\n"
-    else:
-        output += f"nproj = {nproj}\n"
+    output += f"pspace = sd_list(nelec, nspin, num_limit=None, exc_orders={pspace_exc}, spin=None)"
     output += "\n"
 
     output += "# Select parameters that will be optimized\n"
@@ -387,75 +387,64 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         output += "pyci_ham = pyci.hamiltonian(nuc_nuc, ham.one_int, ham.two_int)\n"
         output += "pyci_fock = pyci.hamiltonian(nuc_nuc, fock.one_int, fock.two_int)\n"
     seniority = 'wfn.seniority' if wfn_type != 'pccd' else '0'
-    if solver == "fanpt":
-        output += "\n".join(
-                textwrap.wrap(
-                    f"fanci_wfn = convert_to_fanci(wfn, pyci_fock, seniority={seniority}, "
-                    "param_selection=param_selection, nproj=nproj, objective_type='projected', "
-                    "norm_det=[(0, 1)])",
-                    width=100, subsequent_indent=" " * len("fanci_wfn = convert_to_fanci(")
-                )
-            )
-        output += "\n"
-    elif objective in ["projected_stochastic", "projected"]:
-        output += f"fanci_wfn = convert_to_fanci(wfn, pyci_ham, seniority={seniority}, param_selection=param_selection, nproj=nproj, objective_type='projected')\n"
-    elif objective in ["energy", "one_energy", "variational"]:
-        output += f"fanci_wfn = convert_to_fanci(wfn, pyci_ham, seniority={seniority}, param_selection=param_selection, nproj=nproj, objective_type='energy')\n"
-    output += "fanci_wfn.tmpfile = '{}'\n".format(save_chk)
-    output += "fanci_wfn.step_print = True\n"
-    output += "\n"
+
+    if objective == "projected":
+        output += 'objective = ProjectedSchrodinger(wfn, ham, energy_type="compute", pspace=pspace)\n'
+    else:
+        # this has to be updated with new objectives as they get implemented in the new interface
+        pass 
 
     # output += "# Normalize\n"
     # output += "wfn.normalize(pspace)\n\n"
 
     # load energy
     output += "# Set energies\n"
-    output += "integrals = np.zeros(fanci_wfn._nproj, dtype=pyci.c_double)\n"
-    output += "olps = fanci_wfn.compute_overlap(fanci_wfn.active_params, 'S')[:fanci_wfn._nproj]\n"
-    output += "fanci_wfn._ci_op(olps, out=integrals)\n"
-    output += "energy_val = np.sum(integrals * olps) / np.sum(olps ** 2)\n"
+    output += "energy_val = objective.get_energy_one_proj(pspace)\n"
     output += "print('Initial energy:', energy_val)\n"
     output += "\n"
+
+    # set up interface
+    output += 'pyci_interface = interface.pyci.PYCI(objective, nuc_nuc) \n'
 
     output += "# Solve\n"
     if solver == "fanpt":
         results1 = "fanci_results = solve_fanpt("
         results2 = "fanci_wfn, pyci_fock, pyci_ham, np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
     elif objective == "projected_stochastic":
-        results1 = "fanci_results = fanci_wfn.optimize_stochastic("
+        results1 = "results = pyci_interface.objective.optimize_stochastic("
         results2 = "100, np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
     else:
-        results1 = "fanci_results = fanci_wfn.optimize("
-        results2 = "np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
+        results1 = "results = pyci_interface.objective.optimize("
+        results2 = "np.hstack([objective.active_params, energy_val]), {})\n".format(solver_kwargs)
     output += "print('Optimizing wavefunction: solver')\n"
     output += "\n".join(
         textwrap.wrap(results1 + results2, width=100, subsequent_indent=" " * len(results1))
     )
     output += "\n"
-    output += "results = {}\n"
-    if solver != "cma":
-        output += "results['success'] = fanci_results.success\n"
-        output += "results['params'] = fanci_results.x\n"
-        output += "results['message'] = fanci_results.message\n"
-        output += "results['internal'] = fanci_results\n"
-        if solver == "minimize":
-            output += "results['energy'] = fanci_results.fun\n"
-        else:
-            output += "results['energy'] = fanci_results.x[-1]\n"
-        output += "\n"
-    else:
-        output += "results['success'] = fanci_results[-3] != {}\n"
-        output += "results['params'] = fanci_results[0]\n"
-        output += "results['function'] = fanci_results[1]\n"
-        output += "results['energy'] = fanci_results[1]\n"
-        output += "if results['success']:\n"
-        output += "    results['message'] = 'Following termination conditions are satisfied:' + ''.join(\n"
-        output += "        ' {0}: {1},'.format(key, val) for key, val in fanci_results[-3].items()\n"
-        output += "    )\n"
-        output += "    results['message'] = results['message'][:-1] + '.' \n"
-        output += "else:\n"
-        output += "    results['message'] = 'Optimization did not succeed.'\n"
-        output += "results['internal'] = fanci_results\n"
+    # output += "results = {}\n"
+    # if solver != "cma":
+    #     output += "results['success'] = fanci_results.success\n"
+    #     output += "results['params'] = fanci_results.x\n"
+    #     output += "results['message'] = fanci_results.message\n"
+    #     output += "results['internal'] = fanci_results\n"
+    #     if solver == "minimize":
+    #         output += "results['energy'] = fanci_results.fun\n"
+    #     else:
+    #         output += "results['energy'] = fanci_results.x[-1]\n"
+    #     output += "\n"
+    # else:
+    #     output += "results['success'] = fanci_results[-3] != {}\n"
+    #     output += "results['params'] = fanci_results[0]\n"
+    #     output += "results['function'] = fanci_results[1]\n"
+    #     output += "results['energy'] = fanci_results[1]\n"
+    #     output += "if results['success']:\n"
+    #     output += "    results['message'] = 'Following termination conditions are satisfied:' + ''.join(\n"
+    #     output += "        ' {0}: {1},'.format(key, val) for key, val in fanci_results[-3].items()\n"
+    #     output += "    )\n"
+    #     output += "    results['message'] = results['message'][:-1] + '.' \n"
+    #     output += "else:\n"
+    #     output += "    results['message'] = 'Optimization did not succeed.'\n"
+    #     output += "results['internal'] = fanci_results\n"
 
 
     output += "# Results\n"
