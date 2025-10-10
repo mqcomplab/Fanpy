@@ -371,7 +371,10 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "# Projection space\n"
     output += "print('Projection space by excitation')\n"
     output += "fill = 'excitation'\n"
-    output += f"pspace = sd_list(nelec, nspin, num_limit=None, exc_orders={pspace_exc}, spin=None)"
+    if solver == "root":
+        output += f"pspace = sd_list(nelec, nspin, num_limit=len(wfn.params), exc_orders={pspace_exc}, spin=None)"
+    else:
+        output += f"pspace = sd_list(nelec, nspin, num_limit=None, exc_orders={pspace_exc}, spin=None)"
     output += "\n"
 
     output += "# Select parameters that will be optimized\n"
@@ -389,7 +392,10 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     seniority = 'wfn.seniority' if wfn_type != 'pccd' else '0'
 
     if objective == "projected":
-        output += 'objective = ProjectedSchrodinger(wfn, ham, energy_type="compute", pspace=pspace)\n'
+        if save_chk != "":
+            output += f'objective = ProjectedSchrodinger(wfn, ham, energy_type="compute", pspace=pspace, tmpfile="{save_chk}")\n'
+        else: 
+            output += f'objective = ProjectedSchrodinger(wfn, ham, energy_type="compute", pspace=pspace)\n'
     else:
         # this has to be updated with new objectives as they get implemented in the new interface
         pass 
