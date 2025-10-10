@@ -163,17 +163,18 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         if solver_kwargs is None:
             solver_kwargs = "method='hybr', options={'xtol': 1.0e-9}"
         solver_kwargs = ", ".join(["mode='root', use_jac=True", solver_kwargs])
-    elif solver == "cma":
-        if solver_kwargs is None:
-            solver_kwargs = (
-                "sigma0=0.01, options={'ftarget': None, 'timeout': np.inf, "
-                "'tolfun': 1e-11, 'verb_filenameprefix': 'outcmaes', 'verb_log': 1}"
-            )
-        solver_kwargs = ", ".join(["mode='cma', use_jac=False", solver_kwargs])
-    elif solver == "minimize":
-        if solver_kwargs is None:
-            solver_kwargs = "method='BFGS', options={'gtol': 5e-7, 'disp':True}"
-        solver_kwargs = ", ".join(["mode='bfgs', use_jac=True", solver_kwargs])
+    # TODO: enable these solvers when the one energy interface is updated
+    # elif solver == "cma":
+    #     if solver_kwargs is None:
+    #         solver_kwargs = (
+    #             "sigma0=0.01, options={'ftarget': None, 'timeout': np.inf, "
+    #             "'tolfun': 1e-11, 'verb_filenameprefix': 'outcmaes', 'verb_log': 1}"
+    #         )
+    #     solver_kwargs = ", ".join(["mode='cma', use_jac=False", solver_kwargs])
+    # elif solver == "minimize":
+    #     if solver_kwargs is None:
+    #         solver_kwargs = "method='BFGS', options={'gtol': 5e-7, 'disp':True}"
+    #     solver_kwargs = ", ".join(["mode='bfgs', use_jac=True", solver_kwargs])
     elif solver == "fanpt":
         from_imports.append(("fanci.fanpt_wrapper", "reduce_to_fock, solve_fanpt"))
         if solver_kwargs is None:
