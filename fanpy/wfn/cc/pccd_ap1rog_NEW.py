@@ -656,7 +656,7 @@ class PCCD(BaseCC):
                 # FIXME:
                 # print(selected_rows)
                 # print(indices_multi[exc_order])
-
+                
             amplitudes = self.product_amplitudes_multi(indices_multi, deriv=True)
             # print(amplitudes)
             val = sign * amplitudes
@@ -669,3 +669,120 @@ class PCCD(BaseCC):
             return val
         else:
             return temp_olp(sd, self.refwfn)
+
+
+    def _olp_double_derivative(self, sd):
+        """Calculate the double derivative of the overlap with the Slater determinant.
+
+        .. math::
+
+        H_{ab} = \frac{\partial^2}{\partial t_a \partial t_b}
+            \left[ \langle \mathrm{SD} \mid \Psi_{\mathrm{CC}} \rangle \right]
+
+        Parameters
+        ----------
+        sd : int
+            Occupation vector of the left Slater determinant given as a bitstring.
+        
+        Returns
+        -------
+        olp double derivative: 2D numpy array with Hessian elements :math:`H_{ab}`.
+
+        """
+
+        def temp_olp_double_deriv(sd1, sd2):
+            if sd1 == sd2:
+                return np.zeros((self.nparams, self.nparams))
+            # FIXME: this should definitely be vectorized
+            c_inds, a_inds = slater.diff_orbs(sd1, sd2)
+            if isinstance(a_inds, np.ndarray):
+                a_inds = a_inds.tolist()
+            if isinstance(c_inds, np.ndarray):
+                c_inds = c_inds.tolist()
+            # NOTE: Indices of the annihilation (a_inds) and creation (c_inds) operators
+            # that need to be applied to sd2 to turn it into sd1
+
+            # get sign
+            sign = slater.sign_excite(sd2, a_inds, c_inds)
+
+            val = np.zeros(self.nparams)
+            if tuple(a_inds + c_inds) not in self.exop_combinations:
+                self.generate_possible_exops(a_inds, c_inds)
+
+            # FIXME: sometimes exop contains virtual orbitals in annihilators may need to explicitly
+            # excite
+            indices_multi = self.exop_combinations[tuple(a_inds + c_inds)]
+            # FIXME: filter out rows whose excitation operators do not have annihilator that is
+            # doubly occupied
+            occ_indices = set(slater.occ_indices(sd))
+            for exc_order in indices_multi:
+                indices_sign = indices_multi[exc_order]
+                selected_rows = []
+                for row_ind, row in enumerate(indices_sign):
+                    # occupied orbitals but have its spin composite also occupied
+                    # AND its composite CANNOT participate in other excitation operators
+                    trash = set([])
+                    skip_row = False
+                    for exop in (self.ind_exops[i] for i in row[:-1]):
+                        if len(exop) == 2:
+                            # skip because annihilator was used in a single excitation as the
+                            # opposite spin
+                            if exop[0] in trash:
+                                # skip
+                                skip_row = True
+                                break
+                            if exop[0] < self.nspatial:
+                                # skip because corresponding beta orbital is not occupied
+                                if exop[0] + self.nspatial not in occ_indices:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                # this annihilator and its beta component cannot be used again
+                                else:
+                                    # add to trash
+                                    trash.add(exop[0])
+                                    trash.add(exop[0] + self.nspatial)
+                            if exop[0] >= self.nspatial:
+                                # skip because corresponding alpha orbital is not occupied
+                                if exop[0] - self.nspatial not in occ_indices:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                # this annihilator and its alpha component cannot be used again
+                                else:
+                                    # add to trash
+                                    trash.add(exop[0])
+                                    trash.add(exop[0] - self.nspatial)
+                        # FIXME: not sure
+                        else:
+                            for j in exop[: len(exop) // 2]:
+                                # skip because annihilator was used before as part of a single
+                                # excitation or its opposite spin component
+                                if j in trash:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                # not necessary because same orbital is not annihilated multiple
+                                # times by construction
+                                else:
+                                    trash.add(j)
+                            if skip_row:
+                                break
+
+                    if not skip_row:
+                        selected_rows.append(row_ind)
+
+                indices_multi[exc_order] = indices_sign[selected_rows]
+
+            hessian = self.product_amplitudes_multi_double_derivative(indices_multi)
+            val = sign * hessian
+            return val
+
+        if isinstance(self.refwfn, CIWavefunction):
+            val = np.zeros(self.nparams, self.nparams)
+            for refsd in self.refwfn.sd_vec:
+                val += temp_olp_double_deriv(sd, refsd) * self.refwfn.get_overlap(refsd)
+            return val
+        else:
+            return temp_olp_double_deriv(sd, self.refwfn)
+
