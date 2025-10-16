@@ -13,7 +13,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     nuc_nuc=0.0,
     optimize_orbs=False,
     pspace_exc=(1, 2),
-    nproj=None,
     objective="projected",
     solver="least_squares",
     solver_kwargs=None,
@@ -194,8 +193,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     else:
         raise ValueError("Unsupported objective. The PyCI interface only supports the projected objective only.")
 
-    if nproj == 0:
-        from_imports.append(("scipy.special", "comb"))
 
     if memory is not None:
         memory = "'{}'".format(memory)
@@ -485,7 +482,6 @@ def main():  # pragma: no cover
         nuc_nuc=args.nuc_nuc,
         optimize_orbs=args.optimize_orbs,
         pspace_exc=args.pspace_exc,
-        nproj=args.nproj,
         objective=args.objective,
         solver=args.solver,
         solver_kwargs=args.solver_kwargs,

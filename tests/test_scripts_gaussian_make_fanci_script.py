@@ -29,12 +29,12 @@ def test_make_script_wfns(tmp_path, wfn):
     script_path = str(tmp_path / "script.py")
 
 
-    make_script(2, oneint, twoint, wfn, nproj=4, filename=script_path)
+    make_script(2, oneint, twoint, wfn, filename=script_path)
     subprocess.check_output(["python", script_path])
 
-    make_script(2, oneint, twoint, wfn, nproj=4, filename=script_path, wfn_kwargs="")
+    make_script(2, oneint, twoint, wfn, filename=script_path, wfn_kwargs="")
     subprocess.check_output(["python", script_path])
-make_script(2, oneint, twoint, "apr2g", nproj=4, filename="example.py")
+
 @pytest.mark.parametrize("objective", ["projected"])
 def test_make_script_objectives(tmp_path, objective):
     """Test fanpy.scripts.utils.make_script with different objectives."""
