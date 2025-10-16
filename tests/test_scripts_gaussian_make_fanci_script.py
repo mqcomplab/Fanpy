@@ -1,7 +1,9 @@
 """Test fanpy.script.gaussian.make_fanci_script."""
 import subprocess
 import pytest
+import numpy as np
 
+from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.scripts.gaussian.make_fanci_script import make_script
 
 from utils import find_datafile
@@ -261,6 +263,30 @@ def test_make_script_errors(tmp_path):
             twoint,
             "ap1rog",
             objective="variational", # this is not supported at the moment
-            solver="least_squares",
+            solver="cma",
             filename=script_path,
         )
+
+def test_load_ham(tmp_path):
+    """Test that make_script works with load_ham option."""
+
+    script_path = str(tmp_path / "script.py")
+    ham_path = str(tmp_path / "ham.npy")
+    
+    oneint_loaded = np.load(oneint)
+    twoint_loaded = np.load(twoint)
+    ham = RestrictedMolecularHamiltonian(oneint_loaded, twoint_loaded)
+    ham.save_params(ham_path)
+
+    # load hamiltonian
+    make_script(
+        2,
+        oneint,
+        twoint,
+        "ap1rog",
+        objective="projected",
+        solver="least_squares",
+        filename=script_path,
+        load_ham=ham_path,
+    )
+    subprocess.check_output(["python", script_path])
