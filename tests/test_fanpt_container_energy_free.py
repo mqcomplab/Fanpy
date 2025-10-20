@@ -6,43 +6,129 @@ from fanpy.fanpt.containers.energy_free import FANPTContainerEFree
 
 # ---- Mocks ----
 class FakeFpotOp:
-    """<m|V|n>: doubles input."""
+    """
+    Mock fluctuation potential operator `<m|V|n>` used in FANPT tests.
+
+    This mock simulates the behavior of `f_pot_ci_op` by scaling the input vector `x`
+    by a factor of 2. It provides the same call signature as the real operator so it
+    can be injected into FANPT containers without requiring PyCI.
+    """
     def __call__(self, x, out=None):
+        """
+        Apply the mock fluctuation potential.
+
+        Parameters
+        ----------
+        x : array_like
+            Input vector.
+        out : array_like, optional
+            Optional output buffer. If provided, the result is written in-place.
+
+        Returns
+        -------
+        array_like or None
+            If `out` is None, returns `2 * x`. Otherwise, writes to `out` and returns None.
+        """
         if out is None:
             return 2.0 * x
         out[...] = 2.0 * x
 
 
 class FakeHamOp:
-    """<m|H|n>: triples input."""
+    """
+    Mock Hamiltonian operator `<m|H|n>` used in FANPT tests.
+
+    This mock simulates the perturbed Hamiltonian operator `ham_ci_op` by tripling
+    its input. It is used to test derivative assembly logic without invoking the full
+    Hamiltonian machinery.
+    """
     def __call__(self, x, out=None):
+        """
+        Apply the mock Hamiltonian.
+
+        Parameters
+        ----------
+        x : array_like
+            Input vector.
+        out : array_like, optional
+            Optional output buffer to write into.
+
+        Returns
+        -------
+        array_like or None
+            If `out` is None, returns `3 * x`. Otherwise writes into `out` and returns None.
+        """
         if out is None:
             return 3.0 * x
         out[...] = 3.0 * x
 
 
 class FakeObjective:
+    """
+    Mock of a FanCI objective mask used to control active parameter behavior.
+
+    Parameters
+    ----------
+    mask_last_active : bool
+        Whether the last parameter (energy) is active. Used to trigger the energy
+        mask validation inside `FANPTContainerEFree`.
+    """
     def __init__(self, mask_last_active=False):
-        # mask[-1] == True means "energy is active" -> forbidden for EFree
+        # mask[-1] == True → means energy is incorrectly marked active
         self.mask = np.array([False, False, False, mask_last_active], dtype=bool)
 
 
 class FakeFanCIInterface:
+    """
+    Minimal mock of a FanCI interface used to mimic `.objective.mask`.
+
+    This allows creation of FANPT containers without requiring full FanCI setup.
+    """
     def __init__(self, mask_last_active=False):
         self.objective = FakeObjective(mask_last_active)
 
 
 class FakeFanCIJac:
-    """Mock for fanci_objective.compute_jacobian"""
+    """
+    Mock of a FanCI Jacobian provider.
+
+    Simulates `fanci_objective.compute_jacobian` by returning a stored matrix and
+    recording how many times the method was called.
+    """
     def __init__(self, ret):
+        """
+        Parameters
+        ----------
+        ret : array_like
+            Precomputed Jacobian matrix returned on each call.
+        """
         self._ret = ret
         self.calls = 0
         self.last_params = None
 
     def compute_jacobian(self, params):
+        """
+        Fake Jacobian computation.
+
+        Parameters
+        ----------
+        params : array_like
+            Parameter vector passed in by the caller. Stored only for inspection.
+
+        Returns
+        -------
+        np.ndarray
+            The stored Jacobian matrix.
+
+        Notes
+        -----
+        - Increments `self.calls` each time the method is invoked.
+        - Records the most recent `params` for verification in tests.
+        """
         self.calls += 1
         self.last_params = params
         return self._ret
+
 
 
 # ---- Factory: controlled instance without running __init__ ----
@@ -119,6 +205,11 @@ def test_init_accepts_inactive_energy_flag():
 @pytest.mark.parametrize("inorm", [True, False])
 def test_der_g_lambda_efree_adjustment(make_instance, inorm):
     """
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
+    
     super(): d_g_lambda[:nproj] = 2 * ovlp_s
     EFree:
       if inorm=True:   subtract d_ref * ovlp_s = (2*ovlp_ref)*ovlp_s
@@ -148,13 +239,12 @@ def test_der_g_lambda_efree_adjustment(make_instance, inorm):
 @pytest.mark.parametrize("inorm", [True, False])
 def test_der2_g_lambda_wfnparams_efree(make_instance, inorm):
     """
-    super(): d2[:nproj,:] = 2 * d_ovlp_s
-    inorm=True:
-      d2 -= (row_ref of d2) * ovlp_s[:,None]  - super_ref * d_ovlp_s
-           = (2*d_ovlp_ref)*ovlp_s[:,None]    - (2*ovlp_ref)*d_ovlp_s
-    inorm=False:
-      bracket term becomes zero; second term = 2*d_ovlp_s; so d2 - 2*d_ovlp_s = 0
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
     """
+
     inst = make_instance(inorm=inorm, nproj=4, nactive=3, nequation=6, ref_sd=2)
 
     # Tweak d_ovlp_s to a simple grid for deterministic checks
@@ -186,13 +276,10 @@ def test_der2_g_lambda_wfnparams_efree(make_instance, inorm):
 @pytest.mark.parametrize("inorm", [True, False])
 def test_gen_coeff_matrix_efree_adjustment(make_instance, inorm):
     """
-    super(): J = 100 everywhere (nequation x nactive)
-    Build f_proj[:,k] = 3 * d_ovlp_s[:,k]
-    Then:
-      if inorm=True:
-        C[:nproj] -= f_proj[ref] * ovlp_s[:,None]
-      else:
-        C[:nproj] -= ((f_proj[ref] - E * d_ovlp_s[ref]) * ovlp_s[:,None] / ovlp_ref)
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
     """
     nproj, nactive, nequation = 4, 3, 6
     ref_sd = 1
