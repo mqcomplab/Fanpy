@@ -6,6 +6,7 @@ def test_run_calc():
     oneint = find_datafile("data/data_h2_hf_sto6g_oneint.npy")
     twoint = find_datafile("data/data_h2_hf_sto6g_twoint.npy")
     # attempt to run simple calculation with minimal inputs
+    # this checks if the default parameters are working correctly
     run_calc(
         nelec=2,
         one_int_file=oneint,
