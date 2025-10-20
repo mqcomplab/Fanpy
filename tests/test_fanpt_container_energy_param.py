@@ -6,32 +6,106 @@ from fanpy.fanpt.containers.energy_param import FANPTContainerEParam
 
 # --- Mocks ---
 class FakeFpotOp:
-    """Mock for f_pot_ci_op: doubles the input vector."""
+    """Mock operator for `f_pot_ci_op` used in FANPT tests.
+
+    This simulates the fluctuation potential operator by scaling the input
+    vector by a factor of 2. It mimics the signature of a PyCI sparse
+    operator without requiring PyCI to be installed.
+    """
     def __call__(self, x, out=None):
+        """
+        Apply the mock fluctuation potential operator.
+
+        Parameters
+        ----------
+        x : array_like
+            Input vector.
+        out : array_like, optional
+            Optional array to write the result into (in-place).
+
+        Returns
+        -------
+        array_like
+            If `out` is None, returns `2 * x`. Otherwise, writes into `out`
+            and returns None.
+        """
         if out is None:
             return 2.0 * x
         out[...] = 2.0 * x
 
 
 class FakeHamOp:
-    """Mock for ham_ci_op: triples the input vector."""
+    """Mock operator for `ham_ci_op` used in FANPT tests.
+
+    This simulates the perturbed Hamiltonian operator by scaling the input
+    vector by a factor of 3. It behaves like a linear operator acting on CI
+    vectors in FANPT.
+    """
     def __call__(self, x, out=None):
+        """
+        Apply the mock Hamiltonian operator.
+
+        Parameters
+        ----------
+        x : array_like
+            Input vector.
+        out : array_like, optional
+            Optional array to write the result into.
+
+        Returns
+        -------
+        array_like
+            If `out` is None, returns `3 * x`. Otherwise, writes into `out`
+            and returns None.
+        """
         if out is None:
             return 3.0 * x
         out[...] = 3.0 * x
 
 
 class FakeFanCIObjective:
-    """Mock for fanci_objective.compute_jacobian"""
+    """Mock of a FanCI objective providing a fake Jacobian matrix.
+
+    Used to simulate calls to `compute_jacobian` without invoking actual
+    FanCI machinery. Tracks how many times it was called and with what
+    parameters.
+    """
     def __init__(self, ret):
+        """
+        Initialize the mock objective.
+
+        Parameters
+        ----------
+        ret : array_like
+            Precomputed Jacobian matrix to return on every call.
+        """
         self._ret = ret
         self.calls = 0
         self.last_params = None
 
     def compute_jacobian(self, params):
+        """
+        Return a constant Jacobian and record the call.
+
+        Parameters
+        ----------
+        params : array_like
+            Parameter vector passed to the method.
+
+        Returns
+        -------
+        np.ndarray
+            The stored Jacobian matrix (`self._ret`).
+
+        Notes
+        -----
+        - Increments ``self.calls`` each time it is invoked.
+        - Stores the most recent argument in ``self.last_params``.
+        """
         self.calls += 1
         self.last_params = params
         return self._ret
+
 
 
 # --- Fixture to construct a controllable instance (bypass __init__) ---
@@ -92,6 +166,16 @@ def test_der_g_lambda_projects_only_first_nproj(make_instance):
 
 @pytest.mark.parametrize("active_energy,ncols", [(False, 4), (True, 3)])
 def test_der2_g_lambda_wfnparams(make_instance, active_energy, ncols):
+    """
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
+    active_energy : bool
+        Whether energy is treated as an active parameter in this test case.
+    ncols : int
+        Expected number of active wavefunction parameters in this case.
+    """
     inst = make_instance(nactive=4, active_energy=active_energy)
     # ensure the method's expected number of columns
     inst.d_ovlp_s = np.arange(inst.nproj * ncols, dtype=float).reshape(
@@ -109,6 +193,12 @@ def test_der2_g_lambda_wfnparams(make_instance, active_energy, ncols):
 
 
 def test_der2_g_e_wfnparams_active(make_instance):
+    """
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
+    """
     inst = make_instance(nactive=5, active_energy=True)
     ncols = inst.nactive - 1
     inst.d_ovlp_s = np.arange(inst.nproj * ncols).reshape(inst.nproj, ncols, order="F")
@@ -122,12 +212,24 @@ def test_der2_g_e_wfnparams_active(make_instance):
 
 
 def test_der2_g_e_wfnparams_inactive(make_instance):
+    """
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
+    """
     inst = make_instance(active_energy=False)
     inst.der2_g_e_wfnparams()
     assert inst.d2_g_e_wfnparams is None
 
 
 def test_gen_coeff_matrix_calls_fanci(make_instance):
+    """
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
+    """
     inst = make_instance()
     inst.gen_coeff_matrix()
     assert inst.fanci_objective.calls == 1
@@ -138,7 +240,12 @@ def test_gen_coeff_matrix_calls_fanci(make_instance):
 # ---------------- New method tests you asked for ----------------
 
 def test_der3_g_lambda_wfnparams2_inactive_energy(make_instance):
-    """active_energy=False -> ncolumns = nactive"""
+    """
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
+    """
     nactive = 4
     inst = make_instance(nactive=nactive, active_energy=False)
     # set dd_ovlp_s with shape (nproj, ncols, ncols)
@@ -158,7 +265,12 @@ def test_der3_g_lambda_wfnparams2_inactive_energy(make_instance):
 
 
 def test_der3_g_e_wfnparams2_active_energy(make_instance):
-    """active_energy=True -> ncolumns = nactive - 1, returns -dd_ovlp in first nproj, zeros below."""
+    """
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
+    """
     nactive = 5
     ncols = nactive - 1
     inst = make_instance(nactive=nactive, active_energy=True)
@@ -176,6 +288,13 @@ def test_der3_g_e_wfnparams2_active_energy(make_instance):
 
 
 def test_der3_g_e_wfnparams2_inactive_energy(make_instance):
+    """
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
+    """
+    
     inst = make_instance(active_energy=False)
     inst.der3_g_e_wfnparams2()
     assert inst.d3_g_e_wfnparams2 is None
@@ -183,10 +302,12 @@ def test_der3_g_e_wfnparams2_inactive_energy(make_instance):
 
 def test_der2_g_wfnparams2_active_energy(make_instance):
     """
-    For active_energy=True:
-      f_proj = ham_ci_op(dd_ovlp) - E * dd_ovlp
-             = 3*dd_ovlp - E*dd_ovlp = (3 - E) * dd_ovlp  (FakeHamOp triples).
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
     """
+    
     nactive = 6
     ncols = nactive - 1
     E = 2.25
@@ -215,10 +336,12 @@ def test_der2_g_wfnparams2_active_energy(make_instance):
 @pytest.mark.skip(reason="By design: der2_g_wfnparams2 is only used with active_energy=True.")
 def test_der2_g_wfnparams2_inactive_energy_bug(make_instance):
     """
-    Your current der2_g_wfnparams2 uses 'ncolumns', 'f', 'f_proj', 'energy'
-    only set inside `if self.active_energy:`. For active_energy=False this
-    raises before filling `self.d2_g_wfnparams2`. Marking xfail until fixed.
+    Parameters
+    ----------
+    make_instance : fixture
+        Factory providing a controlled FANPTContainerEParam instance.
     """
+    
     inst = make_instance(active_energy=False)
     inst.dd_ovlp_s = np.arange(inst.nproj * inst.nactive * inst.nactive, dtype=float).reshape(
         inst.nproj, inst.nactive, inst.nactive, order="F"
