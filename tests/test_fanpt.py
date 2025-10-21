@@ -8,15 +8,10 @@ import scipy.linalg
 import pytest
 from utils import find_datafile
 from fanpy.eqn.projected import ProjectedSchrodinger
-from fanpy.wfn.cc.standard_cc import StandardCC
-from fanpy.wfn.utils import convert_to_fanci
-from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.tools.sd_list import sd_list
 from scipy.special import comb
-from fanpy.wfn.cc.ap1rog_generalized_NEW import AP1roGSDGeneralized
-from fanpy.wfn.cc.standard_cc import StandardCC
 import fanpy.interface as interface
-import fanpy.interface as interface
+
 # Initialize Hamiltonian
 def reduce_to_fock(two_int):
     """Reduce given two electron integrals to that of the correspoding Fock operator.
@@ -44,7 +39,6 @@ def reduce_to_fock(two_int):
     return fock_two_int
 
 
-#@pytest.mark.skip(reason="This test fails and is being worked on (Issue 23).")
 def test_fock_energy():
     """Test that Fock operator and Hamiltonian operator gives same energy for ground state HF."""
     nelec = 6
@@ -80,7 +74,6 @@ def test_fock_energy():
 
     assert np.allclose(energy_val_orig, energy_val_fock)
 
-#@pytest.mark.skip(reason="This test fails and is being worked on (Issue 23).")
 def test_fock_objective():
     """Test that Fock operator with HF ground state satisfies projected Schrodinger equation."""
     nelec = 6
@@ -109,7 +102,6 @@ def test_fock_objective():
 
 ############################################################
 # check orbital rotation invariance
-#@pytest.mark.skip(reason="This test fails and is being worked on (Issue 23).")
 def test_fock_rotation():
     """Test that Fock operator invariance to orbital rotation."""
     nelec = 6
@@ -132,13 +124,6 @@ def test_fock_rotation():
     pyci_interface.objective._ci_op(olps_orig, out=integrals_orig)
     energy_val_orig = np.sum(integrals_orig * olps_orig) / np.sum(olps_orig ** 2)
 
-    
-    #fanci_wfn_orig = convert_to_fanci(wfn, pyci_ham_orig, seniority=wfn.seniority, param_selection=None, nproj=nproj, objective_type='projected')
-    #integrals_orig = np.zeros(fanci_wfn_orig.nproj, dtype=pyci.c_double)
-    #olps_orig = pyci_interface_fock.objective.compute_overlap(objective_fock.active_params, 'S')[:nproj]
-    #pyci_interface_fock.objective._ci_op(olps_orig, out=integrals_orig)
-    #energy_val_orig = np.sum(integrals_orig * olps_orig) / np.sum(olps_orig ** 2)
-
     # random orbital rotation of occupied
     _, _, v = np.linalg.svd(np.random.rand(nelec // 2, nelec // 2))
     # random orbital rotation of virtual
@@ -156,7 +141,6 @@ def test_fock_rotation():
 
     # check that fock and hamiltonian gives same energy for initial state hf ground state
     orbrot = RestrictedMolecularHamiltonian(one_int, two_int, update_prev_params=True)
-#    pyci_ham_orbrot = pyci.hamiltonian(0, orbrot.one_int, orbrot.two_int)
     pspace = sd_list(nelec, nspin, num_limit=None, exc_orders=[1, 2, 3, 4, 5, 6], spin=0)
     objective_orbrot = ProjectedSchrodinger(wfn, orbrot, energy_type="compute", pspace=pspace)
     pyci_interface_orbrot = interface.pyci.PYCI(objective_orbrot, 2.9182427095417482, max_memory=64000, legacy_fanci=False)
@@ -167,8 +151,9 @@ def test_fock_rotation():
     pyci_interface_orbrot.objective._ci_op(olps_orbrot, out=integrals_orbrot)
     energy_val_orbrot = np.sum(integrals_orbrot * olps_orbrot) / np.sum(olps_orbrot ** 2)
 
-    nproj=35
+    
     # original before orbital rotation
+    nproj=35
     fock = RestrictedMolecularHamiltonian(one_int, two_int, update_prev_params=True)
     pspace = sd_list(nelec, nspin, num_limit=None, exc_orders=[1, 2, 3, 4, 5, 6], spin=0)
     objective_fock = ProjectedSchrodinger(wfn, fock, energy_type="compute", pspace=pspace)
@@ -185,6 +170,5 @@ def test_fock_rotation():
 
     assert np.allclose(energy_val_orig, energy_val_fock)
     assert np.allclose(energy_val_orbrot, energy_val_fock)
-#    #check that objective values are all zero for fock operator
-#    assert np.allclose(np.sum(np.abs(pyci_interface_fock.objective.compute_objective(np.hstack([objective_fock.active_params, energy_val_fock])))), 0)
+
 
