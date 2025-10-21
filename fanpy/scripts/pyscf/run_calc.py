@@ -83,7 +83,7 @@ def write_wfn_py(pattern: str, wfn_type: str, optimize_orbs: bool=False,
                  ham_noise=None, wfn_noise=None,
                  solver_kwargs=None, wfn_kwargs=None,
                  load_orbs=None, load_ham=None, load_wfn=None, load_chk=None, load_prev=False,
-                 memory=None, filename=None, ncores=1, exclude=None, old_fanpy=False):
+                 memory=None, filename=None, ncores=1, exclude=None, fanpy_only=False):
 
     """Make a script for running calculations.
 
@@ -171,9 +171,9 @@ def write_wfn_py(pattern: str, wfn_type: str, optimize_orbs: bool=False,
     filename : str
         Filename to save the generated script file.
         Default just prints it out to stdout.
-    old_fanpy : bool
-        Use old, slower (but probably more robust) fanpy.
-        Default uses faster fanpy.
+    fanpy_only : bool
+        Use fanpy only, this is slower (but probably more robust).
+        Default uses faster fanpy with the PyCI interface.
         Some features are not avaialble on new fanpy.
 
     """
@@ -245,11 +245,11 @@ def write_wfn_py(pattern: str, wfn_type: str, optimize_orbs: bool=False,
 
         save_chk = 'checkpoint.npy'
 
-        if old_fanpy:
+        if fanpy_only:
             pspace = ['--pspace', *pspace_exc]
         else:
             pspace = ['--nproj', str(nproj)]
-        subprocess.run(['fanpy_make_pyscf_script' if old_fanpy else 'fanpy_make_fanci_pyscf_script',
+        subprocess.run(['fanpy_make_pyscf_script' if fanpy_only else 'fanpy_make_fanci_pyscf_script',
                         *optimize_orbs, '--wfn_type', wfn_type,
                         '--objective', objective,
                         '--solver', solver, *kwargs,
