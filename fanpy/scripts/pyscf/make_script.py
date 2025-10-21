@@ -2,7 +2,8 @@
 import os
 import textwrap
 
-from fanpy.scripts.utils import check_inputs, parser
+from fanpy.scripts.utils import check_inputs
+from fanpy.scripts.pyscf.pyscf_parser import parser
 from fanpy.scripts.wavefunction_info import get_wfn_info
 
 def make_script(  # pylint: disable=R1710,R0912,R0915
@@ -543,7 +544,10 @@ def main():  # pragma: no cover
     args = parser.parse_args()
 
     make_script(
+        args.geom,
         args.wfn_type,
+        args.basis,
+        hf_units=args.hf_units,
         optimize_orbs=args.optimize_orbs,
         pspace_exc=args.pspace_exc,
         objective=args.objective,
@@ -560,4 +564,5 @@ def main():  # pragma: no cover
         save_chk=args.save_chk,
         filename=args.filename,
         memory=args.memory,
+        constraint=args.constraint,
     )
