@@ -5,9 +5,6 @@ from fanpy.fanpt.containers.constant_terms import FANPTConstantTerms
 from fanpy.fanpt.containers.base import FANPTContainer
 
 
-# -- Minimal container stub that behaves like FANPTContainer for our tests --
-from fanpy.fanpt.containers.base import FANPTContainer
-
 class DummyContainer(FANPTContainer):
     r"""
     Minimal mock implementation of a FANPT container used for unit testing.
@@ -46,49 +43,6 @@ class DummyContainer(FANPTContainer):
         Third derivatives ∂³G/∂λ∂pₖ∂pₗ.
         Shape: ``(nequation, nactive, nactive)``.
     """
-
-    def __init__(self,
-                 nequation,
-                 nactive,
-                 active_energy,
-                 d_g_lambda=None,
-                 d2_g_lambda_wfnparams=None,
-                 d2_g_e_wfnparams=None,
-                 d2_g_wfnparams2=None,
-                 d3_g_e_wfnparams2=None,
-                 d3_g_lambda_wfnparams2=None):
-        r"""
-        Initialize the dummy FANPT container with precomputed derivative tensors.
-
-        Parameters
-        ----------
-        nequation : int
-            Number of FANPT equations.
-        nactive : int
-            Number of active wavefunction parameters.
-        active_energy : bool
-            Whether energy is treated as an active parameter.
-        d_g_lambda : array_like, optional
-            First derivative ∂G/∂λ. Shape ``(nequation,)``.
-        d2_g_lambda_wfnparams : array_like, optional
-            Mixed derivatives ∂²G/∂λ∂pₖ. Shape ``(nequation, nactive)``.
-        d2_g_e_wfnparams : array_like, optional
-            Mixed derivatives ∂²G/∂E∂pₖ. Shape ``(nequation, nactive-1)`` if
-            ``active_energy=True``.
-        d2_g_wfnparams2 : array_like, optional
-            Pure second derivatives ∂²G/∂pₖ∂pₗ.
-            Shape ``(nequation, nactive, nactive)``.
-        d3_g_e_wfnparams2 : array_like, optional
-            Third derivatives ∂³G/∂E∂pₖ∂pₗ. Shape ``(nequation, nactive-1, nactive-1)``.
-        d3_g_lambda_wfnparams2 : array_like, optional
-            Third derivatives ∂³G/∂λ∂pₖ∂pₗ. Shape ``(nequation, nactive, nactive)``.
-
-        Notes
-        -----
-        This constructor does not perform shape validation and assumes the caller provides
-        correctly shaped derivative arrays consistent with FANPT tensor semantics.
-        It is intended for use only in testing contexts.
-        """
 
     def __init__(self,
                  nequation,
