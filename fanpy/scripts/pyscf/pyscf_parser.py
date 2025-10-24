@@ -101,3 +101,8 @@ parser.add_argument("--constraint",
                     type=str, 
                     default=None, 
                     help="Constraint to apply during optimization.")
+
+parser.add_argument("--fanpt_kwargs", 
+                    type=str,
+                    default="",
+                    help="Additional keyword arguments for FANPT.")
