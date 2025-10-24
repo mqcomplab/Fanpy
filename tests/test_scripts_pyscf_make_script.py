@@ -273,3 +273,15 @@ def test_make_script_filename_option(tmp_path):
     )
     with open(script_path, "r") as f:
         assert f.read() == script
+
+def test_make_script_cli(tmp_path):
+    """Test that the CLI for make_script works."""
+    script_path = str(tmp_path / "script.py")
+    subprocess.check_output([
+        "fanpy_make_pyscf_script",
+        "--geom", '[["H",["0.0","0.0","0.75"]],["H",["0.0","0.0","0.0"]]]',
+        "--wfn_type", "cisd",
+        "--basis", basis,
+        "--filename", script_path,
+    ])
+    subprocess.check_output(["python", script_path])

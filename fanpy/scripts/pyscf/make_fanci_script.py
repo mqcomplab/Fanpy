@@ -2,7 +2,8 @@
 import os
 import textwrap
 
-from fanpy.scripts.utils import check_inputs, parser
+from fanpy.scripts.utils import check_inputs
+from fanpy.scripts.pyscf.pyscf_parser import parser
 from fanpy.scripts.wavefunction_info import get_wfn_info
 
 def make_script(  # pylint: disable=R1710,R0912,R0915
@@ -97,6 +98,8 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     memory : None
         Memory available to run calculations.
 
+    fanpt_kwargs : str, optional
+        Keyword arguments for FANPT.
     """
     # check inputs
     # TODO: the inputs should be checked in the parser
@@ -569,10 +572,12 @@ def main():  # pragma: no cover
     )
     args = parser.parse_args()
     make_script(
+        args.geom,
         args.wfn_type,
+        args.basis,
+        hf_units=args.hf_units,
         optimize_orbs=args.optimize_orbs,
         pspace_exc=args.pspace_exc,
-        nproj=args.nproj,
         objective=args.objective,
         solver=args.solver,
         solver_kwargs=args.solver_kwargs,
@@ -587,4 +592,6 @@ def main():  # pragma: no cover
         save_chk=args.save_chk,
         filename=args.filename,
         memory=args.memory,
+        constraint=args.constraint,
+        fanpt_kwargs=args.fanpt_kwargs
     )
