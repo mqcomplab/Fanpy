@@ -290,3 +290,14 @@ def test_energy_constraint(tmp_path):
         constraint="energy",
     )
     subprocess.check_output(["python", script_path])
+
+def test_make_fanci_script_cli(tmp_path):
+    script_path = str(tmp_path / "script.py")
+    subprocess.check_output([
+        "fanpy_make_fanci_pyscf_script",
+        "--geom", '[["H",["0.0","0.0","0.75"]],["H",["0.0","0.0","0.0"]]]',
+        "--wfn_type", "cisd",
+        "--basis", basis,
+        "--filename", script_path,
+    ])
+    subprocess.check_output(["python", script_path])
