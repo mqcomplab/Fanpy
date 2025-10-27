@@ -78,8 +78,8 @@ def make_wfn_dirs(pattern: str, wfn_name: str, num_runs: int, rep_dirname_prefix
         except FileExistsError:
             pass
 
-def write_wfn_py(pattern: str, wfn_type: str, optimize_orbs: bool=False,
-                 pspace_exc=None, nproj=0, objective=None, solver=None,
+def write_wfn_py(pattern: str, wfn_type: str, geom: list, basis: str, optimize_orbs: bool=False,
+                 pspace_exc=None, objective=None, solver=None,
                  ham_noise=None, wfn_noise=None,
                  solver_kwargs=None, wfn_kwargs=None,
                  load_orbs=None, load_ham=None, load_wfn=None, load_chk=None, load_prev=False,
@@ -100,6 +100,10 @@ def write_wfn_py(pattern: str, wfn_type: str, optimize_orbs: bool=False,
         "basecc", "standardcc", "generalizedcc", "senioritycc", "pccd", "ccsd", "ccsdt", "ccsdtq",
         "ap1rogsd", "ap1rogsd_spin", "apsetgd", "apsetgsd", "apg1rod", "apg1rosd",
         "ccsdsen0", "ccsdqsen0", "ccsdtqsen0", "ccsdtsen2qsen0".
+    geom : list
+        List of atomic coordinates for PySCF.
+    basis : str
+        Basis set for PySCF.
     optimize_orbs : bool
         If True, orbitals are optimized.
         If False, orbitals are not optimized.
@@ -109,10 +113,6 @@ def write_wfn_py(pattern: str, wfn_type: str, optimize_orbs: bool=False,
         Orders of excitations that will be used to build the projection space.
         Default is first, second, third, and fourth order excitations of the HF ground state.
         Used for slower fanpy (i.e. `old_fanpy=True`)
-    nproj : int
-        Number of projection states that will be used.
-        Default uses all possible projection states (i.e. Slater determinants.
-        Used for faster fanpy (i.e. `old_fanpy=False`)
     objective : str
         Form of the Schrodinger equation that will be solved.
         Use `system` to solve the Schrodinger equation as a system of equations.
@@ -245,18 +245,21 @@ def write_wfn_py(pattern: str, wfn_type: str, optimize_orbs: bool=False,
 
         save_chk = 'checkpoint.npy'
 
-        if fanpy_only:
-            pspace = ['--pspace', *pspace_exc]
-        else:
-            pspace = ['--nproj', str(nproj)]
+        # convert geom list into json string with no space
+        geom_str = str(geom).replace(' ', '')
+        # convert to json style for fanpy
+        geom_str = geom_str.replace("'", '"')
+
         subprocess.run(['fanpy_make_pyscf_script' if fanpy_only else 'fanpy_make_fanci_pyscf_script',
                         *optimize_orbs, '--wfn_type', wfn_type,
+                        '--geom', geom_str, 
+                        '--pspace_exc', str(pspace_exc),
+                        '--basis', basis,
                         '--objective', objective,
                         '--solver', solver, *kwargs,
                         *load_files,
                         '--save_chk', save_chk,
                         '--filename', filename, *memory,
-                        *pspace
                         ])
 
         os.chdir(cwd)
