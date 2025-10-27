@@ -571,6 +571,10 @@ def main():  # pragma: no cover
         help="Name of the file that contains the output of the script.",
     )
     args = parser.parse_args()
+    # format pspace excitations
+    args.pspace_exc = args.pspace_exc.strip("[]")
+    if args.pspace_exc is not None:
+        args.pspace_exc = [int(x) for x in args.pspace_exc.split(",")]
     make_script(
         args.geom,
         args.wfn_type,

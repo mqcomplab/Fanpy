@@ -28,7 +28,7 @@ parser.add_argument("--optimize_orbs",
                     help="Whether to optimize orbitals in the Hartree-Fock calculation.")
 
 parser.add_argument("--pspace_exc",  
-                    type=list, 
+                    type=str, 
                     default=(1, 2), 
                     help="Excitations to include in the pspace. E.g. '(1, 2)'")
 
