@@ -55,3 +55,5 @@ def test_write_wfn_py_creates_file(tmp_path, monkeypatch):
     assert out_file.exists()
     content = out_file.read_text()
     assert "CISD" in content # this should be in generated file
+    assert "sto3g" in content
+    assert "ProjectedSchrodinger"
