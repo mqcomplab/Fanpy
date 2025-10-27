@@ -113,12 +113,17 @@ class BaseCC(BaseWavefunction):
     product_amplitudes(self, inds, deriv=None) : float
         Return the product of the CC amplitudes of the coefficients corresponding to
         the given indices.
+    product_amplitudes_multi_double_derivative(self, inds, deriv=None) : float
+        Return the product of the CC amplitudes of the double derivative of overlap coefficients corresponding to
+        the given indices.
     load_cache(self)
         Load the functions whose values will be cached.
     clear_cache(self)
         Clear the cache.
     get_overlap(self, sd, deriv=None) : float
         Return the overlap of the wavefunction with a Slater determinant.
+    get_overlap_double_derivative(self, sd, deriv=None) : float
+        Return the double detivative of overlap of the wavefunction with a Slater determinant.
     generate_possible_exops(self, a_inds, c_inds):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
