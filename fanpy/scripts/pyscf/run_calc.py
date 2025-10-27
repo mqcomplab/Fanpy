@@ -186,7 +186,6 @@ def write_wfn_py(pattern: str, wfn_type: str, geom: list, basis: str, optimize_o
 
     if pspace_exc is None:
         pspace_exc = [1, 2, 3, 4]
-    pspace_exc = [str(i) for i in pspace_exc]
 
     if objective is None:
         objective = 'variational'
