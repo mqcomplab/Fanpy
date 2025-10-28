@@ -13,7 +13,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     nuc_nuc=0.0,
     optimize_orbs=False,
     pspace_exc=(1, 2),
-    nproj=None,
     objective="projected",
     solver="least_squares",
     solver_kwargs=None,
@@ -29,6 +28,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     filename=None,
     memory=None,
     constraint=None,
+    fanpt_kwargs=None
 ):
     """Make a script for running calculations.
 
@@ -133,8 +133,8 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         ham_noise=ham_noise,
         wfn_noise=wfn_noise,
     )
-
-    imports = ["numpy as np", "os", "sys", "pyci"]
+    # imports and kwargs for script 
+    imports = ["numpy as np", "os", "sys", "pyci", "fanpy.interface as interface"]
     from_imports = [("fanpy.wfn.utils", "convert_to_fanci")]
 
     wfn_type = wfn_type.lower()
@@ -156,38 +156,43 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         if solver_kwargs is None:
             solver_kwargs = (
                 "xtol=5.0e-7, ftol=1.0e-9, gtol=5.0e-7, "
-                "max_nfev=fanci_wfn.nactive, verbose=2"
+                "max_nfev=objective.active_nparams, verbose=2"
             )
         solver_kwargs = ", ".join(["mode='lstsq', use_jac=True", solver_kwargs])
     elif solver == "root":  # pragma: no branch
         if solver_kwargs is None:
             solver_kwargs = "method='hybr', options={'xtol': 1.0e-9}"
         solver_kwargs = ", ".join(["mode='root', use_jac=True", solver_kwargs])
-    elif solver == "cma":
-        if solver_kwargs is None:
-            solver_kwargs = (
-                "sigma0=0.01, options={'ftarget': None, 'timeout': np.inf, "
-                "'tolfun': 1e-11, 'verb_filenameprefix': 'outcmaes', 'verb_log': 1}"
-            )
-        solver_kwargs = ", ".join(["mode='cma', use_jac=False", solver_kwargs])
-    elif solver == "minimize":
-        if solver_kwargs is None:
-            solver_kwargs = "method='BFGS', options={'gtol': 5e-7, 'disp':True}"
-        solver_kwargs = ", ".join(["mode='bfgs', use_jac=True", solver_kwargs])
+    # TODO: enable these solvers when the one energy interface is updated
+    # elif solver == "cma":
+    #     if solver_kwargs is None:
+    #         solver_kwargs = (
+    #             "sigma0=0.01, options={'ftarget': None, 'timeout': np.inf, "
+    #             "'tolfun': 1e-11, 'verb_filenameprefix': 'outcmaes', 'verb_log': 1}"
+    #         )
+    #     solver_kwargs = ", ".join(["mode='cma', use_jac=False", solver_kwargs])
+    # elif solver == "minimize":
+    #     if solver_kwargs is None:
+    #         solver_kwargs = "method='BFGS', options={'gtol': 5e-7, 'disp':True}"
+    #     solver_kwargs = ", ".join(["mode='bfgs', use_jac=True", solver_kwargs])
     elif solver == "fanpt":
-        from_imports.append(("fanci.fanpt_wrapper", "reduce_to_fock, solve_fanpt"))
+        from_imports.append(("fanpy.fanpt.fanpt", "FANPT"))
         if solver_kwargs is None:
             solver_kwargs = (
-                "fill=fill, energy_active=True, resum=False, ref_sd=0, final_order=1, "
-                "lambda_i=0.0, lambda_f=1.0, steps=50, "
-                "solver_kwargs={'mode':'lstsq', 'use_jac':True, 'xtol':1.0e-8, 'ftol':1.0e-8, "
-                "'gtol':1.0e-5, 'max_nfev':fanci_wfn.nactive, 'verbose':2, 'vtol':1e-5}"
+                "mode='lstsq', use_jac=True, xtol=1.0e-8, ftol=1.0e-8, "
+                "gtol=1.0e-5, max_nfev=objective.active_nparams, verbose=2"
             )
-    else:
-        raise ValueError("Unsupported solver")
+        if fanpt_kwargs is None:
+            fanpt_kwargs = (
+                "energy_active=True, resum=False, ref_sd=0, final_order=1, "
+                "lambda_i=0.0, lambda_f=1.0, steps=50"
+            )
 
-    if nproj == 0:
-        from_imports.append(("scipy.special", "comb"))
+    if objective == "projected":
+        from_imports.append(("fanpy.eqn.projected", "ProjectedSchrodinger"))
+    else:
+        raise ValueError("Unsupported objective. The PyCI interface only supports the projected objective only.")
+
 
     if memory is not None:
         memory = "'{}'".format(memory)
@@ -280,12 +285,6 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
             textwrap.wrap(ham_final, width=100, subsequent_indent=" " * len(ham_final))
         )
         output += "\n"
-        ham_init = "fock = {}(one_int, reduce_to_fock(two_int))".format(ham_name)
-        output += "\n".join(
-            textwrap.wrap(ham_init, width=100, subsequent_indent=" " * len(ham_init))
-        )
-        output += "\n"
-        output += "print('Hamiltonian: Fock Hamiltonian to {}')\n".format(ham_name)
 
     if load_ham_um is not None:
         output += "# Load unitary matrix of the Hamiltonian\n"
@@ -366,12 +365,10 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "# Projection space\n"
     output += "print('Projection space by excitation')\n"
     output += "fill = 'excitation'\n"
-    if nproj == 0:
-        output += "nproj = int(comb(nspin // 2, nelec - nelec // 2) * comb(nspin // 2, nelec // 2))\n"
-    elif nproj < 0:
-        output += f"nproj = int(wfn.nparams * {-nproj}) + 1\n"
+    if solver == "root":
+        output += f"pspace = sd_list(nelec, nspin, num_limit=len(wfn.params), exc_orders={pspace_exc}, spin=None)"
     else:
-        output += f"nproj = {nproj}\n"
+        output += f"pspace = sd_list(nelec, nspin, num_limit=None, exc_orders={pspace_exc}, spin=None)"
     output += "\n"
 
     output += "# Select parameters that will be optimized\n"
@@ -381,81 +378,69 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     output += "\n"
 
     output += "# Initialize objective\n"
-    if solver != "fanpt":
-        output += "pyci_ham = pyci.hamiltonian(nuc_nuc, ham.one_int, ham.two_int)\n"
+
+    if objective == "projected":
+        if save_chk != "":
+            output += f'objective = ProjectedSchrodinger(wfn, ham, energy_type="compute", pspace=pspace, tmpfile="{save_chk}")\n'
+        else: 
+            output += f'objective = ProjectedSchrodinger(wfn, ham, energy_type="compute", pspace=pspace)\n'
     else:
-        output += "pyci_ham = pyci.hamiltonian(nuc_nuc, ham.one_int, ham.two_int)\n"
-        output += "pyci_fock = pyci.hamiltonian(nuc_nuc, fock.one_int, fock.two_int)\n"
-    seniority = 'wfn.seniority' if wfn_type != 'pccd' else '0'
-    if solver == "fanpt":
-        output += "\n".join(
-                textwrap.wrap(
-                    f"fanci_wfn = convert_to_fanci(wfn, pyci_fock, seniority={seniority}, "
-                    "param_selection=param_selection, nproj=nproj, objective_type='projected', "
-                    "norm_det=[(0, 1)])",
-                    width=100, subsequent_indent=" " * len("fanci_wfn = convert_to_fanci(")
-                )
-            )
-        output += "\n"
-    elif objective in ["projected_stochastic", "projected"]:
-        output += f"fanci_wfn = convert_to_fanci(wfn, pyci_ham, seniority={seniority}, param_selection=param_selection, nproj=nproj, objective_type='projected')\n"
-    elif objective in ["energy", "one_energy", "variational"]:
-        output += f"fanci_wfn = convert_to_fanci(wfn, pyci_ham, seniority={seniority}, param_selection=param_selection, nproj=nproj, objective_type='energy')\n"
-    output += "fanci_wfn.tmpfile = '{}'\n".format(save_chk)
-    output += "fanci_wfn.step_print = True\n"
-    output += "\n"
+        # this has to be updated with new objectives as they get implemented in the new interface
+        pass 
 
     # output += "# Normalize\n"
     # output += "wfn.normalize(pspace)\n\n"
 
     # load energy
     output += "# Set energies\n"
-    output += "integrals = np.zeros(fanci_wfn._nproj, dtype=pyci.c_double)\n"
-    output += "olps = fanci_wfn.compute_overlap(fanci_wfn.active_params, 'S')[:fanci_wfn._nproj]\n"
-    output += "fanci_wfn._ci_op(olps, out=integrals)\n"
-    output += "energy_val = np.sum(integrals * olps) / np.sum(olps ** 2)\n"
+    output += "energy_val = objective.get_energy_one_proj(pspace)\n"
     output += "print('Initial energy:', energy_val)\n"
     output += "\n"
 
+    # set up interface
+    if solver == "fanpt":
+        output += "fanpt = FANPT(objective, nuc_nuc, {})\n".format(fanpt_kwargs)
+    output += 'pyci_interface = interface.pyci.PYCI(objective, nuc_nuc) \n'
+
     output += "# Solve\n"
     if solver == "fanpt":
-        results1 = "fanci_results = solve_fanpt("
-        results2 = "fanci_wfn, pyci_fock, pyci_ham, np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
+        results1 = "results = fanpt.optimize(wfn.params, energy_val,"
+        results2 = "{})\n".format(solver_kwargs)
     elif objective == "projected_stochastic":
-        results1 = "fanci_results = fanci_wfn.optimize_stochastic("
+        results1 = "results = pyci_interface.objective.optimize_stochastic("
         results2 = "100, np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
     else:
-        results1 = "fanci_results = fanci_wfn.optimize("
-        results2 = "np.hstack([fanci_wfn.active_params, energy_val]), {})\n".format(solver_kwargs)
+        results1 = "results = pyci_interface.objective.optimize("
+        results2 = "np.hstack([objective.active_params, energy_val]), {})\n".format(solver_kwargs)
     output += "print('Optimizing wavefunction: solver')\n"
     output += "\n".join(
         textwrap.wrap(results1 + results2, width=100, subsequent_indent=" " * len(results1))
     )
     output += "\n"
-    output += "results = {}\n"
-    if solver != "cma":
-        output += "results['success'] = fanci_results.success\n"
-        output += "results['params'] = fanci_results.x\n"
-        output += "results['message'] = fanci_results.message\n"
-        output += "results['internal'] = fanci_results\n"
-        if solver == "minimize":
-            output += "results['energy'] = fanci_results.fun\n"
-        else:
-            output += "results['energy'] = fanci_results.x[-1]\n"
-        output += "\n"
-    else:
-        output += "results['success'] = fanci_results[-3] != {}\n"
-        output += "results['params'] = fanci_results[0]\n"
-        output += "results['function'] = fanci_results[1]\n"
-        output += "results['energy'] = fanci_results[1]\n"
-        output += "if results['success']:\n"
-        output += "    results['message'] = 'Following termination conditions are satisfied:' + ''.join(\n"
-        output += "        ' {0}: {1},'.format(key, val) for key, val in fanci_results[-3].items()\n"
-        output += "    )\n"
-        output += "    results['message'] = results['message'][:-1] + '.' \n"
-        output += "else:\n"
-        output += "    results['message'] = 'Optimization did not succeed.'\n"
-        output += "results['internal'] = fanci_results\n"
+    # output += "results = {}\n"
+    # if solver != "cma":
+    #     output += "results['success'] = fanci_results.success\n"
+    #     output += "results['params'] = fanci_results.x\n"
+    #     output += "results['message'] = fanci_results.message\n"
+    #     output += "results['internal'] = fanci_results\n"
+    #     if solver == "minimize":
+    #         output += "results['energy'] = fanci_results.fun\n"
+    #     else:
+    #         output += "results['energy'] = fanci_results.x[-1]\n"
+    #     output += "\n"
+    # else:
+    #     output += "results['success'] = fanci_results[-3] != {}\n"
+    #     output += "results['params'] = fanci_results[0]\n"
+    #     output += "results['function'] = fanci_results[1]\n"
+    #     output += "results['energy'] = fanci_results[1]\n"
+    #     output += "if results['success']:\n"
+    #     output += "    results['message'] = 'Following termination conditions are satisfied:' + ''.join(\n"
+    #     output += "        ' {0}: {1},'.format(key, val) for key, val in fanci_results[-3].items()\n"
+    #     output += "    )\n"
+    #     output += "    results['message'] = results['message'][:-1] + '.' \n"
+    #     output += "else:\n"
+    #     output += "    results['message'] = 'Optimization did not succeed.'\n"
+    #     output += "results['internal'] = fanci_results\n"
 
 
     output += "# Results\n"
@@ -497,7 +482,6 @@ def main():  # pragma: no cover
         nuc_nuc=args.nuc_nuc,
         optimize_orbs=args.optimize_orbs,
         pspace_exc=args.pspace_exc,
-        nproj=args.nproj,
         objective=args.objective,
         solver=args.solver,
         solver_kwargs=args.solver_kwargs,
