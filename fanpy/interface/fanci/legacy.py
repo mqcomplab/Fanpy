@@ -805,6 +805,30 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
         """
         raise NotImplementedError("this method must be overwritten in a sub-class")
 
+    @abstractmethod
+    def compute_overlap_double_deriv(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
+        """
+        Compute the FanCI overlap double derivative matrix.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Parameter array, [p_0, p_1, ..., p_n].
+        occs_array : (np.ndarray | 'P' | 'S')
+            Array of determinant occupations for which to compute overlap. A string "P" or "S" can
+            be passed instead that indicates whether ``occs_array`` corresponds to the "P" space
+            or "S" space, so that a more efficient, specialized computation can be done for these.
+
+        Returns
+        -------
+        ovlp double derivative w.r.t wfn parameters: np.ndarray
+            Overlap double derivative tensor.
+
+        """
+        raise NotImplementedError("this method must be overwritten in a sub-class")
+
+    
+    
     def fill_wavefunction(self, wfn: pyci.wavefunction, nproj: int, fill: str) -> None:
         """
         Fill the PyCI wave function object for the FanCI problem.
@@ -1223,6 +1247,67 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
                 y[i] = self.fanpy_wfn.get_overlap(sd, deriv=deriv_indices)
 
         return y
+
+    def compute_overlap_double_deriv(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
+        """
+        Compute the FanCI overlap double derivative tensor.
+        Each SD gives a (nparam x nparam) Hessian block.
+        
+        Parameters
+        ----------
+        x : np.ndarray
+            Parameter array, [p_0, ..., p_n].
+        occs_array : (np.ndarray | 'P' | 'S')
+            Which determinants: P-space or S-space.
+        
+        Returns
+        -------
+        ovlp_hessian : np.ndarray
+            Shape: (N_SD, nparam, nparam)
+        """
+        if occs_array == "P":
+            occs_array = self.pspace
+        elif occs_array == "S":
+            occs_array = self.sspace
+        elif isinstance(occs_array, np.ndarray):
+            pass
+        else:
+            raise ValueError("invalid `occs_array` argument")
+        
+        # Convert occs -> Slater determinants
+        sds = []
+        if isinstance(occs_array[0, 0], np.ndarray):
+            for i, occs in enumerate(occs_array):
+                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
+                # convert occupation vector to sd
+                if occs.dtype == bool:
+                    occs = np.where(occs)[0]
+                sd = slater.create(0, *occs[0])
+                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
+                sds.append(sd)
+        else:
+            for i, occs in enumerate(occs_array):
+                if occs.dtype == bool:
+                    occs = np.where(occs)
+                sd = slater.create(0, *occs)
+                sds.append(sd)        
+        
+        # Update Fanpy params
+        for component, indices in self.param_selection.items():
+            new_params = component.params.ravel()
+            new_params[indices] = x[self.param_selection[component]]
+            component.assign_params(new_params)
+        
+        # Compute Hessians
+        deriv_indices = np.arange(self.nparam - 1)[self.mask[:-1]]
+        hessians = []
+        for sd in sds:
+            hess = self.fanpy_wfn.get_overlap_double_derivative(sd)
+            hessians.append(hess)
+        
+        return np.stack(hessians)
+
+
 
     def compute_objective(self, x: np.ndarray) -> np.ndarray:
         """

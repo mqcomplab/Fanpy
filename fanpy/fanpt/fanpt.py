@@ -96,6 +96,7 @@ class FANPT:
         lambda_f=1.0,
         steps=1,
         step_print=False,
+        quasi_approximation_order=None,
         **kwargs,
     ):
         """
@@ -129,6 +130,8 @@ class FANPT:
                 Solve FANPT in n stepts between lambda_i and lambda_f. Defaults to 1.
             step_print : bool
                 Option to print relevant information when the objective is evaluated.
+            quasi_approximation_order : int or None, optional 
+                — 2 (default) or 3. If None, treated as 2 downstream.
             kwargs (dict, optional):
                 Additional keyword arguments for self.fanpt_container_class class. Defaults to {}.
 
@@ -204,6 +207,7 @@ class FANPT:
         self.lambda_f = lambda_f
         self.steps = steps
         self.step_print = step_print
+        self.quasi_approximation_order = quasi_approximation_order
         self.kwargs = kwargs
 
     def optimize(
@@ -290,6 +294,7 @@ class FANPT:
                 final_l=final_l,
                 solver=None,
                 resum=self.resum,
+                quasi_approximation_order=self.quasi_approximation_order,
             )
             new_wfn_params = fanpt_updater.new_wfn_params
             new_energy = fanpt_updater.new_energy
