@@ -322,9 +322,10 @@ def run_calcs(pattern: str, time=None, memory=None, ncores=1, outfile='outfile',
                 f.write('cwd=$PWD\n')
                 if calc_range:
                     f.write(f'for i in {{{calc_range[0]}..{calc_range[1]}}}; do\n')
+                    f.write('    cd _$i\n')
                 else:
                     f.write('for i in */; do\n')
-                f.write('    cd $i\n')
+                    f.write('    cd $i\n')
                 f.write(f'    python -u ../calculate.py > {results_out}\n')
                 f.write('    cd $cwd\n')
                 f.write('done\n')
