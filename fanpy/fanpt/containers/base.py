@@ -142,6 +142,8 @@ class FANPTContainer(metaclass=ABCMeta):
             Overlaps in the "S" projection space.
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
+        dd_ovlp_s : {np.ndarray, None}
+            Double derivatives of the overlaps in the "S" projection space.
         """
         # Separate parameters for better readability.
         self.fanci_interface = fanci_interface

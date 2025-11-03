@@ -3,7 +3,7 @@ import os
 import textwrap
 
 from fanpy.scripts.utils import check_inputs, parser
-from fanpy.scripts.gaussian.wavefunction_info import get_wfn_info
+from fanpy.scripts.wavefunction_info import get_wfn_info
 
 def make_script(  # pylint: disable=R1710,R0912,R0915
     nelec,

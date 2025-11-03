@@ -1116,7 +1116,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
         # FIXME: converting occs_array to slater determinants to be converted back to indices is a waste
         # convert slater determinants
         sds = []
-        if isinstance(occs_array[0, 0], np.ndarray):
+        if isinstance(occs_array[0, 0], np.ndarray): # pspace generated with FCI
             for i, occs in enumerate(occs_array):
                 # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
                 # convert occupation vector to sd
@@ -1125,11 +1125,12 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
                 sd = slater.create(0, *occs[0])
                 sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
                 sds.append(sd)
-        else:
+        else: # pspace generated with DOCI
             for i, occs in enumerate(occs_array):
                 if occs.dtype == bool:
                     occs = np.where(occs)
                 sd = slater.create(0, *occs)
+                sd = slater.create(sd, *(occs + self.fanpy_wfn.nspatial))
                 sds.append(sd)
 
         # Feed in parameters into fanpy wavefunction
@@ -1185,7 +1186,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
         # a waste
         # convert slater determinants
         sds = []
-        if isinstance(occs_array[0, 0], np.ndarray):
+        if isinstance(occs_array[0, 0], np.ndarray): # pspace generated with FCI
             for i, occs in enumerate(occs_array):
                 # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
                 # convert occupation vector to sd
@@ -1194,11 +1195,12 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
                 sd = slater.create(0, *occs[0])
                 sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
                 sds.append(sd)
-        else:
+        else: # pspace generated with DOCI
             for i, occs in enumerate(occs_array):
                 if occs.dtype == bool:
                     occs = np.where(occs)
                 sd = slater.create(0, *occs)
+                sd = slater.create(sd, *(occs + self.fanpy_wfn.nspatial))
                 sds.append(sd)
 
         # Select sds according to selected chunks
