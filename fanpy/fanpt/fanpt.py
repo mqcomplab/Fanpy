@@ -207,9 +207,20 @@ class FANPT:
         self.lambda_f = lambda_f
         self.steps = steps
         self.step_print = step_print
-        self.quasi_approximation_order = quasi_approximation_order
+        self.quasi_approximation_order = quasi_approximation_order        
+        if self.quasi_approximation_order not in (2, 3):
+            raise ValueError(
+                f"Invalid quasi_approximation_order={self.quasi_approximation_order}. "
+                "Quasi approximation order can only be 2 or 3."
+            )
+
         self.kwargs = kwargs
 
+        if self.quasi_approximation_order == 3 and not self.energy_active:
+            raise ValueError(
+                "quasi_approximation_order=3 requires energy_active=True. "
+                "Please set energy_active=True or use quasi_approximation_order=2."
+            )
     def optimize(
         self,
         guess_params,
@@ -282,6 +293,7 @@ class FANPT:
                 inorm=self.inorm,
                 norm_det=self.norm_det,
                 ref_sd=self.ref_sd,
+                quasi_approximation_order=self.quasi_approximation_order,
                 **self.kwargs,
             )
 
