@@ -112,7 +112,8 @@ class PCCD(BaseCC):
         to the given indices to be created.
     assign_s_type(self, s_type):
         Assign the s_type option.
-
+    _olp_double_derivative(self, sd): int
+        Returns double derivative of overlap for a given sd
     """
 
     def __init__(

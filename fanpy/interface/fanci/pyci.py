@@ -459,6 +459,14 @@ class ProjectedSchrodingerPyCI(FanCI):
             pass
         else:
             raise ValueError("invalid `occs_array` argument")
+        from fanpy.wfn.cc.base import BaseCC
+
+        if not (isinstance(self.fanpy_wfn, BaseCC)
+                and hasattr(self.fanpy_wfn, "get_overlap_double_derivative")
+                and callable(self.fanpy_wfn.get_overlap_double_derivative)):
+            raise NotImplementedError(f"{type(self.fanpy_wfn).__name__} is not supported for second derivative overlap. "
+        "Must be a CC-type FanPy wavefunction (BaseCC) with "
+        "`get_overlap_double_derivative(sd)` implemented.")
         sds = []
         if isinstance(occs_array[0, 0], np.ndarray):
             for i, occs in enumerate(occs_array):

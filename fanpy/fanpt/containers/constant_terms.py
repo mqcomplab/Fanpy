@@ -46,10 +46,14 @@ class FANPTConstantTerms:
     -------
     __init__(self, fanpt_container, order=1, previous_responses=None, quasi_approximation_order=2)
         Initialize the constant terms.
-    assign_fanpt_container(self, fanpt_container)
-    assign_order(self, order)
-    assign_previous_responses(self, previous_responses)
-    assign_quasi_approximation_order(self, qao)
+    assign_fanpt_container(self, fanpt_container):
+        Assign the FANPT Container
+    assign_order(self, order):
+        Assign the order
+    assign_previous_responses(self, previous_responses):
+        Assign the previous responses
+    assign_quasi_approximation_order(self, qao):
+        Assign the quasi approximation order
     gen_constant_terms(self)
     """
 
@@ -138,35 +142,32 @@ class FANPTConstantTerms:
 
         Parameters
         ----------
-        previous_responses : np.ndarray or None
-            Previous responses of the FANPT calculations up to order = order - 1.
-            If self.order == 1, this may be None.
+        previous_responses : np.ndarray
+            Previous responses of the FANPT calculations up to order = order -1.
 
         Raises
         ------
         TypeError
-            If previous_responses is not a numpy array (when required).
+            If previous_responses is not a numpy array.
             If the elements of previous_responses are not numpy arrays.
         ValueError
             If previous_responses is None and order is not 1.
             If the shape of previous_responses is not equal to (order - 1, nactive).
         """
         if self.order == 1:
-            self.previous_responses = None if previous_responses is None else previous_responses
-            return
-
-        if previous_responses is None:
-            raise ValueError("previous_responses must be provided when order > 1.")
-
-        if not isinstance(previous_responses, np.ndarray):
-            raise TypeError("previous_responses must be a numpy array.")
-        # Optional: enforce element-wise ndarray if you expect a 2D object array of ndarrays
-        # but given your usage with slicing, a 2D float array is expected.
-        expected_shape = (self.order - 1, self.fanpt_container.nactive)
-        if previous_responses.shape != expected_shape:
-            raise ValueError(f"previous_responses must have shape {expected_shape}, "
-                             f"got {previous_responses.shape}.")
-        self.previous_responses = previous_responses
+            self.previous_responses = previous_responses
+        else:
+            if not isinstance(previous_responses, np.ndarray):
+                raise TypeError("previous_responses must be a numpy array.")
+            if not all([isinstance(response, np.ndarray) for response in previous_responses]):
+                raise TypeError("The elements of previous_responses must be numpy arrays.")
+            if previous_responses.shape != (self.order - 1, self.fanpt_container.nactive):
+                raise ValueError(
+                    "The shape of previous_responses must be ({}, {}).".format(
+                        self.order - 1, self.fanpt_container.nactive
+                    )
+                )
+            self.previous_responses = previous_responses
 
     def gen_constant_terms(self):
         r"""Generate the constant terms.
@@ -201,7 +202,6 @@ class FANPTConstantTerms:
 
                 # Extra contributions only if quasi_approximation_order == 3
                 if self.quasi_approximation_order == 3:
-                    print("voila")
                     if self.order == 2:
                         # Second-derivative contribution wrt p_k, p_l
                         constant_terms -= np.einsum(

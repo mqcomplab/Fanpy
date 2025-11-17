@@ -140,6 +140,7 @@ class FANPTContainerEParam(FANPTContainer):
         ovlp_s=None,
         d_ovlp_s=None,
         dd_ovlp_s=None,
+        quasi_approximation_order=2,
     ):
         r"""Initialize the FANPT container.
 
@@ -168,6 +169,8 @@ class FANPTContainerEParam(FANPTContainer):
             Derivatives of the overlaps in the "S" projection space.
         dd_ovlp_s : {np.ndarray, None}
             Double derivatives of the overlaps in the "S" projection space.
+        quasi_approximation_order : int (2 or 3)
+            FANPT quasi approximation order
         """
         super().__init__(
             fanci_interface,
@@ -183,11 +186,13 @@ class FANPTContainerEParam(FANPTContainer):
             ovlp_s,
             d_ovlp_s,
             dd_ovlp_s,
+            quasi_approximation_order=quasi_approximation_order,
         )
         self.der2_g_e_wfnparams()
-        self.der2_g_wfnparams2()
-        self.der3_g_lambda_wfnparams2()
-        self.der3_g_e_wfnparams2()
+        if quasi_approximation_order==3:
+            self.der2_g_wfnparams2()
+            self.der3_g_lambda_wfnparams2()
+            self.der3_g_e_wfnparams2()
     def der_g_lambda(self):
         r"""Derivative of the FANPT equations with respect to the lambda parameter.
 
@@ -255,15 +260,19 @@ class FANPTContainerEParam(FANPTContainer):
         # Only the projected equations get contributions
         f_proj = f[: self.nproj]
     
-        # Loop over all (k, l) pairs
+        # Loop only over upper triangle (k <= l) and mirror to (l, k)
         for k in range(ncolumns):
-            for l in range(ncolumns):
-                # Slice the second derivative overlap vector: shape (nproj,)
+            for l in range(k, ncolumns):
+                # d2_ovlp_vector has shape (nproj,)
                 d2_ovlp_vector = self.dd_ovlp_s[:, k, l]
-    
-                # Apply perturbation operator: sum_n <m|V|n> * d2_ovlp
-                # This fills the result for all projected equations
-                self.f_pot_ci_op(d2_ovlp_vector, out=f_proj[:, k, l])
+
+                # Compute f[:, k, l]
+                out = f_proj[:, k, l]           # view into f, no extra alloc
+                self.f_pot_ci_op(d2_ovlp_vector, out=out)
+
+                # Mirror to f[:, l, k] if off-diagonal
+                if l != k:
+                    f_proj[:, l, k] = out
     
         # Store result
         self.d3_g_lambda_wfnparams2 = f
@@ -301,7 +310,7 @@ class FANPTContainerEParam(FANPTContainer):
     
         Generates
         ---------
-        d3_g_wfnparams2_e : np.ndarray
+        d3_g_e_wfnparams2 : np.ndarray
             Third derivative tensor with shape:
             (self.nequations, len(self.wfn_params_active), len(self.wfn_params_active))
         """
@@ -354,13 +363,17 @@ class FANPTContainerEParam(FANPTContainer):
             f = np.zeros((self.nequation, ncolumns, ncolumns), order = "F")
             f_proj = f[:self.nproj]
             energy=self.params[-1]
-            
 
-        for i in range(ncolumns):
-            for j in range(ncolumns):
-                self.ham_ci_op(self.dd_ovlp_s[:,i,j], out= f_proj[:,i,j])
-                dd_ovlp_proj= self.dd_ovlp_s[:, i, j][:self.nproj]
-                dd_ovlp_proj *= energy
-                f_proj[:,i,j] -= dd_ovlp_proj
+        for k in range(ncolumns):
+            for l in range(k, ncolumns):
+                d2_ovlp = self.dd_ovlp_s[:, k, l]              
+                out = f_proj[:, k, l]                          # view into f (no new alloc)
+                self.ham_ci_op(d2_ovlp, out=out)
+                out -= energy * d2_ovlp[: self.nproj]
+    
+                # mirror to (l, k) if off-diagonal
+                if l != k:
+                    f_proj[:, l, k] = out
+    
         self.d2_g_wfnparams2 = f
 
