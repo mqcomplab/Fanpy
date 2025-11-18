@@ -79,7 +79,7 @@ class FANPTUpdater:
         Return the energy calculated as the sum of the FANPT responses of the E variable.
     """
 
-    def __init__(self, fanpt_container, final_order=1, final_l=1.0, solver=None, resum=False, quasi_approximation_order=None):
+    def __init__(self, fanpt_container, final_order=1, final_l=1.0, solver=None, resum=False, quasi_approximation_order=2):
         r"""Initialize the updater.
 
         Parameters

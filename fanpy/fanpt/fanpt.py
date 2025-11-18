@@ -96,7 +96,7 @@ class FANPT:
         lambda_f=1.0,
         steps=1,
         step_print=False,
-        quasi_approximation_order=None,
+        quasi_approximation_order=2,
         **kwargs,
     ):
         """
