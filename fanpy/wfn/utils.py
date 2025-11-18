@@ -957,16 +957,17 @@ def convert_to_fanci(
                 isamp += 1
 
         def calculate_overlap_deriv_chunks(self):
-
-            tensor_mem = self._nactive * 8 / 1e6
+            size_sspace = self._sspace.shape[0]
+            tensor_mem = size_sspace * 8 / 1e6
             avail_mem = (self.max_memory - current_memory()) * 0.9
 
             chunk_size = max(1, math.floor(avail_mem / tensor_mem))
-            chunk_size = min(chunk_size, self._nactive)
+            
+            chunk_size = min(chunk_size, size_sspace)
 
             chunks_list = []
-            for s_chunk in range(0, self._nactive, chunk_size):
-                f_chunk = min(self._nactive, s_chunk + chunk_size)
+            for s_chunk in range(0, size_sspace, chunk_size):
+                f_chunk = min(size_sspace, s_chunk + chunk_size)
                 chunks_list.append([s_chunk, f_chunk])
 
             return chunks_list
