@@ -116,6 +116,7 @@ class FANPTContainerEFree(FANPTContainerEParam):
         f_pot_ci_op=None,
         ovlp_s=None,
         d_ovlp_s=None,
+        quasi_approximation_order=2,
     ):
         r"""Initialize the FANPT container.
 
@@ -142,6 +143,8 @@ class FANPTContainerEFree(FANPTContainerEParam):
             Overlaps in the "S" projection space.
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
+        quasi_approximation_order: int (2 or 3)
+            FANPT quasi-approximation order
         """
         if fanci_interface.objective.mask[-1]:
             raise TypeError("The energy cannot be an active parameter.")

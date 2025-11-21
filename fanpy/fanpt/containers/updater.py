@@ -49,7 +49,7 @@ class FANPTUpdater:
 
     Methods
     -------
-    __init__(self, fanpt_container, final_order=1, final_l=1, solver=None)
+    __init__(self, fanpt_container, final_order=1, final_l=1, solver=None, quasi_approximation_order=None)
         Initialize the updater.
     assign_fanpt_container(self, fanpt_container)
         Assign the FANPT container.
@@ -79,7 +79,7 @@ class FANPTUpdater:
         Return the energy calculated as the sum of the FANPT responses of the E variable.
     """
 
-    def __init__(self, fanpt_container, final_order=1, final_l=1.0, solver=None, resum=False):
+    def __init__(self, fanpt_container, final_order=1, final_l=1.0, solver=None, resum=False, quasi_approximation_order=2):
         r"""Initialize the updater.
 
         Parameters
@@ -94,9 +94,12 @@ class FANPTUpdater:
             Solver that will be used to solve the FANPT equations.
         resum : bool
             Indicates if we will solve the FANPT equations by re-summing the series.
+        quasi_approximation_order : int or None, optional
+            2 (default) or 3. If None, FANPTConstantTerms will treat it as 2.
         """
         self.assign_fanpt_container(fanpt_container=fanpt_container)
         self.assign_final_l(final_l=final_l)
+        self.quasi_approximation_order=quasi_approximation_order
         self.assign_resum(resum)
         if self.resum:
             self.inverse_coeff_matrix()
@@ -275,6 +278,7 @@ class FANPTUpdater:
                 fanpt_container=self.fanpt_container,
                 order=o,
                 previous_responses=resp_matrix[: o - 1, :],
+                quasi_approximation_order=self.quasi_approximation_order,
             )
             constant_terms = c_terms.constant_terms
             resp_matrix[o - 1] = self.solver(self.fanpt_container.c_matrix, constant_terms)[0]

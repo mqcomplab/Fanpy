@@ -96,6 +96,7 @@ class FANPT:
         lambda_f=1.0,
         steps=1,
         step_print=False,
+        quasi_approximation_order=2,
         **kwargs,
     ):
         """
@@ -129,6 +130,8 @@ class FANPT:
                 Solve FANPT in n stepts between lambda_i and lambda_f. Defaults to 1.
             step_print : bool
                 Option to print relevant information when the objective is evaluated.
+            quasi_approximation_order : int or None, optional 
+                — 2 (default) or 3. If None, treated as 2 downstream.
             kwargs (dict, optional):
                 Additional keyword arguments for self.fanpt_container_class class. Defaults to {}.
 
@@ -204,8 +207,20 @@ class FANPT:
         self.lambda_f = lambda_f
         self.steps = steps
         self.step_print = step_print
+        self.quasi_approximation_order = quasi_approximation_order        
+        if self.quasi_approximation_order not in (2, 3):
+            raise ValueError(
+                f"Invalid quasi_approximation_order={self.quasi_approximation_order}. "
+                "Quasi approximation order can only be 2 or 3."
+            )
+
         self.kwargs = kwargs
 
+        if self.quasi_approximation_order == 3 and not self.energy_active:
+            raise ValueError(
+                "quasi_approximation_order=3 requires energy_active=True. "
+                "Please set energy_active=True or use quasi_approximation_order=2."
+            )
     def optimize(
         self,
         guess_params,
@@ -278,6 +293,7 @@ class FANPT:
                 inorm=self.inorm,
                 norm_det=self.norm_det,
                 ref_sd=self.ref_sd,
+                quasi_approximation_order=self.quasi_approximation_order,
                 **self.kwargs,
             )
 
@@ -290,6 +306,7 @@ class FANPT:
                 final_l=final_l,
                 solver=None,
                 resum=self.resum,
+                quasi_approximation_order=self.quasi_approximation_order,
             )
             new_wfn_params = fanpt_updater.new_wfn_params
             new_energy = fanpt_updater.new_energy

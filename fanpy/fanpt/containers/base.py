@@ -5,7 +5,6 @@ from fanpy.fanpt.utils import linear_comb_ham
 
 import pyci
 
-
 class FANPTContainer(metaclass=ABCMeta):
     r"""Container for the matrices and vectors required ot perform a FANPT calculation.
 
@@ -66,6 +65,9 @@ class FANPTContainer(metaclass=ABCMeta):
     d_ovlp_s : np.ndarray
         Derivatives of the overlaps of the wavefunction with the determinants in the "S" space
         with respect to the active wavefunction parameters.
+    dd_ovlp_s : np.ndarray
+        Double derivatives of the overlaps of the wavefunction with the determinants in the "S" space
+        with respect to the active wavefunction parameters.
     d_g_lambda : np.ndarray
         Derivative of the FANPT equations with respect to the lambda parameter.
         numpy array with shape (self.nequations,).
@@ -88,7 +90,7 @@ class FANPTContainer(metaclass=ABCMeta):
 
     Methods
     -------
-    __init__(self, fanci_objective, params, ham0, ham1, l=0, ref_sd=0)
+    __init__(self, fanci_interface, params, ham0, ham1, l=0, ref_sd=0, inorm=False, norm_det=None, ham_ci_op=None, f_pot_ci_op=None, ovlp_s=None, d_ovlp_s=None, dd_ovlp_s=None, quasi_approximation_order=2)
         Initialize the FANPT container.
     linear_comb_ham(ham1, ham0, a1, a0)
         Return a linear combination of two PyCI Hamiltonians.
@@ -114,6 +116,8 @@ class FANPTContainer(metaclass=ABCMeta):
         f_pot_ci_op=None,
         ovlp_s=None,
         d_ovlp_s=None,
+        dd_ovlp_s=None,
+        quasi_approximation_order=2,
     ):
         r"""Initialize the FANPT container.
 
@@ -142,6 +146,10 @@ class FANPTContainer(metaclass=ABCMeta):
             Overlaps in the "S" projection space.
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
+        dd_ovlp_s : {np.ndarray, None}
+            Double derivatives of the overlaps in the "S" projection space.
+        quasi_approximation_order: int (2 or 3)
+            FANPT Quasi approximation order
         """
         # Separate parameters for better readability.
         self.fanci_interface = fanci_interface
@@ -190,7 +198,14 @@ class FANPTContainer(metaclass=ABCMeta):
             self.d_ovlp_s = d_ovlp_s
         else:
             self.d_ovlp_s = self.fanci_objective.compute_overlap_deriv(self.wfn_params, "S")
-
+        if dd_ovlp_s:
+            self.dd_ovlp_s = dd_ovlp_s
+        elif quasi_approximation_order == 3:
+            self.dd_ovlp_s = self.fanci_objective.compute_overlap_double_deriv(
+                self.wfn_params, "S"
+            )
+        else:
+            self.dd_ovlp_s = None
         # Update Hamilonian in the fanci_objective.
         self.fanci_interface.pyci_ham = self.ham
 

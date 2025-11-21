@@ -72,13 +72,26 @@ class FANPTContainerEParam(FANPTContainer):
         Derivative of the FANPT equations with respect to lambda and the wavefunction
         parameters.
         numpy array with shape (self.nequations, len(self.wfn_params_active)).
+    d3_g_lambda_wfnparams2 : np.ndarray
+        Third order derivative of the FANPT equations with respect to lambda and the wavefunction
+        parameters.
+        numpy array with shape (self.nequations, len(self.wfn_params_active), len(self.wfn_params_active)).
     d2_g_e_wfnparams : np.ndarray
         Derivative of the FANPT equations with respect to the energy and the wavefunction
         parameters.
         numpy array with shape (self.nequations, len(self.wfn_params_active)).
+    d3_g_e_wfnparams2 : np.ndarray
+        Derivative of the FANPT equations with respect to the energy and the wavefunction
+        parameters.
+        numpy array with shape (self.nequations, len(self.wfn_params_active), len(self.wfn_params_active)).
     c_matrix : np.ndarray
         Coefficient matrix of the FANPT system of equations.
         numpy array with shape (self.nequations, len(self.nactive)).
+    d2_g_wfnparams2 : np.ndarray
+        Second order derivative of the FANPT equations with respect to the energy and the wavefunction
+        parameters.
+        numpy array with shape (self.nequations, len(self.wfn_params_active), len(self.wfn_params_active)).
+
 
     Properties
     ----------
@@ -97,11 +110,19 @@ class FANPTContainerEParam(FANPTContainer):
         Derivative of the FANPT equations with respect to the lambda parameter.
     der2_g_lambda_wfnparams(self)
         Derivative of the FANPT equations with respect to lambda and the wavefunction parameters.
+    der3_g_lambda_wfnparams2(self)
+        Third order derivative of the FANPT equations with respect to lambda and the wavefunction parameters.
     der2_g_e_wfnparams(self)
         Derivative of the FANPT equations with respect to the energy and the wavefunction
         parameters.
+    der3_g_e_wfnparams2(self)
+        Third order derivative of the FANPT equations with respect to the energy and the wavefunction
+        parameters.
     gen_coeff_matrix(self)
         Generate the coefficient matrix of the linear FANPT system of equations.
+    der2_g_wfnparams2(self)
+        Second order derivative of the FANPT equations with respect to the energy and the wavefunction
+        parameters.
     """
 
     def __init__(
@@ -118,6 +139,8 @@ class FANPTContainerEParam(FANPTContainer):
         f_pot_ci_op=None,
         ovlp_s=None,
         d_ovlp_s=None,
+        dd_ovlp_s=None,
+        quasi_approximation_order=2,
     ):
         r"""Initialize the FANPT container.
 
@@ -144,6 +167,10 @@ class FANPTContainerEParam(FANPTContainer):
             Overlaps in the "S" projection space.
         d_ovlp_s : {np.ndarray, None}
             Derivatives of the overlaps in the "S" projection space.
+        dd_ovlp_s : {np.ndarray, None}
+            Double derivatives of the overlaps in the "S" projection space.
+        quasi_approximation_order : int (2 or 3)
+            FANPT quasi approximation order
         """
         super().__init__(
             fanci_interface,
@@ -158,9 +185,14 @@ class FANPTContainerEParam(FANPTContainer):
             f_pot_ci_op,
             ovlp_s,
             d_ovlp_s,
+            dd_ovlp_s,
+            quasi_approximation_order=quasi_approximation_order,
         )
         self.der2_g_e_wfnparams()
-
+        if quasi_approximation_order==3:
+            self.der2_g_wfnparams2()
+            self.der3_g_lambda_wfnparams2()
+            self.der3_g_e_wfnparams2()
     def der_g_lambda(self):
         r"""Derivative of the FANPT equations with respect to the lambda parameter.
 
@@ -199,6 +231,53 @@ class FANPTContainerEParam(FANPTContainer):
             self.f_pot_ci_op(d_ovlp_col, out=f_proj_col)
         self.d2_g_lambda_wfnparams = f
 
+    def der3_g_lambda_wfnparams2(self):
+        r"""Compute the third derivative of the FANPT equations with respect to two wavefunction 
+        parameters and the lambda perturbation parameter.
+    
+        Generates
+        ---------
+        d^3G / dp_k dλ dp_l = sum_n <m|V|n> d^2 f_n / dp_k dp_l
+    
+        - For each projection equation m
+        - For each pair of active wavefunction parameters (k, l)
+        - Stores the result in a tensor: (self.nequations, len(self.wfn_params_active), len(self.wfn_params_active))
+    
+        Notes
+        -----
+        If `self.active_energy` is True, the last wfn parameter is omitted.
+        Only `self.nproj` projection equations are non-zero.
+        """
+        # Determine how many wavefunction parameters to use
+        if self.active_energy:
+            ncolumns = self.nactive - 1
+        else:
+            ncolumns = self.nactive
+    
+        # Allocate tensor: (nequation, ncolumns, ncolumns)
+        f = np.zeros((self.nequation, ncolumns, ncolumns), order="F")
+    
+        # Only the projected equations get contributions
+        f_proj = f[: self.nproj]
+    
+        # Loop only over upper triangle (k <= l) and mirror to (l, k)
+        for k in range(ncolumns):
+            for l in range(k, ncolumns):
+                # d2_ovlp_vector has shape (nproj,)
+                d2_ovlp_vector = self.dd_ovlp_s[:, k, l]
+
+                # Compute f[:, k, l]
+                out = f_proj[:, k, l]           # view into f, no extra alloc
+                self.f_pot_ci_op(d2_ovlp_vector, out=out)
+
+                # Mirror to f[:, l, k] if off-diagonal
+                if l != k:
+                    f_proj[:, l, k] = out
+    
+        # Store result
+        self.d3_g_lambda_wfnparams2 = f
+
+
     def der2_g_e_wfnparams(self):
         r"""Derivative of the FANPT equations with respect to the energy and the wavefunction
         parameters.
@@ -220,6 +299,30 @@ class FANPTContainerEParam(FANPTContainer):
         else:
             self.d2_g_e_wfnparams = None
 
+    def der3_g_e_wfnparams2(self):
+        r"""Compute the third derivative of the FANPT equations with respect to two
+        wavefunction parameters and the energy.
+    
+        Computes:
+        d^3G / dp_k dp_l dE = -d^2 f / dp_k dp_l
+    
+        Only computed if `self.active_energy` is True.
+    
+        Generates
+        ---------
+        d3_g_e_wfnparams2 : np.ndarray
+            Third derivative tensor with shape:
+            (self.nequations, len(self.wfn_params_active), len(self.wfn_params_active))
+        """
+        if self.active_energy:
+            ncolumns = self.nactive - 1
+            f = np.zeros((self.nequation, ncolumns, ncolumns), order="F")
+            f[: self.nproj] = -self.dd_ovlp_s[: self.nproj]
+            self.d3_g_e_wfnparams2 = f
+        else:
+            self.d3_g_e_wfnparams2 = None
+
+
     def gen_coeff_matrix(self):
         r"""Generate the coefficient matrix of the linear FANPT system of equations.
 
@@ -236,3 +339,41 @@ class FANPTContainerEParam(FANPTContainer):
             numpy array with shape (self.nequations, len(self.nactive)).
         """
         self.c_matrix = self.fanci_objective.compute_jacobian(self.params)
+
+    def der2_g_wfnparams2(self):
+        r"""
+        Compute the second derivative of the FANCI projection equations with respect to 
+        two wavefunction parameters.
+    
+        Specifically, this evaluates the tensor:
+            d^2G / dp_k dp_l = ⟨m|H|d^2ψ/dp_k dp_l⟩ - E ⋅ d^2f / dp_k dp_l
+    
+        The result is a rank-3 tensor where each entry corresponds to the second 
+        derivative of the m-th projection equation with respect to the k-th and l-th 
+        active wavefunction parameters, accounting for energy-dependent correction.
+    
+        Generates
+        ---------
+        d2_g_wfnparams_wfnparams : np.ndarray
+            A tensor of shape (self.nequation, len(self.wfn_params_active), len(self.wfn_params_active))
+            Contains the second derivatives of the projection equations.
+        """
+        if self.active_energy:
+            ncolumns= self.nactive - 1
+            f = np.zeros((self.nequation, ncolumns, ncolumns), order = "F")
+            f_proj = f[:self.nproj]
+            energy=self.params[-1]
+
+        for k in range(ncolumns):
+            for l in range(k, ncolumns):
+                d2_ovlp = self.dd_ovlp_s[:, k, l]              
+                out = f_proj[:, k, l]                          # view into f (no new alloc)
+                self.ham_ci_op(d2_ovlp, out=out)
+                out -= energy * d2_ovlp[: self.nproj]
+    
+                # mirror to (l, k) if off-diagonal
+                if l != k:
+                    f_proj[:, l, k] = out
+    
+        self.d2_g_wfnparams2 = f
+
