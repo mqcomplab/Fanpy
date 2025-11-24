@@ -51,6 +51,7 @@ indices_list[ao_ind].append(slater.spatial_to_spin_indices(i, nspin // 2, to_bet
 system_inds = {atom_system_inds}
 
 # Orbital labels
+from fanpy.tools import slater
 ao_inds = np.load('{ao_inds_file}')
 indices_list = [[] for _ in range(max(system_inds) + 1)] 
 for i, ao_ind in enumerate(ao_inds):
@@ -96,6 +97,7 @@ print('Number of Electrons in System {k+1}: {{}}'.format(nelec{k+1}))
     output = re.sub(
         r"""# Initialize Hamiltonian""",
         fr"""# Initialize wavefunction
+from fanpy.wfn.composite.embedding_fixedelectron import FixedEmbeddedWavefunction
 wfn = FixedEmbeddedWavefunction(nelec, [{nelecs}], nspin, indices_list, wfn_list, memory=None, disjoint={disjoint})
 print('Wavefunction: Embedded Fixed Electrons')
 
