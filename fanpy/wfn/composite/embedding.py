@@ -3,7 +3,7 @@ from fanpy.wfn.base import BaseWavefunction
 from fanpy.wfn.composite.product import ProductWavefunction
 
 import numpy as np
-
+import warnings
 
 class EmbeddedWavefunction(ProductWavefunction):
     """Embedding of multiple subsystems."""
@@ -26,6 +26,7 @@ class EmbeddedWavefunction(ProductWavefunction):
         params_list : {np.ndarray, basecc, none}
 
         """
+        warnings.warn("Embedding wavefunction is experimental feature.", UserWarning)
         self.assign_nelec(nelec)
         self.assign_nspin(nspin)
         # FIXME: uses memory in each wavefunction
