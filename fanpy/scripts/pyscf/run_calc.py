@@ -2,7 +2,7 @@ import os
 import re
 import glob
 import subprocess
-from fanpy.scripts.pyscf.make_input import make_pyscf_input
+from fanpy.scripts.pyscf.make_pyscf_input import make_pyscf_input
 
 def write_pyscf_py(input_path: str, coords: str, basis='sto-3g', memory='4GB', charge=0, spin=0, units='B'):
     """Write the PySCF calculation setup for the directories that match the given pattern.
