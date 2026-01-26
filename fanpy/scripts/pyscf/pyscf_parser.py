@@ -22,13 +22,15 @@ parser.add_argument("--hf_units",
                     default="Angstrom", 
                     help="Units for the geometry in the Hartree-Fock calculation. Default is 'angstrom'.")
 
-parser.add_argument("--optimize_orbs", 
-                    type=bool, 
-                    default=False, 
-                    help="Whether to optimize orbitals in the Hartree-Fock calculation.")
+parser.add_argument(
+    "--optimize_orbs",
+    action="store_true",
+    required=False,
+    help="Flag for optimizing orbitals. Orbitals are not optimized by default.",
+)
 
 parser.add_argument("--pspace_exc",  
-                    type=list, 
+                    type=str, 
                     default=(1, 2), 
                     help="Excitations to include in the pspace. E.g. '(1, 2)'")
 
