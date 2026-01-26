@@ -265,15 +265,15 @@ def convert_gbs_nwchem(gbs_file: str):
     return gbs_dict
 
 
-def localize(xyz_file, basis_file, mo_coeff_file=None, unit='Bohr', method=None, system_inds=None):
+def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, system_inds=None):
     """Run HF using PySCF.
 
     Parameters
     ----------
     xyz_file : str
         XYZ file location.
-    basis_file : str
-        Basis file location
+    basis : str
+        Name of the basis set for PySCF. 
     is_unrestricted : bool
         Flag to run unrestricted HF.
         Default is restricted HF.
@@ -314,12 +314,8 @@ def localize(xyz_file, basis_file, mo_coeff_file=None, unit='Bohr', method=None,
     
 
     # get mol
-    if os.path.splitext(basis_file)[1] == ".gbs":
-        basis = convert_gbs_nwchem(basis_file)
-    else:
-        basis = basis_file
     mol = gto.M(
-        atom=atoms, basis={i: j for i, j in basis.items() if i + ' ' in atoms}, parse_arg=False,
+        atom=atoms, basis=basis, parse_arg=False,
         unit=unit
     )
 

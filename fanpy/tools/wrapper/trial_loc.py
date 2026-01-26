@@ -7,7 +7,7 @@ from pyscf import gto
 from pyscf import scf 
 from pyscf import __config__
 from pyscf.lo.iao import reference_mol
-from fanpy.tools.wrapper.pyscf import convert_gbs_nwchem
+from fanpy.tools.wrapper.pyscf_tools import convert_gbs_nwchem
 
 
 xyz_file = "./system.xyz"

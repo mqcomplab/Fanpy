@@ -13,7 +13,7 @@ from utils import find_datafile
 def test_pyscf_hartreefock_h2_rhf_sto6g():
     """Test PySCF HF against H2 RHF STO-6G data from Gaussian."""
     pytest.importorskip("pyscf")
-    from fanpy.tools.wrapper.pyscf import hartreefock
+    from fanpy.tools.wrapper.pyscf_tools import hartreefock
 
     hf_data = hartreefock(find_datafile("data/data_h2.xyz"), "sto-6g")
     check_data_h2_rhf_sto6g(
@@ -24,7 +24,7 @@ def test_pyscf_hartreefock_h2_rhf_sto6g():
 def test_pyscf_hartreefock_lih_rhf_sto6g():
     """Test PySCF HF against LiH RHF STO6G data from Gaussian."""
     pytest.importorskip("pyscf")
-    from fanpy.tools.wrapper.pyscf import hartreefock, __file__ as cwd
+    from fanpy.tools.wrapper.pyscf_tools import hartreefock, __file__ as cwd
 
     hf_data = hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g")
     check_data_lih_rhf_sto6g(
@@ -52,8 +52,8 @@ def test_generate_fci_cimatrix_h2_631gdp():
 
     """
     pytest.importorskip("pyscf")
-    from fanpy.tools.wrapper.pyscf import hartreefock
-    from fanpy.tools.wrapper.pyscf import fci_cimatrix
+    from fanpy.tools.wrapper.pyscf_tools import hartreefock
+    from fanpy.tools.wrapper.pyscf_tools import fci_cimatrix
 
     hf_data = hartreefock(find_datafile("data/data_h2.xyz"), "6-31gss")
 
@@ -90,8 +90,8 @@ def test_generate_fci_cimatrix_lih_sto6g():
 
     """
     pytest.importorskip("pyscf")
-    from fanpy.tools.wrapper.pyscf import hartreefock
-    from fanpy.tools.wrapper.pyscf import fci_cimatrix
+    from fanpy.tools.wrapper.pyscf_tools import hartreefock
+    from fanpy.tools.wrapper.pyscf_tools import fci_cimatrix
 
     hf_data = hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g")
 

@@ -1,11 +1,20 @@
 
-def make_script(xyzfile, basisfile, method, system_inds, unit="Bohr", mo_coeff_file=None, filename="calculate.py"):
+def make_script(xyzfile, basis, method, system_inds, unit="Bohr", mo_coeff_file=None, filename="calculate.py"):
+    """Create a Python script to perform localization and integral calculation.
+
+    Parameters
+    ----------
+    xyzfile : str
+        Path to the XYZ file containing the molecular geometry.
+    basis : str
+        Basis set name for PySCF. 
+    """
     if mo_coeff_file is not None:
         mo_coeff_file = f'"{mo_coeff_file}"'
 
     with open(filename, 'w') as f:
         f.write(
-            f"""from fanpy.tools.wrapper.pyscf import localize
+            f"""from fanpy.tools.wrapper.pyscf_tools import localize
 import numpy as np
 
 with open('{xyzfile}', 'r') as f:
@@ -18,7 +27,7 @@ with open('./system.xyz', 'w') as f:
     for line in xyz_lines:
         f.write(line)
 
-results = localize("./system.xyz", "{basisfile}", mo_coeff_file={mo_coeff_file}, unit="{unit}",
+results = localize("./system.xyz", "{basis}", mo_coeff_file={mo_coeff_file}, unit="{unit}",
                    method="{method}", system_inds={system_inds})
 
 print(f"Nuclear-nuclear repulsion: {{results['nuc_nuc']}}")
