@@ -1,6 +1,7 @@
 from fanpy.tools import slater
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.wfn.composite.embedding import EmbeddedWavefunction
+import warnings
 
 import numpy as np
 
@@ -26,6 +27,7 @@ class FixedEmbeddedWavefunction(EmbeddedWavefunction):
         params_list : {np.ndarray, basecc, none}
 
         """
+        warnings.warn("Embedding wavefunction is experimental feature.", UserWarning)
         super().__init__(nelec, nspin, indices_list, wfns, memory=memory, disjoint=disjoint)
         self.nelec_list = nelec_list
         # TODO: nelec in nelec_list cannot be 0
