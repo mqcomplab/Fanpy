@@ -2,7 +2,7 @@ name: Test Fanpy
 
 on:
   push:
-    branches: [hotfix-scikit-version-limit]
+    branches: [main]
   pull_request:
     branches: [main]
 
