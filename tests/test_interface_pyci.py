@@ -226,3 +226,38 @@ def test_energy(legacy_fanci):
 
     # check if energy is a float
     assert isinstance(results['energy'], float)
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_integration(legacy_fanci):
+    """ Test if interface with real hamiltonian and wavefunction can compute jacobian, objective, and optimize without returning NaN or inf values. This is a basic sanity check to ensure that the interface is working as expected with real data.
+    """
+    test_wfn = StandardCC(2, 4)
+    one_int = np.load("data/data_h2_hf_sto6g_oneint.npy")
+    two_int = np.load("data/data_h2_hf_sto6g_twoint.npy")
+    test_ham = RestrictedMolecularHamiltonian(
+        one_int, two_int
+    )
+    pspace = sd_list(2, 4, num_limit=None, exc_orders=[1, 2, 3, 4], spin=0)
+    fanpy_objective = ProjectedSchrodinger(test_wfn, test_ham, energy_type="compute", pspace = pspace)
+
+    interface = PYCI(fanpy_objective, 0.0, legacy_fanci=legacy_fanci)
+
+    # compute jacobian 
+    jac = interface.objective.compute_jacobian(np.ones(interface.nparam))
+    # check for NaN or inf values in jacobian
+    assert not np.any(np.isnan(jac))
+    assert not np.any(np.isinf(jac))
+
+    # compute objective
+    obj = interface.objective.compute_objective(np.ones(interface.nparam))
+    # check for NaN or inf values in objective
+    assert not np.any(np.isnan(obj))
+    assert not np.any(np.isinf(obj))
+
+    # optimize 
+    results = interface.objective.optimize(x0=np.ones(interface.nparam))
+    assert not np.isnan(results['energy'])
+    assert not np.isinf(results['energy'])
+    assert not np.any(np.isnan(results['x']))
+    assert not np.any(np.isinf(results['x']))
+
