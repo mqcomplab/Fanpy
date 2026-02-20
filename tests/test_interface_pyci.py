@@ -256,8 +256,47 @@ def test_integration(legacy_fanci):
 
     # optimize 
     results = interface.objective.optimize(x0=np.ones(interface.nparam))
+    assert results["success"]
     assert not np.isnan(results['energy'])
     assert not np.isinf(results['energy'])
     assert not np.any(np.isnan(results['x']))
     assert not np.any(np.isinf(results['x']))
 
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_behavior_regression_small_system(legacy_fanci):
+    test_wfn = StandardCC(2, 4)
+    one_int = np.load("data/data_h2_hf_sto6g_oneint.npy")
+    two_int = np.load("data/data_h2_hf_sto6g_twoint.npy")
+    test_ham = RestrictedMolecularHamiltonian(
+        one_int, two_int
+    )
+    pspace = sd_list(2, 4, num_limit=None, exc_orders=[1, 2, 3, 4], spin=0)
+    fanpy_objective = ProjectedSchrodinger(test_wfn, test_ham, energy_type="compute", pspace = pspace)
+
+    interface = PYCI(fanpy_objective, 0.0, legacy_fanci=legacy_fanci)
+
+    x0 = np.ones(interface.nparam)
+    # the expected values are base on the output of the integration test. If the integration test is passing, then these expected values should be correct. If there are changes to the interface that affect the objective or jacobian computation, then these expected values may need to be updated.
+    expected_obj = np.array([-3.0200443 , -1.89131832, -1.89131832,  1.4439305 ,  3.0])
+    expected_jac = np.array([[ 1.81610047e-01, -1.81610047e-01, -1.81610047e-01,
+         1.81610047e-01, -1.81610047e-01, -1.00000000e+00],
+       [-2.07292837e+00, -4.75554844e-16, -4.75554844e-16,
+         1.81610047e-01, -4.75554844e-16, -1.00000000e+00],
+       [ 1.81610047e-01, -4.75554844e-16, -4.75554844e-16,
+        -2.07292837e+00, -4.75554844e-16, -1.00000000e+00],
+       [-1.26232046e+00,  1.26232046e+00,  1.26232046e+00,
+        -1.26232046e+00,  1.26232046e+00,  1.00000000e+00],
+       [ 0.00000000e+00,  2.00000000e+00,  2.00000000e+00,
+         0.00000000e+00,  2.00000000e+00,  0.00000000e+00]])
+    
+    obj = interface.objective.compute_objective(x0)
+    jac = interface.objective.compute_jacobian(x0)
+    assert np.allclose(obj, expected_obj)
+    assert np.allclose(jac, expected_jac)
+
+    # make sure initial x0 is not already optimal or a weird point. 
+    # using expected objective, since we have already verified that the objective is computed correctly 
+    initial_cost = np.linalg.norm(expected_obj) # the objective is the residual value of the projected schrodinger equation 
+    results = interface.objective.optimize(x0=x0)
+    assert results["cost"] < initial_cost # optimization should reduce cost
+    assert not np.allclose(results['energy'], expected_obj[-1], atol=10**-3) # energy should be different from initial objective value
