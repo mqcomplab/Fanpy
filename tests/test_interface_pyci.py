@@ -1,6 +1,8 @@
 import pytest
 import numpy as np
 
+from utils import find_datafile
+
 from fanpy.interface.pyci import PYCI
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.projected import ProjectedSchrodinger
@@ -232,8 +234,8 @@ def test_integration(legacy_fanci):
     """ Test if interface with real hamiltonian and wavefunction can compute jacobian, objective, and optimize without returning NaN or inf values. This is a basic sanity check to ensure that the interface is working as expected with real data.
     """
     test_wfn = StandardCC(2, 4)
-    one_int = np.load("data/data_h2_hf_sto6g_oneint.npy")
-    two_int = np.load("data/data_h2_hf_sto6g_twoint.npy")
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
     test_ham = RestrictedMolecularHamiltonian(
         one_int, two_int
     )
@@ -265,8 +267,8 @@ def test_integration(legacy_fanci):
 @pytest.mark.parametrize("legacy_fanci", [True, False])
 def test_behavior_regression_small_system(legacy_fanci):
     test_wfn = StandardCC(2, 4)
-    one_int = np.load("data/data_h2_hf_sto6g_oneint.npy")
-    two_int = np.load("data/data_h2_hf_sto6g_twoint.npy")
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
     test_ham = RestrictedMolecularHamiltonian(
         one_int, two_int
     )
