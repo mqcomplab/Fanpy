@@ -518,6 +518,8 @@ class ProjectedSchrodingerPyCI(FanCI):
         """
         if self.objective_type == "projected":
             output = super().compute_objective(x)
+            if not np.all(np.isfinite(output)):
+                print("WARNING: NaN detected in objective output")
             self.print_queue["Electronic Energy"] = x[-1]
             self.print_queue["Cost"] = np.sum(output[: self.nproj] ** 2)
             self.print_queue["Cost from constraints"] = np.sum(output[self.nproj :] ** 2)
@@ -579,6 +581,8 @@ class ProjectedSchrodingerPyCI(FanCI):
             else:
                 output = self.masked_compute_jacobian(x)
             self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
+            if not np.all(np.isfinite(output)):
+                print("WARNING: NaN detected in Jacobian output")
             if self.step_print:
                 print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
         else:
