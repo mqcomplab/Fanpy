@@ -4,6 +4,8 @@ import numpy as np
 import pyci
 
 import fanpy.interface.pyci
+from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
+from fanpy.tools.sd_list import sd_list
 from fanpy.fanpt.utils import reduce_to_fock
 from fanpy.eqn.projected import ProjectedSchrodinger
 from fanpy.fanpt.containers import FANPTUpdater, FANPTContainerEParam, FANPTContainerEFree
@@ -311,13 +313,22 @@ class FANPT:
             )
             new_wfn_params = fanpt_updater.new_wfn_params
             new_energy = fanpt_updater.new_energy
-
+            new_ham = fanpt_updater.new_ham
+            one_int = new_ham.one_mo
+            two_int = new_ham.two_mo
+            new_ham_fanpy = RestrictedMolecularHamiltonian(one_int, two_int)
+            wfn = self.fanci_interface.fanpy_wfn
+            wfn.assign_params(new_wfn_params)
+            new_objective = ProjectedSchrodinger(wfn, new_ham_fanpy)
+            pspace_wfn = sd_list(wfn.nelec, wfn.nspin, spin=0)
+            updated_energy = new_objective.get_energy_one_proj(pspace_wfn)
             # These params serve as initial guess to solve the fanci equations for the given lambda.
             fanpt_params = np.append(new_wfn_params, new_energy)
             print("Frobenius Norm of parameters: {}".format(np.linalg.norm(fanpt_params - guess_params)))
             print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - guess_params[-1])))
-            print("Energy after FanPT: {}".format(guess_params[-1]))
 
+            print("Energy after FanPT: {}".format(guess_params[-1]))
+            print("energy after FanPT with updated wfn parameters: {}".format(updated_energy))
             # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
             self.fanci_interface.update_objective(fanpt_updater.new_ham)
             fanci_objective = self.fanci_interface.objective
