@@ -327,7 +327,7 @@ class FANPT:
             print("Frobenius Norm of parameters: {}".format(np.linalg.norm(fanpt_params - guess_params)))
             print("Energy change: {}".format(np.linalg.norm(fanpt_params[-1] - guess_params[-1])))
 
-            print("Energy after FanPT: {}".format(guess_params[-1]))
+            print("Energy after FanPT: {}".format(new_energy))
             print("energy after FanPT with updated wfn parameters: {}".format(updated_energy))
             # Initialize perturbed Hamiltonian with the current value of lambda using the static method of fanpt_container.
             self.fanci_interface.update_objective(fanpt_updater.new_ham)
