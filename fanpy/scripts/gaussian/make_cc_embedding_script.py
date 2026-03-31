@@ -2,6 +2,7 @@
 import os
 import textwrap
 import re
+import warnings 
 
 from fanpy.scripts.utils import check_inputs, parser
 
@@ -27,6 +28,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
         Indices of the system to which each atom belongs.
 
     """
+    warnings.warn("Embedding wavefunctions are experimental features. This script may not work for all wavefunction types and may require manual editing after generation.", UserWarning)
     for script in script_filenames:
         if not os.path.isfile(script):
             raise ValueError("Given script must exist")
