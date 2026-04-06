@@ -1,9 +1,13 @@
 import pytest
 import numpy as np
 
+from utils import find_datafile
+
 from fanpy.interface.pyci import PYCI
+from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.projected import ProjectedSchrodinger
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
+from fanpy.ham.base import BaseHamiltonian
 from fanpy.wfn.cc.standard_cc import StandardCC
 from fanpy.tools.sd_list import sd_list
 from fanpy.tools.performance import current_memory
@@ -50,3 +54,251 @@ def test_norm_constraint_chunking(legacy_fanci):
 
     # compare jacobians
     assert np.allclose(jac_constraint, jac_constraint_chunk)
+
+class FakeWavefunction(BaseWavefunction):
+    """ A fake wavefunction for testing purposes.
+    """
+
+    def __init__(self, nelec, nspin, params):
+        """ Initialize FakeWavefunction.
+
+        Args:
+            nelec (int): Number of electrons.
+            nspin (int): Number of spin orbitals.
+        """
+        self.assign_params(params)
+        super().__init__(nelec, nspin)
+
+    def get_overlap(self, sd, deriv=None):
+        """ Get overlap with a Slater determinant.
+
+        Args:
+            sd (int): Slater determinant in integer representation. -> not used for fake implementation.
+            deriv (np.ndarray, optional): If provided, compute the derivative of the overlap.
+
+        Returns:
+            float: Overlap value.
+        """
+        if deriv is not None:
+            return np.zeros(len(deriv))
+        else:
+            return 1.0 
+        
+    def assign_params(self, params):
+        """ Assign parameters to the wavefunction.
+
+        Args:
+            params (np.ndarray): Parameters to assign.
+        """
+        self.params = params
+
+class FakeHamiltonian(BaseHamiltonian):
+    """ A fake Hamiltonian for testing purposes.
+    """
+    def __init__(self, one_int, two_int):
+        """ Initialize FakeHamiltonian.
+
+        Args:
+            one_int (np.ndarray): One-electron integrals.
+            two_int (np.ndarray): Two-electron integrals.
+        """
+        self.one_int = one_int
+        self.two_int = two_int
+        self._nspin = one_int.shape[0] * 2 # assuming one_int is square and its size corresponds to the orbital space
+    @property
+    def nspin(self):
+        """ Return the number of spin orbitals.
+
+        Returns:
+            int: Number of spin orbitals.
+        """
+        return self._nspin
+    
+    def integrate_sd_sd(self, sd1, sd2, deriv=None):
+        """ Integrate the Hamiltonian with against two Slater determinants.
+
+        Args:
+            sd1 (int): First Slater determinant in integer representation. -> not used for fake implementation.
+            sd2 (int): Second Slater determinant in integer representation. -> not used for fake implementation.
+            deriv (np.ndarray, optional): If provided, compute the derivative of the integral.
+
+        Returns:
+            float: Integral value.
+        """
+        if deriv is not None:
+            return np.zeros(len(deriv))
+        else:
+            return 1.0
+
+class PyCITestSetup:
+    """ A test setup for PyCI interface. It sets up the Restricted Hamiltonian and a fake wavefunction.
+    """
+    def __init__(self):
+        self.nelec = 2
+        self.nspin = 4
+        self.e_nuc = 0
+        self.params = np.array([0.5, 0.5])
+        self.wfn = FakeWavefunction(self.nelec, self.nspin, self.params)
+        one_int = np.zeros((self.nelec, self.nelec)) # one electron integrals
+        two_int = np.zeros((self.nelec, self.nelec, self.nelec, self.nelec)) # two electron integrals
+        self.ham = FakeHamiltonian(one_int=one_int, two_int=two_int)
+        self.eqn = ProjectedSchrodinger(self.wfn, self.ham) # default eqn setup
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_pyci_interface_nproj(legacy_fanci):
+    """ Test whether nproj is correctly set in PyCI interface. For the default case.
+    """
+    setup_class = PyCITestSetup()
+
+    interface = PYCI(setup_class.eqn, setup_class.e_nuc, legacy_fanci=legacy_fanci)
+
+    # check nproj type
+    assert isinstance(interface.nproj, int)
+
+    # check nproj range: should be between 1 and FCI
+    fci_pspace = sd_list(setup_class.nelec, setup_class.nspin, spin=0)
+    assert 1 <= interface.nproj <= len(fci_pspace)
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_pspace_trimming(legacy_fanci):
+    """ Test whether spin unrestricted pspace is trimmed to spin restricted in PyCI interface.
+    """
+    setup_data = PyCITestSetup()
+
+    # set up Objective with unrestricted pspace
+    pspace_unrestr = sd_list(setup_data.nelec, setup_data.nspin) 
+    # spin unrestricted FCI space not supported in PyCI -> interface should trim it to spin restricted
+    eqn = ProjectedSchrodinger(setup_data.wfn, setup_data.ham, pspace=pspace_unrestr)
+
+    pspace_restr = sd_list(setup_data.nelec, setup_data.nspin, spin=0)
+
+    # interface setup
+    interface = PYCI(eqn, setup_data.e_nuc, legacy_fanci=legacy_fanci)
+    assert interface.nproj == len(pspace_restr)
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_mask(legacy_fanci):
+    """ Test whether mask is correctly set in PyCI interface.
+    """
+    setup_data = PyCITestSetup()
+
+    interface = PYCI(setup_data.eqn, setup_data.e_nuc, legacy_fanci=legacy_fanci)
+
+    assert interface.mask.shape == (interface.nparam,) # consistent with number of parameters
+    nparams = len(setup_data.wfn.params) + 1 # wfn params + energy
+    assert interface.mask.shape == (nparams,) 
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_jac(legacy_fanci):
+    """ Basic test to see if jac can be computed and has the correct dimensions.
+    """
+    setup_data = PyCITestSetup()
+    interface = PYCI(setup_data.eqn, setup_data.e_nuc, legacy_fanci=legacy_fanci)
+
+    nparams = len(setup_data.wfn.params) + 1 # wfn params + energy
+    jac_params = np.ones(interface.nparam) 
+    jac = interface.objective.compute_jacobian(jac_params)
+
+    assert jac.shape == (interface.nproj+1, nparams) # we need to add one for the normalization condition
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_objective(legacy_fanci):
+    """ Test shape of objective computation."""
+    setup_data = PyCITestSetup()
+    eqn = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+
+    interface = PYCI(eqn, setup_data.e_nuc, legacy_fanci=legacy_fanci)
+    obj_params = np.ones(interface.nparam) 
+    objective = interface.objective.compute_objective(obj_params)
+
+    assert objective.shape == (interface.nproj+1,) # we need to add one for the normalization condition
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_energy(legacy_fanci):
+    """ Basic test to see if energy can be computed and appears in results dictionary."""
+    setup_data = PyCITestSetup()
+    eqn = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+
+    interface = PYCI(eqn, setup_data.e_nuc, legacy_fanci=legacy_fanci)
+    x0 = np.ones(interface.nparam)
+    results = interface.objective.optimize(x0=x0) # dictionary with energy and other info
+
+    # check if energy keyword is present
+    assert 'energy' in results
+
+    # check if energy is a float
+    assert isinstance(results['energy'], float)
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_integration(legacy_fanci):
+    """ Test if interface with real hamiltonian and wavefunction can compute jacobian, objective, and optimize without returning NaN or inf values. This is a basic sanity check to ensure that the interface is working as expected with real data.
+    """
+    test_wfn = StandardCC(2, 4)
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
+    test_ham = RestrictedMolecularHamiltonian(
+        one_int, two_int
+    )
+    pspace = sd_list(2, 4, num_limit=None, exc_orders=[1, 2, 3, 4], spin=0)
+    fanpy_objective = ProjectedSchrodinger(test_wfn, test_ham, energy_type="compute", pspace = pspace)
+
+    interface = PYCI(fanpy_objective, 0.0, legacy_fanci=legacy_fanci)
+
+    # compute jacobian 
+    jac = interface.objective.compute_jacobian(np.ones(interface.nparam))
+    # check for NaN or inf values in jacobian
+    assert not np.any(np.isnan(jac))
+    assert not np.any(np.isinf(jac))
+
+    # compute objective
+    obj = interface.objective.compute_objective(np.ones(interface.nparam))
+    # check for NaN or inf values in objective
+    assert not np.any(np.isnan(obj))
+    assert not np.any(np.isinf(obj))
+
+    # optimize 
+    results = interface.objective.optimize(x0=np.ones(interface.nparam))
+    assert results["success"]
+    assert not np.isnan(results['energy'])
+    assert not np.isinf(results['energy'])
+    assert not np.any(np.isnan(results['x']))
+    assert not np.any(np.isinf(results['x']))
+
+@pytest.mark.parametrize("legacy_fanci", [True, False])
+def test_behavior_regression_small_system(legacy_fanci):
+    test_wfn = StandardCC(2, 4)
+    one_int = np.load(find_datafile("data/data_h2_hf_sto6g_oneint.npy"))
+    two_int = np.load(find_datafile("data/data_h2_hf_sto6g_twoint.npy"))
+    test_ham = RestrictedMolecularHamiltonian(
+        one_int, two_int
+    )
+    pspace = sd_list(2, 4, num_limit=None, exc_orders=[1, 2, 3, 4], spin=0)
+    fanpy_objective = ProjectedSchrodinger(test_wfn, test_ham, energy_type="compute", pspace = pspace)
+
+    interface = PYCI(fanpy_objective, 0.0, legacy_fanci=legacy_fanci)
+
+    x0 = np.ones(interface.nparam)
+    # the expected values are base on the output of the integration test. If the integration test is passing, then these expected values should be correct. If there are changes to the interface that affect the objective or jacobian computation, then these expected values may need to be updated.
+    expected_obj = np.array([-3.0200443 , -1.89131832, -1.89131832,  1.4439305 ,  3.0])
+    expected_jac = np.array([[ 1.81610047e-01, -1.81610047e-01, -1.81610047e-01,
+         1.81610047e-01, -1.81610047e-01, -1.00000000e+00],
+       [-2.07292837e+00, -4.75554844e-16, -4.75554844e-16,
+         1.81610047e-01, -4.75554844e-16, -1.00000000e+00],
+       [ 1.81610047e-01, -4.75554844e-16, -4.75554844e-16,
+        -2.07292837e+00, -4.75554844e-16, -1.00000000e+00],
+       [-1.26232046e+00,  1.26232046e+00,  1.26232046e+00,
+        -1.26232046e+00,  1.26232046e+00,  1.00000000e+00],
+       [ 0.00000000e+00,  2.00000000e+00,  2.00000000e+00,
+         0.00000000e+00,  2.00000000e+00,  0.00000000e+00]])
+    
+    obj = interface.objective.compute_objective(x0)
+    jac = interface.objective.compute_jacobian(x0)
+    assert np.allclose(obj, expected_obj)
+    assert np.allclose(jac, expected_jac)
+
+    # make sure initial x0 is not already optimal or a weird point. 
+    # using expected objective, since we have already verified that the objective is computed correctly 
+    initial_cost = np.linalg.norm(expected_obj) # the objective is the residual value of the projected schrodinger equation 
+    results = interface.objective.optimize(x0=x0)
+    assert results["cost"] < initial_cost # optimization should reduce cost
+    assert not np.allclose(results['energy'], expected_obj[-1], atol=10**-3) # energy should be different from initial objective value
