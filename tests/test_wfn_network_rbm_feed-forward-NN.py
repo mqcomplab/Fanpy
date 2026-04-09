@@ -3,7 +3,6 @@
 import numpy as np
 import pytest
 from fanpy.wfn.network.rbm import RestrictedBoltzmannMachine
-from fanpy.tools import slater
 
 #@pytest.fixture
 #def rbm_default():
