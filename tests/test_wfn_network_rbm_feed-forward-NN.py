@@ -69,7 +69,7 @@ def test_get_overlaps_vectorized_and_derivative(sds):
     vec_derivs = rbm.get_overlaps(sds, deriv=deriv_index)
     numeric_grad = finite_diff_grad(rbm, sds[0])
     
-    assert np.isclose(vec_derivs[0], numeric_grad[deriv_index],
+    assert np.isclose(vec_derivs[deriv_index], numeric_grad[deriv_index],
                       rtol=1e-3, atol=1e-6)
 
     ## Derivatives w.r.t multiple params
