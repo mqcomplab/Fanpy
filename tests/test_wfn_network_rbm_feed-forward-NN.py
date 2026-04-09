@@ -72,15 +72,15 @@ def test_get_overlaps_vectorized_and_derivative(sds):
                       rtol=1e-3, atol=1e-6)
 
     ## Derivatives w.r.t multiple params
-    #for deriv_index in [0, rbm.nparams - 1]:
-    #    derivs = rbm.get_overlaps(sds, deriv=deriv_index)
-    #    assert derivs.shape == (len(sds),)
-    #    sd = sds[0]
-    #    eps = 1e-6
-    #    base_flat = rbm.params.copy()
-    #    numeric = finite_diff_grad(rbm, sd)[deriv_index]
-    #    rbm.assign_params(base_flat)
-    #    assert np.isclose(derivs[0], numeric, rtol=1e-3, atol=1e-6)
+    for deriv_index in [0, rbm.nparams - 1]:
+       derivs = rbm.get_overlaps(sds, deriv=deriv_index)
+       assert derivs.shape == (len(sds),)
+       sd = sds[0]
+       eps = 1e-6
+       base_flat = rbm.params.copy()
+       numeric = finite_diff_grad(rbm, sd)[deriv_index]
+       rbm.assign_params(base_flat)
+       assert np.isclose(derivs[0], numeric, rtol=1e-3, atol=1e-6)
 
 
 def test_get_overlaps_empty_input():
