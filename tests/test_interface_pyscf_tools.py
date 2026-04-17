@@ -1,4 +1,4 @@
-"""Test fanpy.tools.wrapper.pyscf."""
+"""Test fanpy.interface.pyscf_tools."""
 import os
 
 import numpy as np
