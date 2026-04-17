@@ -14,7 +14,7 @@ def make_script(xyzfile, basis, method, system_inds, unit="Bohr", mo_coeff_file=
 
     with open(filename, 'w') as f:
         f.write(
-            f"""from fanpy.tools.wrapper.pyscf_tools import localize
+            f"""from fanpy.interface.pyscf_tools import localize
 import numpy as np
 
 with open('{xyzfile}', 'r') as f:
