@@ -3,8 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from fanpy.interface.pyscf_tools import hartreefock
-from fanpy.interface.pyscf_tools import fci_cimatrix
+from fanpy.interface.pyscf_tools import hartreefock, fci_cimatrix, localize
 
 from test_wrapper_python_wrapper import check_data_h2_rhf_sto6g, check_data_lih_rhf_sto6g
 from utils import find_datafile
@@ -82,3 +81,29 @@ def test_generate_fci_cimatrix_lih_sto6g():
     ci_matrix, _ = fci_cimatrix(hf_data)
     ground_energy = np.linalg.eigh(ci_matrix)[0][0] + nuc_nuc
     assert abs(ground_energy - (-7.9723355823)) < 1e-7
+
+def test_localize_h2_sto6g():
+    """ Run localization sfunction for basic system with minimal inputs.
+    """
+    pytest.importorskip("pyscf")
+
+    name = find_datafile("data/data_h2.xyz")
+    result = localize(name, "sto-6g")
+    ao_inds_expected = [0, 1]
+    t_ab_mo_expected = [[0.51604374,  2.02091274],
+                        [0.51604374, -2.02091274 ]]
+    assert np.allclose(ao_inds_expected, result["ao_inds"])
+    assert np.allclose(t_ab_mo_expected, result["t_ab_mo"])
+
+def test_localize_lih_sto6g():
+    """ Run localization sfunction for LiH with minimal inputs.
+    """
+    pytest.importorskip("pyscf")
+
+    name = find_datafile("data/data_lih.xyz")
+    result = localize(name, "sto-6g")
+    ao_inds_expected = [0, 0, 0, 0, 0, 1]
+    assert np.allclose(ao_inds_expected, result["ao_inds"])
+    # todo: comparison of t_ab_mo for LiH. This may be tricky because the phase of wavefunctions might impact the hamiltonian element. So fixing the behavior is not as straight forward as with H2. 
+
+# todo: add tests for localization methods (boys, er, iao, etc.), but those need to be fixed first. 
