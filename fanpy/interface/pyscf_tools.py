@@ -54,6 +54,7 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
         If calculation is unrestricted or generalized.
 
     """
+    # todo: add verbosity parameter. The HF calculation determines the verbosity level for the subsequent PYSCF class. 
     # check xyz file
     cwd = os.path.dirname(__file__)
     if os.path.isfile(os.path.join(cwd, xyz_file)):
@@ -239,7 +240,7 @@ def convert_gbs_nwchem(gbs_file: str):
     return gbs_dict
 
 
-def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, system_inds=None):
+def localize(xyz_file : str, basis : str, mo_coeff_file=None, unit='Bohr', method=None, system_inds=None):
     """Run HF using PySCF.
 
     Parameters
@@ -248,21 +249,32 @@ def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, syst
         XYZ file location.
     basis : str
         Name of the basis set for PySCF. 
-    is_unrestricted : bool
-        Flag to run unrestricted HF.
-        Default is restricted HF.
+    mo_coeff_file : str
+        Default: None
+    unit : str 
+        Unit for HF calcualtion/molecular geometry. 
+        Default: Bohr
+    method : str
+        Method to use for localization. 
+        Defaul: None
+    system_inds: 
+        Default: None
 
     Returns
     -------
     result : dict
-        "hf_energy"
+        "hf_energy" : np.float
             The electronic energy.
-        "nuc_nuc"
+        "nuc_nuc" : np.float
             The nuclear repulsion energy.
-        "one_int"
+        "one_int" : np.ndarray
             The tuple of the one-electron interal.
-        "two_int"
+        "two_int" : np.ndarray
             The tuple of the two-electron integral in Physicist's notation.
+        "t_ab_mo" : np.ndarray
+            todo: find out what this is
+        "ao_inds" : list 
+            Assignment of AOs to fragments (?) 
 
     Raises
     ------
@@ -272,6 +284,7 @@ def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, syst
         If calculation is unrestricted or generalized.
 
     """
+    #todo: figure out description related to localization specific parameters. (e.g. system_inds, t_ab_mo, etc.)
     # check xyz file
     cwd = os.path.dirname(__file__)
     if os.path.isfile(os.path.join(cwd, xyz_file)):
