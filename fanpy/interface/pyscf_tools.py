@@ -21,6 +21,7 @@ from pyscf.fci import cistring
 from pyscf.lib import hermi_triu, load_library
 from pyscf.tools import molden
 from pyscf.lo.iao import reference_mol
+from fanpy.interface.pyscf import PYSCF
 
 
 LIBFCI = load_library("libfci")
@@ -42,15 +43,8 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
 
     Returns
     -------
-    result : dict
-        "hf_energy"
-            The electronic energy.
-        "nuc_nuc"
-            The nuclear repulsion energy.
-        "one_int"
-            The tuple of the one-electron interal.
-        "two_int"
-            The tuple of the two-electron integral in Physicist's notation.
+    result : fanpy.interface.PYSCF class
+        processing class that calculates one and two electron integrals and other relevant information from a pySCF object. These properties are class attributes. See docs of PYSCF for more information.
 
     Raises
     ------
@@ -83,28 +77,8 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
     hf = scf.RHF(mol)
     # run hf
     hf.scf()
-    # energies
-    energy_nuc = hf.energy_nuc()
-    energy_tot = hf.kernel()  # HF is solved here
-    energy_elec = energy_tot - energy_nuc
-    # mo_coeffs
-    mo_coeff = hf.mo_coeff
-    # Get integrals (See pyscf.gto.moleintor.getints_by_shell for other types of integrals)
-    # get 1e integral
-    one_int_ab = mol.intor("cint1e_nuc_sph") + mol.intor("cint1e_kin_sph")
-    one_int = mo_coeff.T.dot(one_int_ab).dot(mo_coeff)
-    # get 2e integral
-    eri = ao2mo.full(mol, mo_coeff, verbose=0, intor="cint2e_sph")
-    two_int = ao2mo.restore(1, eri, mol.nao_nr())
-    # NOTE: PySCF uses Chemist's notation
-    two_int = np.einsum("ijkl->ikjl", two_int)
-    # results
-    result = {
-        "hf_energy": energy_elec,
-        "nuc_nuc": energy_nuc,
-        "one_int": one_int,
-        "two_int": two_int,
-    }
+    # process data with PYSCF class
+    result = PYSCF(hf)
     return result
 
 

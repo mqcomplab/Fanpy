@@ -17,7 +17,7 @@ def test_pyscf_hartreefock_h2_rhf_sto6g():
 
     hf_data = hartreefock(find_datafile("data/data_h2.xyz"), "sto-6g")
     check_data_h2_rhf_sto6g(
-        hf_data["hf_energy"], hf_data["nuc_nuc"], hf_data["one_int"], hf_data["two_int"]
+        hf_data.energy_elec, hf_data.energy_nuc, hf_data.one_int, hf_data.two_int
     )
 
 
@@ -28,14 +28,14 @@ def test_pyscf_hartreefock_lih_rhf_sto6g():
 
     hf_data = hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g")
     check_data_lih_rhf_sto6g(
-        hf_data["hf_energy"], hf_data["nuc_nuc"], hf_data["one_int"], hf_data["two_int"]
+        hf_data.energy_elec, hf_data.energy_nuc, hf_data.one_int, hf_data.two_int
     )
 
     path = find_datafile("data/data_lih.xyz")
     cwd = os.path.dirname(cwd)
     hf_data = hartreefock(os.path.relpath(path, cwd), "sto-6g")
     check_data_lih_rhf_sto6g(
-        hf_data["hf_energy"], hf_data["nuc_nuc"], hf_data["one_int"], hf_data["two_int"]
+        hf_data.energy_elec, hf_data.energy_nuc, hf_data.one_int, hf_data.two_int
     )
 
     with pytest.raises(ValueError):
@@ -58,9 +58,9 @@ def test_generate_fci_cimatrix_h2_631gdp():
     hf_data = hartreefock(find_datafile("data/data_h2.xyz"), "6-31gss")
 
     nelec = 2
-    nuc_nuc = hf_data["nuc_nuc"]
-    one_int = hf_data["one_int"]
-    two_int = hf_data["two_int"]
+    nuc_nuc = hf_data.energy_nuc
+    one_int = hf_data.one_int
+    two_int = hf_data.two_int
 
     # physicist notation
     ci_matrix, pspace = fci_cimatrix(one_int, two_int, nelec, is_chemist_notation=False)
@@ -96,9 +96,9 @@ def test_generate_fci_cimatrix_lih_sto6g():
     hf_data = hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g")
 
     nelec = 4
-    nuc_nuc = hf_data["nuc_nuc"]
-    one_int = hf_data["one_int"]
-    two_int = hf_data["two_int"]
+    nuc_nuc = hf_data.energy_nuc
+    one_int = hf_data.one_int
+    two_int = hf_data.two_int
 
     # physicist notation
     ci_matrix, pspace = fci_cimatrix(one_int, two_int, nelec, is_chemist_notation=False)
