@@ -82,21 +82,13 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
     return result
 
 
-def fci_cimatrix(h1e, eri, nelec, is_chemist_notation=False):
+def fci_cimatrix(hf_data):
     """Construct the FCI CI Hamiltonian matrix using PySCF.
 
     Parameters
     ----------
-    h1e : np.ndarray(K, K)
-        One electron integrals.
-    eri : np.ndarray(K, K, K, K)
-        Two electron integrals.
-    nelec : int
-        Number of electrons.
-    is_chemist_notation : bool
-        Flag to set the notation for the two electron integrals.
-        By default, it is assumed that the Physicist's notation is used for the two electron
-        integrals.
+    hf_data : fanpy.interface.pyscf.PYSCF
+        Hartree Fock data for which to generate FCI CI Matrix
 
     Returns
     -------
@@ -112,21 +104,29 @@ def fci_cimatrix(h1e, eri, nelec, is_chemist_notation=False):
         If number of electrons is invalid.
 
     """
-    if not is_chemist_notation:
-        eri = np.einsum("ijkl->ikjl", eri)
+
+    if not type(hf_data) is PYSCF:
+        raise TypeError("Hartree Fock data must be an instance of fanpy.interface.pyscf.PYSCF")
+    
+    # Assing integrals to specific variables since these get changed during the calculation
+    eri = hf_data.two_int # in physicist notation
+    h1e = hf_data.one_int # one electron integrals
+
+    eri = np.einsum("ijkl->ikjl", eri) # convert to chemist notation
     # adapted/copied from pyscf.fci.direct_spin1.make_hdiag
     # number of spatial orbitals
     norb = h1e.shape[0]
     # number of electrons
-    if isinstance(nelec, (int, np.number)):
+    # note: hf_data.nelec is by default an int, but I am keeping the check here just in case
+    if isinstance(hf_data.nelec, (int, np.number)):
         # beta
-        nelecb = nelec // 2
+        nelecb = hf_data.nelec // 2
         # alpha
-        neleca = nelec - nelecb
-    elif isinstance(nelec, (tuple, list)) and len(nelec) == 2:
-        neleca, nelecb = nelec
+        neleca = hf_data.nelec - nelecb
+    elif isinstance(hf_data.nelec, (tuple, list)) and len(hf_data.nelec) == 2:
+        neleca, nelecb = hf_data.nelec
     else:
-        raise ValueError("Unsupported electron number, {0}".format(nelec))
+        raise ValueError("Unsupported electron number, {0}".format(hf_data.nelec))
     # integrals
     h1e = np.asarray(h1e, order="C")
     eri = np.asarray(eri, order="C")
