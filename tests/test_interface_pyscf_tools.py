@@ -1,19 +1,19 @@
 """Test fanpy.interface.pyscf_tools."""
 import os
-
 import numpy as np
-
 import pytest
 
-from test_wrapper_python_wrapper import check_data_h2_rhf_sto6g, check_data_lih_rhf_sto6g
+from fanpy.interface.pyscf_tools import hartreefock
+from fanpy.interface.pyscf_tools import fci_cimatrix
 
+from test_wrapper_python_wrapper import check_data_h2_rhf_sto6g, check_data_lih_rhf_sto6g
 from utils import find_datafile
 
 
 def test_pyscf_hartreefock_h2_rhf_sto6g():
     """Test PySCF HF against H2 RHF STO-6G data from Gaussian."""
     pytest.importorskip("pyscf")
-    from fanpy.interface.pyscf_tools import hartreefock
+    
 
     hf_data = hartreefock(find_datafile("data/data_h2.xyz"), "sto-6g")
     check_data_h2_rhf_sto6g(
@@ -24,7 +24,7 @@ def test_pyscf_hartreefock_h2_rhf_sto6g():
 def test_pyscf_hartreefock_lih_rhf_sto6g():
     """Test PySCF HF against LiH RHF STO6G data from Gaussian."""
     pytest.importorskip("pyscf")
-    from fanpy.interface.pyscf_tools import hartreefock, __file__ as cwd
+    from fanpy.interface.pyscf_tools import __file__ as cwd # note: this import has to be in the class since cwd gets referenced here
 
     hf_data = hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g")
     check_data_lih_rhf_sto6g(
@@ -52,9 +52,7 @@ def test_generate_fci_cimatrix_h2_631gdp():
 
     """
     pytest.importorskip("pyscf")
-    from fanpy.interface.pyscf_tools import hartreefock
-    from fanpy.interface.pyscf_tools import fci_cimatrix
-
+  
     hf_data = hartreefock(find_datafile("data/data_h2.xyz"), "6-31gss")
     nuc_nuc = hf_data.energy_nuc
     # physicist notation
@@ -76,8 +74,6 @@ def test_generate_fci_cimatrix_lih_sto6g():
 
     """
     pytest.importorskip("pyscf")
-    from fanpy.interface.pyscf_tools import hartreefock
-    from fanpy.interface.pyscf_tools import fci_cimatrix
 
     hf_data = hartreefock(find_datafile("data/data_lih.xyz"), "sto-6g")
 
