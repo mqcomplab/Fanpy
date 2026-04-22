@@ -27,7 +27,7 @@ from fanpy.interface.pyscf import PYSCF
 LIBFCI = load_library("libfci")
 
 
-def hartreefock(xyz_file, basis, is_unrestricted=False):
+def hartreefock(xyz_file, basis, is_unrestricted=False, unit="angstrom"):
     """Run HF using PySCF.
 
     Parameters
@@ -40,6 +40,8 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
     is_unrestricted : bool
         Flag to run unrestricted HF.
         Default is restricted HF.
+    unit : str
+        units for the molecular geometry, for PySCF calculation.
 
     Returns
     -------
@@ -68,7 +70,7 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
         atoms = ";".join(lines)
 
     # get mol
-    mol = gto.M(atom=atoms, basis=basis, parse_arg=False, unit="angstrom")
+    mol = gto.M(atom=atoms, basis=basis, parse_arg=False, unit=unit)
 
     # get hf
     if is_unrestricted:
