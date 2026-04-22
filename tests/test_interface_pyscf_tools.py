@@ -82,13 +82,19 @@ def test_generate_fci_cimatrix_lih_sto6g():
     ground_energy = np.linalg.eigh(ci_matrix)[0][0] + nuc_nuc
     assert abs(ground_energy - (-7.9723355823)) < 1e-7
 
+def test_generate_fci_cimatrix_errors():
+    """Make sure checks are performed correctly."""
+    with pytest.raises(TypeError):
+        _ = fci_cimatrix("not hf data")
+
 def test_localize_h2_sto6g():
     """ Run localization sfunction for basic system with minimal inputs.
     """
     pytest.importorskip("pyscf")
 
     name = find_datafile("data/data_h2.xyz")
-    result = localize(name, "sto-6g")
+    hf_data = hartreefock(name, "sto-6g", unit="Bohr")
+    result = localize(hf_data)
     ao_inds_expected = [0, 1]
     t_ab_mo_expected = [[0.51604374,  2.02091274],
                         [0.51604374, -2.02091274 ]]
@@ -101,7 +107,8 @@ def test_localize_lih_sto6g():
     pytest.importorskip("pyscf")
 
     name = find_datafile("data/data_lih.xyz")
-    result = localize(name, "sto-6g")
+    hf_data = hartreefock(name, "sto-6g", unit="Bohr")
+    result = localize(hf_data)
     ao_inds_expected = [0, 0, 0, 0, 0, 1]
     assert np.allclose(ao_inds_expected, result["ao_inds"])
     # todo: comparison of t_ab_mo for LiH. This may be tricky because the phase of wavefunctions might impact the hamiltonian element. So fixing the behavior is not as straight forward as with H2. 
