@@ -14,7 +14,7 @@ def make_script(xyzfile, basis, method, system_inds, unit="Bohr", mo_coeff_file=
 
     with open(filename, 'w') as f:
         f.write(
-            f"""from fanpy.interface.pyscf_tools import localize
+            f"""from fanpy.interface.pyscf_tools import localize, hartreefock
 import numpy as np
 
 with open('{xyzfile}', 'r') as f:
@@ -26,8 +26,8 @@ with open('./system.xyz', 'w') as f:
     f.write('\\n\\n')
     for line in xyz_lines:
         f.write(line)
-
-results = localize("./system.xyz", "{basis}", mo_coeff_file={mo_coeff_file}, unit="{unit}",
+hf_data = hartreefock("./system.xyz", basis="{basis}", unit="{unit}")
+results = localize(hf_data, mo_coeff_file={mo_coeff_file},
                    method="{method}", system_inds={system_inds})
 
 print(f"Nuclear-nuclear repulsion: {{results['nuc_nuc']}}")
