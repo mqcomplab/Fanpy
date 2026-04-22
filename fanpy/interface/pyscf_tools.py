@@ -240,7 +240,7 @@ def convert_gbs_nwchem(gbs_file: str):
     return gbs_dict
 
 
-def localize(xyz_file : str, basis : str, mo_coeff_file=None, unit='Bohr', method=None, system_inds=None):
+def localize(hf_data : PYSCF, mo_coeff_file=None, method=None, system_inds=None):
     """Run HF using PySCF.
 
     Parameters
@@ -285,58 +285,21 @@ def localize(xyz_file : str, basis : str, mo_coeff_file=None, unit='Bohr', metho
 
     """
     #todo: figure out description related to localization specific parameters. (e.g. system_inds, t_ab_mo, etc.)
-    # check xyz file
-    cwd = os.path.dirname(__file__)
-    if os.path.isfile(os.path.join(cwd, xyz_file)):
-        xyz_file = os.path.join(cwd, xyz_file)
-    elif not os.path.isfile(xyz_file):  # pragma: no branch
-        raise ValueError("Given xyz_file does not exist")
-
-    # get coordinates
-    with open(xyz_file, "r") as f:
-        lines = [i.strip() for i in f.readlines()[2:]]
-        #if unit in ["bohr", "Bohr"]:
-        #    lines = [" ".join([str(float(j) * 0.529177249) if i != 0 else j for i, j in enumerate(line.split())]) for line in lines]
-        atoms = ";".join(lines)
-    
-
-    # get mol
-    mol = gto.M(
-        atom=atoms, basis=basis, parse_arg=False,
-        unit=unit
-    )
-
-    # get hf
-    hf = scf.RHF(mol)
-    # run hf
-    hf.scf()
-
     # energies
-    energy_nuc = hf.energy_nuc()
-    energy_tot = hf.kernel()  # HF is solved here
-    energy_elec = energy_tot - energy_nuc
+    energy_nuc = hf_data.energy_nuc
+    energy_elec = hf_data.energy_elec
 
     # mo_coeffs
     if mo_coeff_file is None:
-        mo_coeff = hf.mo_coeff
+        mo_coeff = hf_data.mo_coeff
     else:
         mo_coeff = np.load(mo_coeff_file)
+    one_int = hf_data.one_int
+    two_int = hf_data.two_int
+    two_int = np.einsum("ijkl->ikjl", two_int) # convert to chemist notation
 
-    # Get integrals (See pyscf.gto.moleintor.getints_by_shell for other types of integrals)
-    # get 1e integral
-    one_int_ab = mol.intor("cint1e_nuc_sph") + mol.intor("cint1e_kin_sph")
-    one_int = mo_coeff.T.dot(one_int_ab).dot(mo_coeff)
-    # get 2e integral
-    eri = ao2mo.full(mol, mo_coeff, verbose=0, intor="cint2e_sph")
-    two_int = ao2mo.restore(1, eri, mol.nao_nr())
-    # FIXME: pyscf integrals
-    hcore_ao = mol.intor_symmetric('int1e_kin') + mol.intor_symmetric('int1e_nuc')
-    one_int = np.einsum('pi,pq,qj->ij', mo_coeff, hcore_ao, mo_coeff)
-    eri_4fold_ao = mol.intor('int2e_sph', aosym=1)
-    two_int = ao2mo.incore.full(eri_4fold_ao, mo_coeff)
-
-    # NOTE: PySCF uses Chemist's notation
-    two_int = np.einsum("ijkl->ikjl", two_int)
+    # PySCF molecule object
+    mol = hf_data.mol
 
     # labels
     ao_labels = mol.ao_labels()
@@ -355,37 +318,39 @@ def localize(xyz_file : str, basis : str, mo_coeff_file=None, unit='Bohr', metho
     if method is None:
         return result
 
+    # todo: check if refactor to use new PySCF interface is working properly. 
+    # freeze behavior to old implementation.
     # energy check
     one_energy = np.einsum('ii->i', one_int)
     two_energy = 2 * np.einsum('ijij->ij', two_int)
     two_energy -= np.einsum('ijji->ij', two_int)
-    two_energy = np.sum(two_energy[:, :hf.mol.nelectron // 2], axis=1)
-    print("pyscf mo energies:", hf.mo_energy)
+    two_energy = np.sum(two_energy[:, :mol.nelectron // 2], axis=1)
+    print("pyscf mo energies:", hf_data.mo_energy)
     print("computed mo energies:", one_energy + two_energy)
     print("pyscf hf electronic energy:", energy_elec)
-    print("computed hf electronic energy:", 2 * np.sum(one_energy[:hf.mol.nelectron // 2]) + np.sum(two_energy[:hf.mol.nelectron // 2]))
+    print("computed hf electronic energy:", 2 * np.sum(one_energy[:mol.nelectron // 2]) + np.sum(two_energy[:mol.nelectron // 2]))
 
     if method != "svd":
         if method == "iao":
-            t_ab_lo= lo.iao.iao(mol, mo_coeff[:,hf.mo_occ > 0], minao="sto-6g")
+            t_ab_lo= lo.iao.iao(mol, mo_coeff[:,hf_data.mo_occ > 0], minao="sto-6g")
             # Orthogonalize IAO
-            t_ab_lo = lo.vec_lowdin(t_ab_lo, hf.get_ovlp())
+            t_ab_lo = lo.vec_lowdin(t_ab_lo, hf_data.mf.get_ovlp())
         elif method == "boys":
-            t_ab_lo = lo.Boys(hf.mol, mo_coeff).kernel()
+            t_ab_lo = lo.Boys(mol, mo_coeff).kernel()
         elif method == "pm":
-            t_ab_lo = lo.PM(hf.mol, mo_coeff).kernel()
+            t_ab_lo = lo.PM(mol, mo_coeff).kernel()
         elif method == "er":
-            t_ab_lo = lo.ER(hf.mol, mo_coeff).kernel()
+            t_ab_lo = lo.ER(mol, mo_coeff).kernel()
         else:
             t_ab_lo = np.identity(mo_coeff.shape[0])
 
         olp_ab_ab = mol.intor_symmetric('int1e_ovlp')
 
         # find the localized orbitals that contribute the most to occupied mo
-        olp_omo_lo = mo_coeff[:, hf.mo_occ > 0].T.dot(olp_ab_ab).dot(t_ab_lo)
+        olp_omo_lo = mo_coeff[:, hf_data.mo_occ > 0].T.dot(olp_ab_ab).dot(t_ab_lo)
         indices_lo = np.argsort(np.diag(olp_omo_lo.T.dot(olp_omo_lo)))[::-1]
         # orbitals that are best spanned by occupied orbitals will be considered "occupied"
-        indices_occ_lo, indices_vir_lo = indices_lo[:hf.mol.nelectron // 2], indices_lo[hf.mol.nelectron // 2:]
+        indices_occ_lo, indices_vir_lo = indices_lo[:mol.nelectron // 2], indices_lo[mol.nelectron // 2:]
         #print(np.diag(olp_omo_lo.T.dot(olp_omo_lo)))
         #print(indices_occ_lo)
         #print(indices_vir_lo)
@@ -398,7 +363,7 @@ def localize(xyz_file : str, basis : str, mo_coeff_file=None, unit='Bohr', metho
         #t_mo_lo[np.where(hf.mo_occ > 0)[0][:, None], indices_occ_ab[None, :]] = u.dot(vh)
 
         # find the localized orbitals that contribute the most to virtual mo
-        olp_vmo_lo = mo_coeff[:, hf.mo_occ == 0].T.dot(olp_ab_ab).dot(t_ab_lo)
+        olp_vmo_lo = mo_coeff[:, hf_data.mo_occ == 0].T.dot(olp_ab_ab).dot(t_ab_lo)
         u, _, vh = np.linalg.svd(olp_vmo_lo[:, indices_vir_lo])
         t_vmo_vlo = u.dot(vh)
         #t_mo_lo[np.where(hf.mo_occ == 0)[0][:, None], indices_vir_ab[None, :]] = u.dot(vh)
@@ -443,7 +408,7 @@ def localize(xyz_file : str, basis : str, mo_coeff_file=None, unit='Bohr', metho
 
         coeff_mo_lo = []
         new_lo_inds = []
-        for sub_mo_coeff in [mo_coeff[:, hf.mo_occ > 0], mo_coeff[:, hf.mo_occ == 0]]:
+        for sub_mo_coeff in [mo_coeff[:, hf_data.mo_occ > 0], mo_coeff[:, hf_data.mo_occ == 0]]:
             s12 = sub_mo_coeff.T.dot(orig_s12)
             system_s12 = []
             for i in range(max(system_inds) + 1):
