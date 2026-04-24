@@ -33,6 +33,7 @@ class PYSCF:
 
         # General info
         self.mol = mf.mol
+        self.mf = mf # keep this just in case. The localization script requires the `get_overlap` method for subsequent calculations. 
 
         # Number of electrons
         self.nelec = self.mol.nelectron
@@ -41,6 +42,8 @@ class PYSCF:
         # Number of spin orbitals
         self.mo_coeff = mf.mo_coeff.copy()
         self.nmo = self.mo_coeff.shape[1]
+        self.mo_occ = mf.mo_occ # needed for localization script
+        self.mo_energy = mf.mo_energy # needed for localization script
         self.nspinorb = self.nmo * 2
         info("> Number of spin orbitals: %i", self.nspinorb)
 

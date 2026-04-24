@@ -21,12 +21,13 @@ from pyscf.fci import cistring
 from pyscf.lib import hermi_triu, load_library
 from pyscf.tools import molden
 from pyscf.lo.iao import reference_mol
+from fanpy.interface.pyscf import PYSCF
 
 
 LIBFCI = load_library("libfci")
 
 
-def hartreefock(xyz_file, basis, is_unrestricted=False):
+def hartreefock(xyz_file, basis, is_unrestricted=False, unit="angstrom"):
     """Run HF using PySCF.
 
     Parameters
@@ -39,18 +40,13 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
     is_unrestricted : bool
         Flag to run unrestricted HF.
         Default is restricted HF.
+    unit : str
+        units for the molecular geometry, for PySCF calculation.
 
     Returns
     -------
-    result : dict
-        "hf_energy"
-            The electronic energy.
-        "nuc_nuc"
-            The nuclear repulsion energy.
-        "one_int"
-            The tuple of the one-electron interal.
-        "two_int"
-            The tuple of the two-electron integral in Physicist's notation.
+    result : fanpy.interface.PYSCF class
+        processing class that calculates one and two electron integrals and other relevant information from a pySCF object. These properties are class attributes. See docs of PYSCF for more information.
 
     Raises
     ------
@@ -60,6 +56,7 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
         If calculation is unrestricted or generalized.
 
     """
+    # todo: add verbosity parameter. The HF calculation determines the verbosity level for the subsequent PYSCF class. 
     # check xyz file
     cwd = os.path.dirname(__file__)
     if os.path.isfile(os.path.join(cwd, xyz_file)):
@@ -73,7 +70,7 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
         atoms = ";".join(lines)
 
     # get mol
-    mol = gto.M(atom=atoms, basis=basis, parse_arg=False, unit="angstrom")
+    mol = gto.M(atom=atoms, basis=basis, parse_arg=False, unit=unit)
 
     # get hf
     if is_unrestricted:
@@ -83,46 +80,18 @@ def hartreefock(xyz_file, basis, is_unrestricted=False):
     hf = scf.RHF(mol)
     # run hf
     hf.scf()
-    # energies
-    energy_nuc = hf.energy_nuc()
-    energy_tot = hf.kernel()  # HF is solved here
-    energy_elec = energy_tot - energy_nuc
-    # mo_coeffs
-    mo_coeff = hf.mo_coeff
-    # Get integrals (See pyscf.gto.moleintor.getints_by_shell for other types of integrals)
-    # get 1e integral
-    one_int_ab = mol.intor("cint1e_nuc_sph") + mol.intor("cint1e_kin_sph")
-    one_int = mo_coeff.T.dot(one_int_ab).dot(mo_coeff)
-    # get 2e integral
-    eri = ao2mo.full(mol, mo_coeff, verbose=0, intor="cint2e_sph")
-    two_int = ao2mo.restore(1, eri, mol.nao_nr())
-    # NOTE: PySCF uses Chemist's notation
-    two_int = np.einsum("ijkl->ikjl", two_int)
-    # results
-    result = {
-        "hf_energy": energy_elec,
-        "nuc_nuc": energy_nuc,
-        "one_int": one_int,
-        "two_int": two_int,
-    }
+    # process data with PYSCF class
+    result = PYSCF(hf)
     return result
 
 
-def fci_cimatrix(h1e, eri, nelec, is_chemist_notation=False):
+def fci_cimatrix(hf_data):
     """Construct the FCI CI Hamiltonian matrix using PySCF.
 
     Parameters
     ----------
-    h1e : np.ndarray(K, K)
-        One electron integrals.
-    eri : np.ndarray(K, K, K, K)
-        Two electron integrals.
-    nelec : int
-        Number of electrons.
-    is_chemist_notation : bool
-        Flag to set the notation for the two electron integrals.
-        By default, it is assumed that the Physicist's notation is used for the two electron
-        integrals.
+    hf_data : fanpy.interface.pyscf.PYSCF
+        Hartree Fock data for which to generate FCI CI Matrix
 
     Returns
     -------
@@ -138,21 +107,29 @@ def fci_cimatrix(h1e, eri, nelec, is_chemist_notation=False):
         If number of electrons is invalid.
 
     """
-    if not is_chemist_notation:
-        eri = np.einsum("ijkl->ikjl", eri)
+
+    if not type(hf_data) is PYSCF:
+        raise TypeError("Hartree Fock data must be an instance of fanpy.interface.pyscf.PYSCF")
+    
+    # Assing integrals to specific variables since these get changed during the calculation
+    eri = hf_data.two_int # in physicist notation
+    h1e = hf_data.one_int # one electron integrals
+
+    eri = np.einsum("ijkl->ikjl", eri) # convert to chemist notation
     # adapted/copied from pyscf.fci.direct_spin1.make_hdiag
     # number of spatial orbitals
     norb = h1e.shape[0]
     # number of electrons
-    if isinstance(nelec, (int, np.number)):
+    # note: hf_data.nelec is by default an int, but I am keeping the check here just in case
+    if isinstance(hf_data.nelec, (int, np.number)):
         # beta
-        nelecb = nelec // 2
+        nelecb = hf_data.nelec // 2
         # alpha
-        neleca = nelec - nelecb
-    elif isinstance(nelec, (tuple, list)) and len(nelec) == 2:
-        neleca, nelecb = nelec
+        neleca = hf_data.nelec - nelecb
+    elif isinstance(hf_data.nelec, (tuple, list)) and len(hf_data.nelec) == 2:
+        neleca, nelecb = hf_data.nelec
     else:
-        raise ValueError("Unsupported electron number, {0}".format(nelec))
+        raise ValueError("Unsupported electron number, {0}".format(hf_data.nelec))
     # integrals
     h1e = np.asarray(h1e, order="C")
     eri = np.asarray(eri, order="C")
@@ -265,7 +242,7 @@ def convert_gbs_nwchem(gbs_file: str):
     return gbs_dict
 
 
-def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, system_inds=None):
+def localize(hf_data : PYSCF, mo_coeff_file=None, method=None, system_inds=None):
     """Run HF using PySCF.
 
     Parameters
@@ -274,21 +251,32 @@ def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, syst
         XYZ file location.
     basis : str
         Name of the basis set for PySCF. 
-    is_unrestricted : bool
-        Flag to run unrestricted HF.
-        Default is restricted HF.
+    mo_coeff_file : str
+        Default: None
+    unit : str 
+        Unit for HF calcualtion/molecular geometry. 
+        Default: Bohr
+    method : str
+        Method to use for localization. 
+        Defaul: None
+    system_inds: 
+        Default: None
 
     Returns
     -------
     result : dict
-        "hf_energy"
+        "hf_energy" : np.float
             The electronic energy.
-        "nuc_nuc"
+        "nuc_nuc" : np.float
             The nuclear repulsion energy.
-        "one_int"
+        "one_int" : np.ndarray
             The tuple of the one-electron interal.
-        "two_int"
+        "two_int" : np.ndarray
             The tuple of the two-electron integral in Physicist's notation.
+        "t_ab_mo" : np.ndarray
+            todo: find out what this is
+        "ao_inds" : list 
+            Assignment of AOs to fragments (?) 
 
     Raises
     ------
@@ -298,58 +286,22 @@ def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, syst
         If calculation is unrestricted or generalized.
 
     """
-    # check xyz file
-    cwd = os.path.dirname(__file__)
-    if os.path.isfile(os.path.join(cwd, xyz_file)):
-        xyz_file = os.path.join(cwd, xyz_file)
-    elif not os.path.isfile(xyz_file):  # pragma: no branch
-        raise ValueError("Given xyz_file does not exist")
-
-    # get coordinates
-    with open(xyz_file, "r") as f:
-        lines = [i.strip() for i in f.readlines()[2:]]
-        #if unit in ["bohr", "Bohr"]:
-        #    lines = [" ".join([str(float(j) * 0.529177249) if i != 0 else j for i, j in enumerate(line.split())]) for line in lines]
-        atoms = ";".join(lines)
-    
-
-    # get mol
-    mol = gto.M(
-        atom=atoms, basis=basis, parse_arg=False,
-        unit=unit
-    )
-
-    # get hf
-    hf = scf.RHF(mol)
-    # run hf
-    hf.scf()
-
+    #todo: figure out description related to localization specific parameters. (e.g. system_inds, t_ab_mo, etc.)
     # energies
-    energy_nuc = hf.energy_nuc()
-    energy_tot = hf.kernel()  # HF is solved here
-    energy_elec = energy_tot - energy_nuc
+    energy_nuc = hf_data.energy_nuc
+    energy_elec = hf_data.energy_elec
 
     # mo_coeffs
     if mo_coeff_file is None:
-        mo_coeff = hf.mo_coeff
+        mo_coeff = hf_data.mo_coeff
     else:
         mo_coeff = np.load(mo_coeff_file)
+    one_int = hf_data.one_int
+    two_int = hf_data.two_int
+    two_int = np.einsum("ijkl->ikjl", two_int) # convert to chemist notation
 
-    # Get integrals (See pyscf.gto.moleintor.getints_by_shell for other types of integrals)
-    # get 1e integral
-    one_int_ab = mol.intor("cint1e_nuc_sph") + mol.intor("cint1e_kin_sph")
-    one_int = mo_coeff.T.dot(one_int_ab).dot(mo_coeff)
-    # get 2e integral
-    eri = ao2mo.full(mol, mo_coeff, verbose=0, intor="cint2e_sph")
-    two_int = ao2mo.restore(1, eri, mol.nao_nr())
-    # FIXME: pyscf integrals
-    hcore_ao = mol.intor_symmetric('int1e_kin') + mol.intor_symmetric('int1e_nuc')
-    one_int = np.einsum('pi,pq,qj->ij', mo_coeff, hcore_ao, mo_coeff)
-    eri_4fold_ao = mol.intor('int2e_sph', aosym=1)
-    two_int = ao2mo.incore.full(eri_4fold_ao, mo_coeff)
-
-    # NOTE: PySCF uses Chemist's notation
-    two_int = np.einsum("ijkl->ikjl", two_int)
+    # PySCF molecule object
+    mol = hf_data.mol
 
     # labels
     ao_labels = mol.ao_labels()
@@ -368,37 +320,39 @@ def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, syst
     if method is None:
         return result
 
+    # todo: check if refactor to use new PySCF interface is working properly. 
+    # freeze behavior to old implementation.
     # energy check
     one_energy = np.einsum('ii->i', one_int)
     two_energy = 2 * np.einsum('ijij->ij', two_int)
     two_energy -= np.einsum('ijji->ij', two_int)
-    two_energy = np.sum(two_energy[:, :hf.mol.nelectron // 2], axis=1)
-    print("pyscf mo energies:", hf.mo_energy)
+    two_energy = np.sum(two_energy[:, :mol.nelectron // 2], axis=1)
+    print("pyscf mo energies:", hf_data.mo_energy)
     print("computed mo energies:", one_energy + two_energy)
     print("pyscf hf electronic energy:", energy_elec)
-    print("computed hf electronic energy:", 2 * np.sum(one_energy[:hf.mol.nelectron // 2]) + np.sum(two_energy[:hf.mol.nelectron // 2]))
+    print("computed hf electronic energy:", 2 * np.sum(one_energy[:mol.nelectron // 2]) + np.sum(two_energy[:mol.nelectron // 2]))
 
     if method != "svd":
         if method == "iao":
-            t_ab_lo= lo.iao.iao(mol, mo_coeff[:,hf.mo_occ > 0], minao="sto-6g")
+            t_ab_lo= lo.iao.iao(mol, mo_coeff[:,hf_data.mo_occ > 0], minao="sto-6g")
             # Orthogonalize IAO
-            t_ab_lo = lo.vec_lowdin(t_ab_lo, hf.get_ovlp())
+            t_ab_lo = lo.vec_lowdin(t_ab_lo, hf_data.mf.get_ovlp())
         elif method == "boys":
-            t_ab_lo = lo.Boys(hf.mol, mo_coeff).kernel()
+            t_ab_lo = lo.Boys(mol, mo_coeff).kernel()
         elif method == "pm":
-            t_ab_lo = lo.PM(hf.mol, mo_coeff).kernel()
+            t_ab_lo = lo.PM(mol, mo_coeff).kernel()
         elif method == "er":
-            t_ab_lo = lo.ER(hf.mol, mo_coeff).kernel()
+            t_ab_lo = lo.ER(mol, mo_coeff).kernel()
         else:
             t_ab_lo = np.identity(mo_coeff.shape[0])
 
         olp_ab_ab = mol.intor_symmetric('int1e_ovlp')
 
         # find the localized orbitals that contribute the most to occupied mo
-        olp_omo_lo = mo_coeff[:, hf.mo_occ > 0].T.dot(olp_ab_ab).dot(t_ab_lo)
+        olp_omo_lo = mo_coeff[:, hf_data.mo_occ > 0].T.dot(olp_ab_ab).dot(t_ab_lo)
         indices_lo = np.argsort(np.diag(olp_omo_lo.T.dot(olp_omo_lo)))[::-1]
         # orbitals that are best spanned by occupied orbitals will be considered "occupied"
-        indices_occ_lo, indices_vir_lo = indices_lo[:hf.mol.nelectron // 2], indices_lo[hf.mol.nelectron // 2:]
+        indices_occ_lo, indices_vir_lo = indices_lo[:mol.nelectron // 2], indices_lo[mol.nelectron // 2:]
         #print(np.diag(olp_omo_lo.T.dot(olp_omo_lo)))
         #print(indices_occ_lo)
         #print(indices_vir_lo)
@@ -411,7 +365,7 @@ def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, syst
         #t_mo_lo[np.where(hf.mo_occ > 0)[0][:, None], indices_occ_ab[None, :]] = u.dot(vh)
 
         # find the localized orbitals that contribute the most to virtual mo
-        olp_vmo_lo = mo_coeff[:, hf.mo_occ == 0].T.dot(olp_ab_ab).dot(t_ab_lo)
+        olp_vmo_lo = mo_coeff[:, hf_data.mo_occ == 0].T.dot(olp_ab_ab).dot(t_ab_lo)
         u, _, vh = np.linalg.svd(olp_vmo_lo[:, indices_vir_lo])
         t_vmo_vlo = u.dot(vh)
         #t_mo_lo[np.where(hf.mo_occ == 0)[0][:, None], indices_vir_ab[None, :]] = u.dot(vh)
@@ -456,7 +410,7 @@ def localize(xyz_file, basis, mo_coeff_file=None, unit='Bohr', method=None, syst
 
         coeff_mo_lo = []
         new_lo_inds = []
-        for sub_mo_coeff in [mo_coeff[:, hf.mo_occ > 0], mo_coeff[:, hf.mo_occ == 0]]:
+        for sub_mo_coeff in [mo_coeff[:, hf_data.mo_occ > 0], mo_coeff[:, hf_data.mo_occ == 0]]:
             s12 = sub_mo_coeff.T.dot(orig_s12)
             system_s12 = []
             for i in range(max(system_inds) + 1):
