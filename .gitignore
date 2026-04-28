@@ -52,3 +52,7 @@ qaworkdir
 
 # Ignore Cython generated files
 fanpy/eqn/schrodinger/*.c
+
+# Sphinx Documentation
+_api_autogen/
+generated/
