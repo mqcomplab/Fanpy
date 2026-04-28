@@ -19,7 +19,7 @@ whose coefficients are parameterized with a function.
 
 .. math::
 
-  \ket{\Psi} = \sum_{\mathbf{m} \in S} f(\mathbf{m}) \ket{\mathbf{m}}
+  \left| \Psi \right> = \sum_{\mathbf{m} \in S} f(\mathbf{m}) \left| \mathbf{m} \right>
 
 Since the Slater determinants are orthogonal to one another, these functions represent the overlap
 of the wavefunction with the given Slater determinant. These functions are provided by the
