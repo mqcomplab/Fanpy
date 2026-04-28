@@ -312,4 +312,4 @@ autodoc_member_order = "bysource"
 # -----------------------------------------------------------------------------
 # Autosummary
 # -----------------------------------------------------------------------------
-autosummary_generate = ["tech_api.rst"]
+autosummary_generate = True
