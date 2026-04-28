@@ -130,8 +130,8 @@ Backend
 
 Scripts
 =======
-* :func:`Run calculation <fanpy.scripts.run_calc.run_calc>`
-* :func:`Make calculation script <fanpy.scripts.make_script.make_script>`
+* :func:`Run calculation <fanpy.scripts.gaussian.run_calc.run_calc>`
+* :func:`Make calculation script <fanpy.scripts.gaussian.make_script.make_script>`
 
 .. Silent api generation
     .. autosummary::
@@ -219,5 +219,5 @@ Scripts
       fanpy.tools.graphs.generate_complete_pmatch
       fanpy.tools.graphs.generate_biclique_pmatch
 
-      fanpy.scripts.make_script.make_script
-      fanpy.scripts.run_calc.run_calc
+      fanpy.scripts.gaussian.make_script.make_script
+      fanpy.scripts.gaussian.run_calc.run_calc
