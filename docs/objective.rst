@@ -21,7 +21,7 @@ wavefunction in question:
 
 .. math::
 
-    E &= \frac{\left< \Psi \middle| \hat{H} \middle| \Psi \right>}{\left< \Psi \middle| \Psi \right>}
+    E = \frac{\left< \Psi \middle| \hat{H} \middle| \Psi \right>}{\left< \Psi \middle| \Psi \right>}
 
 This formulation of energy satisfies the variational principle: it is always greater than or equal
 to the true energy and is equal to the true energy only when the wavefunction represents the exact
@@ -95,13 +95,13 @@ integrating on the left with an arbitrary function. In other words, if
 
 .. math::
 
-  \hat{H} \ket{\Psi} = E \ket{\Psi}
+  \hat{H} \left| \Psi \right> = E \left| \Psi \right>
 
 then
 
 .. math::
 
-  \braket{\Phi | \hat{H} | \Psi} = E \braket{\Psi | \Phi} \mbox{  $\forall$ $\Phi$}
+  \left< \Phi \middle| \hat{H} \middle| \Psi \right> = E \left< \Psi \middle| \Phi \right> \mbox{  $\forall$ $\Phi$}
 
 This equation is called the weak form of the eigenproblem, or the projected Schrödinger
 equation. In the projected Schrödinger equation, the Schrödinger equation is integrated with a set
@@ -109,9 +109,9 @@ of functions, termed the projection space, to form a system of nonlinear equatio
 
 .. math::
 
-    \braket{\mathbf{m}_1 | \hat{H} | \Psi} - E \braket{\mathbf{m}_1 | \Psi} &= 0\\
+    \left< \mathbf{m}_1 \middle| \hat{H} \middle| \Psi \right> - E \left<  \mathbf{m}_1 \middle| \Psi \right> &= 0\\
     &\hspace{0.5em} \vdots\\
-    \braket{\mathbf{m}_M | \hat{H} | \Psi} - E \braket{\mathbf{m}_M | \Psi} &= 0\\
+    \left< \mathbf{m}_M \middle| \hat{H} \middle| \Psi \right> - E \left< \mathbf{m}_M \middle| \Psi \right> &= 0\\
 
 To avoid the trivial solution, :math:`\Psi = 0`, a normalization constraint is often added as an
 extra equation. If all of the equations are satisfied, the wavefunction and energy are the solutions
