@@ -128,16 +128,16 @@ with one another:
 
 .. math::
 
-    h_{ij}^\phi &=
+    h_{ij}^{\phi} &=
     \begin{cases}
-      h^\alpha_{ij}  =  h^\beta_{ij} = h^\phi_{ij} & \mbox{if $\sigma_i = \sigma_j}\\
+      h^{\alpha}_{ij}  =  h^{\beta}_{ij} = h^{\phi}_{ij} & \mbox{if $\sigma_i = \sigma_j$}\\
       0 & \mbox{else}\\
     \end{cases}\\
     g_{ijkl}^{\chi} &=
     \begin{cases}
       g^{\alpha \alpha}_{ijkl} = g^{\alpha \beta}_{ijkl} = g^{\beta \alpha}_{ijkl} =
-      g^{\beta \beta}_{ijkl} =  = g^\phi_{ijkl}
-      & \mbox{if $\sigma_i = \sigma_k and $\sigma_j = \sigma_l}\\
+      g^{\beta \beta}_{ijkl}  = g^{\phi}_{ijkl}
+      & \mbox{if $\sigma_i = \sigma_k$ and $\sigma_j = \sigma_l$}\\
       0 & \mbox{else}\\
     \end{cases}
 
@@ -160,13 +160,13 @@ anti-Hermitian matrix elements, :math:`\kappa_{ij}`, in the unitary transformati
 
   \left.
     \frac{
-      \partial \braket{\mathbf{m} | e^{-\hat{\mathbf{\kappa}}} \hat{H} e^{\hat{\mathbf{\kappa}}} | \mathbf{n}}
+      \partial \left< \mathbf{m} \middle| e^{-\hat{\mathbf{\kappa}}} \hat{H} e^{\hat{\mathbf{\kappa}}} \middle| \mathbf{n} \right>
     }{\partial \kappa_{ij}}
   \right|_{\kappa = 0}
   =
   \left.
     \frac{
-      \partial \braket{\mathbf{m} | [\hat{H}, \hat{\mathbf{\kappa}}]  | \mathbf{n}}
+      \partial \left< \mathbf{m} \middle| [\hat{H}, \hat{\mathbf{\kappa}}]  \middle| \mathbf{n} \right> 
     }{\partial \kappa_{ij}}
   \right|_{\kappa = 0}
 
