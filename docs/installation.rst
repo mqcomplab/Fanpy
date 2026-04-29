@@ -58,7 +58,7 @@ Run the following command to install any of the optional dependencies:
 
   pip install -e ".[pyscf, tensorflow]"
 
-The one and two-electron integrals are not generated within Fanpy and must be obtainedfrom some 
+The one and two-electron integrals are not generated within Fanpy and must be obtained from some 
 external sources. The recommended approach is with PySCF, though there is also the option to provide these
 integrals in the form of `numpy` files. Please refer to the tutorials for more information. 
 
