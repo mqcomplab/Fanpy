@@ -60,7 +60,14 @@ Run the following command to install any of the optional dependencies:
 
 The one and two-electron integrals are not generated within Fanpy and must be obtainedfrom some 
 external sources. The recommended approach is with PySCF, though there is also the option to provide these
-integrals in the form of `numpy` files. Please refer to the tutorials for more information.  
+integrals in the form of `numpy` files. Please refer to the tutorials for more information. 
+
+Step 4 (optional): Installing PyCI
+-----------------------
+
+The PyCI package can be used to speed up the calculations. Note: FanPT calculations require PyCI to be installed. 
+Other calculations can be run purely in Fanpy or with the PyCI interface. See the PyCI documentation for installation
+instructions: https://pyci.qcdevs.org/intro.html
 
 For Developers
 ==============
