@@ -4,92 +4,77 @@
 Installation
 ============
 
-Dependencies
-============
+Quick Steps
+===========
 
-The FANCI module has been developed using the following dependencies:
+Step 1: Create conda environment 
+--------------------------------
 
-* Python >= 3.5: http://www.python.org/
-* SciPy >= 0.18.0: http://www.scipy.org/
-* NumPy >= 1.11.0: http://www.numpy.org/
-* cma >= 2.7.0: https://github.com/CMA-ES/pycma
-* pytest >= 4.0.0: https://docs.pytest.org/en/latest/
+Fanpy requires **Python 3.9 or newer.** It is recommended to install fanpy in a conda environment:
 
-The latest versions of these modules can be accessed with conda or pip.
+.. code-block:: bash
+    
+    conda create -n fanpy python 
+    conda activate fanpy
 
-Conda
------
+Step 2: Clone the Fanpy code base
+---------------------------------
 
-  .. code-block:: bash
+The code for Fanpy is available in the GitHub repository of `mqcomplab` and can be cloned by running the following commands:
 
-     conda install numpy scipy cma pytest
+.. code-block:: bash
 
-Pip
----
+  git clone https://github.com/mqcomplab/Fanpy.git
+  cd Fanpy
+  
+Step 3: Installing Fanpy 
+------------------------
+Once you have cloned the repository, you can `pip` install the module.  
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     pip install numpy scipy cma pytest
+  pip install -e .
 
+This will install the required dependencies listed below:
 
-Optional Dependencies
-=====================
+  * SciPy >= 1.9.0: http://www.scipy.org/
+  * NumPy >= 1.25.0: http://www.numpy.org/
+  * Cython: https://cython.org/
+  * Pandas: https://pandas.pydata.org/
+  * cma: https://github.com/CMA-ES/pycma
+  * psutil: https://psutil.readthedocs.io/stable/
 
-Some modules may require additional dependencies, such as `scikit-optimize` (for decision tree and
-Bayesian optimization algorithms) or `tensorflow` (for neural network wavefunction):
+Fanpy has multiple optional dependencies, some install a single package while others install multiple packages:
 
-* skopt >= 0.5.2: https://scikit-optimize.github.io/stable/
-* tensorflow == 2.2.0: https://www.tensorflow.org/
+* `pyscf`: Fanpy needs one and two-electron integrals from Hartree Fock (HF) calculations. 
+* `tensorflow`: there are some wavefunctions that require tensorflow
+* `horton`: This has been used to convert HF results from Gaussian to numpy arrays. Note: running HF calculations with Gaussian is depricated. 
+* `test`: these dependencies are necessary to run the unit tests for Fanpy. List of packages installed: `pytest`, `pytest-cov`, `numdifftools`, `scikit-learn`, `scikit-optimize`
+* `dev`: installs linters and other development tools. List of packages: `tox`, `pytest`, `pytest-cov`, `flake8`, `flake8-pydocstyle`, `flake8-import-order`, `pep8-naming`, `pylint`, `bandit`, `black`
 
-In addition, the one and two-electron integrals are not generated within FanCI and must be obtained
-from some external sources. The `horton` module can be used to generate integrals from Gaussian fchk
-file and from its HF code. The `pyscf` and `psi4` modules can be used to generate integrals from
-their HF routines. Scripts for generating the integrals are provided in the `scripts` module.
+Run the following command to install any of the optional dependencies:
 
-* HORTON == 2.1.0: http://theochem.github.io/horton/2.0.1/index.html
-* PySCF >= 1.6.5: https://github.com/sunqm/pyscf
-* Psi4 >= 1.1: https://github.com/psi4/psi4
+.. code-block:: bash
 
-Please note that `horton` is only compatible with Python 2.7, so it must be installed on a different
-version of Python. It is recommended that you use some form of virtual environment to isolate the
-two versions of Python.
+  pip install -e ".[pyscf, tensorflow]"
 
-  .. code-block:: bash
-
-     conda create --name integrals python=2.7
-     conda install -n integrals -c theochem horton
-     source activate integrals
-
-The Python interpreters for HORTON must be specified in the environment variables `HORTONPYTHON`. To
-find the location of the Python interpreter, either use `which python` in the terminal or `import
-sys; print(sys.executable)`
-
-  .. code-block:: bash
-
-     export HORTONPYTHON=/abspath/to/hortonpython
-
+The one and two-electron integrals are not generated within Fanpy and must be obtainedfrom some 
+external sources. The recommended approach is with PySCF, though there is also the option to provide these
+integrals in the form of `numpy` files. Please refer to the tutorials for more information.  
 
 For Developers
 ==============
 
-Though `Fanpy` in continuously integrated and tested when contributed through GitHub, developers may be
-interested in applying the same set of tests locally. To do so, only the module `tox` is needed.
-
-* tox >= 3.12.1: https://tox.readthedocs.io/en/latest/
-
-Then, from the project home directory, the following command executes the unit tests:
-
-  .. code-block:: bash
-
-     tox -e py37
-
-To check the code quality, linters, such as `flake8` and `pylint`, can be used via the following command:
-
-  .. code-block:: bash
-
-     tox -e linters
+`Fanpy` in continuously integrated and tested when contributed through GitHub, developers may be
+interested in applying the same set of tests locally. For this, the optional `test` dependencies 
+in addition to PySCF are required. There are currently no linter tests required when contributing to 
+`Fanpy`.
 
 
 Documentation Building
 ======================
-* sphinx
+
+`Fanpy` has a documentation which can be built locally with `sphinx`. The following packages are required to build the documentation:
+
+* `sphinx`
+* `sphinx-rtd-theme`
