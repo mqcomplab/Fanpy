@@ -4,7 +4,7 @@ import pytest
 from pyscf import gto, scf
 
 from fanpy.interface.pyscf import PYSCF
-from test_wrapper_python_wrapper import check_data_h2_rhf_sto6g
+from tests.interface_utils import check_data_h2_rhf_sto6g
 
 def test_hf_data_h2_sto6g():
     """Make sure computed integrals, and extracted HF energies are the same as Gaussian."""
