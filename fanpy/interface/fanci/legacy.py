@@ -274,7 +274,7 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
         self._pspace.setflags(write=False)
         self._sspace.setflags(write=False)
         self._mask_view.setflags(write=False)
-
+    # todo: check if I can move the functions to tools: this is used in multiple places. 
     def make_norm_constraint(self):
         def f(x: np.ndarray) -> float:
             r""" "
@@ -529,7 +529,7 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
 
         # Update nactive
         self._nactive = self._mask.sum()
-
+    # todo: check if test exists for this. PyCI might have it since it is from it. May have to extract
     def compute_objective(self, x: np.ndarray) -> np.ndarray:
         """
         Compute the FanCI objective function.
@@ -580,6 +580,7 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
         # Return objective
         return f
 
+    # todo: same as compute_objective
     def compute_jacobian(self, x: np.ndarray) -> np.ndarray:
         """
         Compute the Jacobian of the FanCI objective function.
@@ -652,6 +653,7 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
         # Return Jacobian
         return jac
 
+    #todo: same as norm constraint
     def make_param_constraint(self, i: int, val: float) -> Tuple[Callable, Callable]:
         """
         Generate parameter constraint functions.
@@ -690,7 +692,8 @@ class ProjectedSchrodingerLegacyFanCI(metaclass=ABCMeta):
             return y
 
         return f, dfdx
-
+    
+    #todo: same as norm constraint
     def make_det_constraint(self, i: int, val: float) -> Tuple[Callable, Callable]:
         """
         Generate determinant overlap constraint functions.
@@ -1084,6 +1087,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
             **kwargs,
         )
 
+    # todo: not interface, move to some other function. 
     def compute_overlap(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
         """
         Compute the FanCI overlap vector.
@@ -1148,6 +1152,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
                 y[i] = self.fanpy_wfn.get_overlap(sd)
         return y
 
+    # todo: same as compute overlap
     def compute_overlap_deriv(
         self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[None, None]
     ) -> np.ndarray:
@@ -1246,6 +1251,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
 
         return y
 
+    # todo: same as compute_overlap
     def compute_overlap_double_deriv(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
         """
         Compute the FanCI overlap double derivative tensor.
@@ -1343,7 +1349,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
                     print(
                         "(Mid Optimization) Cost from constraints: {}".format(self.print_queue["Cost from constraints"])
                     )
-        else:
+        else: #todo: this else block does not get called, since the objective type has to be projected. As such, it should be moved to utility function. 
             # NOTE: ignores energy and constraints
             # Allocate objective vector
             output = np.zeros(self.nproj, dtype=pyci.c_double)
@@ -1393,7 +1399,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
             self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
             if self.step_print:
                 print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
-        else:
+        else: # todo: same as compute_objective
             # NOTE: ignores energy and constraints
             # Allocate Jacobian matrix (in transpose memory order)
             output = np.zeros((self.nproj, self.nactive), order="F", dtype=pyci.c_double)
@@ -1578,6 +1584,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
             opt_kwargs["jac"] = j
 
         # Parse mode parameter; choose optimizer and fix arguments
+        # todo: limit methods for optimization. We have projected schrodinger objective not one energy. 
         if mode == "lstsq":
             optimizer = least_squares
             opt_kwargs.setdefault("xtol", 1.0e-8)
