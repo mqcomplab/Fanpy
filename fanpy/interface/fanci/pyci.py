@@ -2,6 +2,7 @@
 Legacy version of FanCI objective class.
 Based of the original class from FanCI code.
 """
+#todo: update docstrings
 
 from fanpy.tools import slater
 
@@ -9,6 +10,7 @@ from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
 from fanpy.tools.performance import current_memory
+from fanpy.interface.fanci.utils import convert_pyci_occs_to_fanpy_sds
 
 from typing import Any, Callable, List, Tuple, Union, Sequence
 
@@ -182,6 +184,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         tmpfile: str,
         **kwargs: Any,
     ) -> None:
+        # todo: add default values to some of these arguments.
         """
         Initialize the FanCI problem.
 
@@ -270,6 +273,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             **kwargs,
         )
 
+    #todo: move to utility file. 
     def compute_overlap(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
         """
         Compute the FanCI overlap vector.
@@ -301,23 +305,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         # FIXME: converting occs_array to slater determinants to be converted back to indices is
         # a waste
         # convert slater determinants
-        sds = []
-        if isinstance(occs_array[0, 0], np.ndarray): # if pspace generated with FCI
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
-                sds.append(sd)
-        else: # if pspace generated with DOCI
-            for i, occs in enumerate(occs_array):
-                if occs.dtype == bool:
-                    occs = np.where(occs)
-                sd = slater.create(0, *occs)
-                sd = slater.create(sd, *(occs + self.fanpy_wfn.nspatial))
-                sds.append(sd)
+        sds = convert_pyci_occs_to_fanpy_sds(occs_array, nspatial=self.fanpy_wfn.nspatial)
 
         # Feed in parameters into fanpy wavefunction
         for component, indices in self.param_selection.items():
@@ -336,6 +324,7 @@ class ProjectedSchrodingerPyCI(FanCI):
                 y[i] = self.fanpy_wfn.get_overlap(sd)
         return y
 
+    #todo: move to utility file. 
     def compute_overlap_deriv(
         self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[None, None]
     ) -> np.ndarray:
@@ -434,6 +423,7 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         return y
 
+    #todo: move to utility file. 
     def compute_overlap_double_deriv(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
         """
         Compute the FanCI overlap double derivative tensor.
@@ -528,7 +518,7 @@ class ProjectedSchrodingerPyCI(FanCI):
                     print(
                         "(Mid Optimization) Cost from constraints: {}".format(self.print_queue["Cost from constraints"])
                     )
-        else:
+        else: #todo: move to utility file. 
             # NOTE: ignores energy and constraints
             # Allocate objective vector
             output = np.zeros(self.nproj, dtype=pyci.c_double)
@@ -581,7 +571,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
             if self.step_print:
                 print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
-        else:
+        else: #todo: move to utility file. 
             # NOTE: ignores energy and constraints
             # Allocate Jacobian matrix (in transpose memory order)
             output = np.zeros((self.nproj, self.nactive), order="F", dtype=pyci.c_double)
@@ -641,6 +631,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             self.save_params()
         return output
 
+    #todo: move to utility file. 
     # TODO: This implementation was needed because PyCI does not support frozen parameters.
     # TODO: It can be removed in the future if PyCI adds support.
     def masked_compute_jacobian(self, x: np.ndarray) -> np.ndarray:
@@ -780,6 +771,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         """
         return np.hstack([comp.params.ravel()[inds] for comp, inds in self.param_selection.items()])
 
+    #todo: move to utility file. 
     def make_norm_constraint(self):
         def f(x: np.ndarray) -> float:
             """ "
@@ -904,6 +896,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         if use_jac:
             opt_kwargs["jac"] = j
 
+        # todo: remove modes that do not work with projected Schrodinger equation. 
         # Parse mode parameter; choose optimizer and fix arguments
         if mode == "lstsq":
             optimizer = least_squares
