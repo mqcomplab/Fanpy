@@ -273,7 +273,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             **kwargs,
         )
 
-    #todo: move to utility file. 
+
     def compute_overlap(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
         """
         Compute the FanCI overlap vector.
@@ -324,7 +324,6 @@ class ProjectedSchrodingerPyCI(FanCI):
                 y[i] = self.fanpy_wfn.get_overlap(sd)
         return y
 
-    #todo: move to utility file. 
     def compute_overlap_deriv(
         self, x: np.ndarray, occs_array: Union[np.ndarray, str], chunk_idx=[None, None]
     ) -> np.ndarray:
@@ -360,23 +359,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         # FIXME: converting occs_array to slater determinants to be converted back to indices is
         # a waste
         # convert slater determinants
-        sds = []
-        if isinstance(occs_array[0, 0], np.ndarray): # if pspace generated with FCI
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
-                sds.append(sd)
-        else: # if pspace generated with DOCI
-            for i, occs in enumerate(occs_array):
-                if occs.dtype == bool:
-                    occs = np.where(occs)
-                sd = slater.create(0, *occs)
-                sd = slater.create(sd, *(occs + self.fanpy_wfn.nspatial))
-                sds.append(sd)
+        sds = convert_pyci_occs_to_fanpy_sds(occs_array, nspatial=self.fanpy_wfn.nspatial)
 
         # Select sds according to selected chunks
         s_chunk, f_chunk = chunk_idx
