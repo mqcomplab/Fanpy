@@ -1,6 +1,7 @@
 """ Test for fanpy.interface.fanci.pyci """
 
 import numpy as np
+import pytest
 
 from fanpy.interface.fanci.pyci import ProjectedSchrodingerPyCI
 import pyci
@@ -86,3 +87,8 @@ def test_compute_overlap():
     olp_size = len(occ_indices) 
     assert overlap.shape == (olp_size,)
     assert np.allclose(overlap, np.ones(olp_size))
+
+def test_compute_overlap_type_check():
+    pyci_obj = make_test_instance()
+    with pytest.raises(ValueError):
+        pyci_obj.compute_overlap(np.array([[0, 1]]), "not_a_vector")
