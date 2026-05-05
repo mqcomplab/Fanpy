@@ -440,22 +440,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             raise NotImplementedError(f"{type(self.fanpy_wfn).__name__} is not supported for second derivative overlap. "
         "Must be a CC-type FanPy wavefunction (BaseCC) with "
         "`get_overlap_double_derivative(sd)` implemented.")
-        sds = []
-        if isinstance(occs_array[0, 0], np.ndarray):
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
-                sds.append(sd)
-        else:
-            for i, occs in enumerate(occs_array):
-                if occs.dtype == bool:
-                    occs = np.where(occs)
-                sd = slater.create(0, *occs)
-                sds.append(sd)        
+        sds = convert_pyci_occs_to_fanpy_sds(occs_array, self.fanpy_wfn.nspatial)  
         
         # Update Fanpy params
         for component, indices in self.param_selection.items():
