@@ -11,6 +11,8 @@ from test_interface_pyci import FakeHamiltonian, FakeWavefunction
 from fanpy.eqn.projected import BaseSchrodinger
 from fanpy.wfn.cc.standard_cc import StandardCC
 
+############## Tools for testing purposes #########################
+
 class FakeSchrodinger(BaseSchrodinger):
     """fake fanpy objective for testing purposes"""
     def __init__(self, wfn, ham):
@@ -31,6 +33,7 @@ class FakeCC(StandardCC):
 
 def make_test_instance(**overrides):
     """make test instance of ProjectedSchrodingerPyCI with fake fanpy objective and fake pyci hamiltonian and wavefunction
+    This helps set up a class that requires a lot of parameters.
     """
     # build Fake fanpy objective
     wfn = FakeWavefunction(2, 4, np.ones(4))
@@ -68,6 +71,26 @@ def make_test_instance(**overrides):
     defaults.update(overrides)
     return ProjectedSchrodingerPyCI(**defaults)
 
+################# init tests ###################################
+def test_init():
+    # errors
+    ham = "non_pyci_hamiltonian"
+    with pytest.raises(TypeError):
+        make_test_instance(ham=ham)
+    fanpy_ham = FakeHamiltonian(np.ones((2, 2)), np.ones((2, 2, 2, 2)))
+    with pytest.raises(TypeError):
+        make_test_instance(fanpy_ham=fanpy_ham)
+
+    # normalization constraints
+    # default is normalization constraint. 
+    # Note: the constraint attribute is just the keys of the constraints dictionary. This is a PyCI feature, not a Fanpy feature. 
+    constraints = None
+    norm_det  = None
+    pyci_obj = make_test_instance(constraints=constraints, norm_det=norm_det)
+    assert type(pyci_obj.constraints) == tuple
+    assert "<\\Phi|\\Psi> - 1>" in pyci_obj.constraints
+
+################# compute overlap tests ###################################
 
 def test_compute_overlap():
     pyci_obj = make_test_instance()
@@ -105,7 +128,10 @@ def test_compute_overlap_type_check():
     with pytest.raises(ValueError):
         pyci_obj.compute_overlap(np.array([[0, 1]]), "not_a_vector")
 
-def test_compute_overlap_derig():
+
+################# compute overlap deriv tests ###################################
+
+def test_compute_overlap_deriv():
     pyci_obj = make_test_instance()
     # compute overlap derivatives between the pyci wavefunction and a random vector
     overlap_deriv = pyci_obj.compute_overlap_deriv(np.random.rand(4), "P")
@@ -127,6 +153,8 @@ def test_compute_overlap_deriv_type_check():
     pyci_obj = make_test_instance()
     with pytest.raises(ValueError):
         pyci_obj.compute_overlap_deriv(np.array([[0, 1]]), "not_a_vector")
+
+################# compute overlap double derivtests ###################################
 
 def test_compute_overlap_double_deriv_errors():
     pyci_obj = make_test_instance()
@@ -159,3 +187,15 @@ def test_compute_overlap_double_deriv():
     double_deriv = pyci_obj.compute_overlap_double_deriv(np.random.rand(4), occs_array=occ_indices)
     assert double_deriv.shape == (len(occ_indices), wfn.nparams, wfn.nparams)
     assert np.allclose(double_deriv, np.ones((len(occ_indices), wfn.nparams, wfn.nparams)))
+
+################# compute objective tests ###################################
+
+
+################# compute jacobian tests ###################################
+
+
+################# optimize tests ###################################
+
+
+################# utility methods tests ###################################
+
