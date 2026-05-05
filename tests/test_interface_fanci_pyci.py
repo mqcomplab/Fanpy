@@ -42,7 +42,7 @@ def make_test_instance(**overrides):
         "seniority": wfn.seniority,
         "nproj": 1,
         "fill": "excitation",
-        "mask": np.ones(wfn.params.shape),
+        "mask": np.ones(wfn.params.shape, dtype=int),
         "constraints": {},
         "param_selection": obj.indices_component_params,
         "norm_param": None,
@@ -92,3 +92,26 @@ def test_compute_overlap_type_check():
     pyci_obj = make_test_instance()
     with pytest.raises(ValueError):
         pyci_obj.compute_overlap(np.array([[0, 1]]), "not_a_vector")
+
+def test_compute_overlap_derig():
+    pyci_obj = make_test_instance()
+    # compute overlap derivatives between the pyci wavefunction and a random vector
+    overlap_deriv = pyci_obj.compute_overlap_deriv(np.random.rand(4), "P")
+    assert overlap_deriv.shape == (len(pyci_obj.pspace), pyci_obj.nactive - pyci_obj.mask[-1])
+    assert np.allclose(overlap_deriv, np.zeros(overlap_deriv.shape))
+
+    # compute overlap derivatives between the pyci wavefunction and a random vector
+    overlap_deriv = pyci_obj.compute_overlap_deriv(np.random.rand(4), "S")
+    assert overlap_deriv.shape == (len(pyci_obj.sspace), pyci_obj.nactive - pyci_obj.mask[-1])
+    assert np.allclose(overlap_deriv, np.zeros(overlap_deriv.shape))
+
+    # compute overlap derivatives between the pyci wavefunction and a random vector
+    occs_array = np.asarray([[0, 1]])
+    overlap_deriv = pyci_obj.compute_overlap_deriv(np.random.rand(4), occs_array=occs_array)
+    assert overlap_deriv.shape == (len(occs_array), pyci_obj.nactive - pyci_obj.mask[-1])
+    assert np.allclose(overlap_deriv, np.zeros(overlap_deriv.shape))
+
+def test_compute_overlap_deriv_type_check():
+    pyci_obj = make_test_instance()
+    with pytest.raises(ValueError):
+        pyci_obj.compute_overlap_deriv(np.array([[0, 1]]), "not_a_vector")
