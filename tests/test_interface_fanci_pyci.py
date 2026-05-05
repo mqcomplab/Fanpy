@@ -9,6 +9,7 @@ import pyci
 from test_interface_pyci import FakeHamiltonian, FakeWavefunction
 
 from fanpy.eqn.projected import BaseSchrodinger
+from fanpy.wfn.cc.standard_cc import StandardCC
 
 class FakeSchrodinger(BaseSchrodinger):
     """fake fanpy objective for testing purposes"""
@@ -16,6 +17,17 @@ class FakeSchrodinger(BaseSchrodinger):
         super().__init__(wfn, ham)
     def objective(self, params):
         return 3.08
+
+class FakeCC(StandardCC):
+    """fake CC wavefunction for testing purposes
+    This is used to test the double derivative of the overlap.
+    """
+    def __init__(self, nelec, nspin):
+        super().__init__(nelec, nspin)
+
+    def get_overlap_double_derivative(self, sd):
+        double_deriv = np.ones((self.nparams, self.nparams))
+        return double_deriv
 
 def make_test_instance(**overrides):
     """make test instance of ProjectedSchrodingerPyCI with fake fanpy objective and fake pyci hamiltonian and wavefunction
@@ -115,3 +127,35 @@ def test_compute_overlap_deriv_type_check():
     pyci_obj = make_test_instance()
     with pytest.raises(ValueError):
         pyci_obj.compute_overlap_deriv(np.array([[0, 1]]), "not_a_vector")
+
+def test_compute_overlap_double_deriv_errors():
+    pyci_obj = make_test_instance()
+    with pytest.raises(ValueError):
+        pyci_obj.compute_overlap_double_deriv(np.random.rand(4), "not_a_vector")
+    # double deriv is only implemented for CC as of now. 
+    with pytest.raises(NotImplementedError):
+        pyci_obj.compute_overlap_double_deriv(np.random.rand(4), "P")
+
+def test_compute_overlap_double_deriv():
+
+    # build python objective with CC wfn
+    wfn = FakeCC(nelec=2, nspin=4)
+    ham = FakeHamiltonian(np.ones((2, 2)), np.ones((2, 2, 2, 2)))
+    obj = FakeSchrodinger(wfn, ham)
+    pyci_obj = make_test_instance(fanpy_objective=obj)
+
+    # pspace double derivatives
+    double_deriv = pyci_obj.compute_overlap_double_deriv(np.random.rand(4), "P")
+    assert double_deriv.shape == (len(pyci_obj.pspace), wfn.nparams, wfn.nparams)
+    assert np.allclose(double_deriv, np.ones((len(pyci_obj.pspace), wfn.nparams, wfn.nparams)))
+
+    # sspace double derivatives
+    double_deriv = pyci_obj.compute_overlap_double_deriv(np.random.rand(4), "S")
+    assert double_deriv.shape == (len(pyci_obj.sspace), wfn.nparams, wfn.nparams)
+    assert np.allclose(double_deriv, np.ones((len(pyci_obj.sspace), wfn.nparams, wfn.nparams)))
+
+    # FCI occs vector double derivatives
+    occ_indices = np.asarray([[[0, 1], [1, 0]], [[1, 1], [0, 0]]]) # use FCI occs representation, with two sd dets
+    double_deriv = pyci_obj.compute_overlap_double_deriv(np.random.rand(4), occs_array=occ_indices)
+    assert double_deriv.shape == (len(occ_indices), wfn.nparams, wfn.nparams)
+    assert np.allclose(double_deriv, np.ones((len(occ_indices), wfn.nparams, wfn.nparams)))
