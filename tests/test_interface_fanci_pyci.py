@@ -58,6 +58,31 @@ def make_test_instance(**overrides):
 
 def test_compute_overlap():
     pyci_obj = make_test_instance()
-    overlap = pyci_obj.compute_overlap(np.random.rand(4), "P")
-    assert overlap[0] == 1.0
 
+    # compute overlap between the pyci wavefunction and a random vector
+    # occ indices are the p-space:
+    overlap = pyci_obj.compute_overlap(np.random.rand(4), "P")
+    olp_size = len(pyci_obj.pspace) # note p-space contains occ indices
+    assert len(overlap) == olp_size
+    assert np.allclose(overlap, np.ones(olp_size))
+
+    # compute overlap between the pyci wavefunction and a random vector
+    # occ indices are the s-space:
+    overlap = pyci_obj.compute_overlap(np.random.rand(4), "S")
+    olp_size = len(pyci_obj.sspace) # note s-space contains occ indices
+    assert len(overlap) == len(pyci_obj.sspace)
+    assert np.allclose(overlap, np.ones(olp_size))
+
+    # compute overlap between the pyci wavefunction and a random vector
+    occ_indices = np.asarray([[0, 1]]) # use DOCI occs representation
+    overlap = pyci_obj.compute_overlap(np.random.rand(4), occ_indices)
+    olp_size = len(occ_indices) 
+    assert overlap.shape == (olp_size,)
+    assert np.allclose(overlap, np.ones(olp_size))
+
+    # compute overlap between the pyci wavefunction and a random vector
+    occ_indices = np.asarray([[[0, 1], [1, 0]], [[1, 1], [0, 0]]]) # use FCI occs representation, with two sd dets
+    overlap = pyci_obj.compute_overlap(np.random.rand(4), occ_indices)
+    olp_size = len(occ_indices) 
+    assert overlap.shape == (olp_size,)
+    assert np.allclose(overlap, np.ones(olp_size))
