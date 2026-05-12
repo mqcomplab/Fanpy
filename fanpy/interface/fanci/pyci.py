@@ -516,61 +516,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
             if self.step_print:
                 print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
-        else: #todo: move to utility file. 
-            # NOTE: ignores energy and constraints
-            # Allocate Jacobian matrix (in transpose memory order)
-            output = np.zeros((self.nproj, self.nactive), order="F", dtype=pyci.c_double)
-            integrals = np.zeros(self.nproj, dtype=pyci.c_double)
-
-            # Compute Jacobian:
-            #
-            #   J_{nk} = d(<n|H|\Psi>)/d(p_k) - E d(<n|\Psi>)/d(p_k) - dE/d(p_k) <n|\Psi>
-            #   J_{nk} = (\sum_n d<\Psi|n> <n|H|\Psi> + <\Psi|n> d<n|H|\Psi>) / \sum_n <\Psi|n>^2 -
-            #            (\sum_n <\Psi|n> <n|H|\Psi>) / (\sum_n <\Psi|n> <n|\Psi>)^2 * (2 \sum_n <\Psi|n>)
-            #   J_{nk} = ((\sum_n d<\Psi|n> <n|H|\Psi> + <\Psi|n> d<n|H|\Psi>) (\sum_n <\Psi|n>^2)
-            #             - (\sum_n <\Psi|n> <n|H|\Psi>) * (2 \sum_n <\Psi|n> d<\Psi|n>))
-            #            / (\sum_n <\Psi|n>^2)^2
-            #   J_{nk} = ((\sum_n d<\Psi|n> <n|H|\Psi> + <\Psi|n> d<n|H|\Psi>) N
-            #             - H * (2 \sum_n <\Psi|n> d<\Psi|n>))
-            #            / N^2
-            #   J_{nk} = (\sum_n N (d<\Psi|n> <n|H|\Psi> + <\Psi|n> d<n|H|\Psi>) - 2 H <\Psi|n> d<\Psi|n>)
-            #            / N^2
-            #
-            # Compute overlap derivatives in sspace:
-            #
-            #   d(c_m)/d(p_k)
-            #
-            overlaps = self.compute_overlap(x[:-1], "S")
-            norm = np.sum(overlaps[: self.nproj] ** 2)
-            self.ci_op(overlaps, out=integrals)
-            energy_integral = np.sum(overlaps[: self.nproj] * integrals)
-
-            d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
-
-            # Iterate over remaining columns of Jacobian and d_ovlp
-            for output_col, d_ovlp_col in zip(output.transpose(), d_ovlp.transpose()):
-                #
-                # Compute each column of the Jacobian:
-                #
-                #   d(<n|H|\Psi>)/d(p_k) = <m|H|n> d(c_m)/d(p_k)
-                #
-                #   E d(<n|\Psi>)/d(p_k) = E \delta_{nk} d(c_n)/d(p_k)
-                #
-                # Note: we update d_ovlp in-place here
-                self.ci_op(d_ovlp_col, out=output_col)
-                output_col *= overlaps[: self.nproj]
-                output_col += d_ovlp_col[: self.nproj] * integrals
-                output_col *= norm
-                output_col -= 2 * energy_integral * overlaps[: self.nproj] * d_ovlp_col[: self.nproj]
-                output_col /= norm**2
-            output = np.sum(output, axis=0)
-            self.print_queue["Norm of the gradient of the energy"] = np.linalg.norm(output)
-            if self.step_print:
-                print(
-                    "(Mid Optimization) Norm of the gradient of the energy: {}".format(
-                        self.print_queue["Norm of the gradient of the energy"]
-                    )
-                )
 
         if self.step_save:
             self.save_params()
