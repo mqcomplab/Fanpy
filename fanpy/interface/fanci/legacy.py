@@ -1454,7 +1454,6 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
             opt_kwargs["jac"] = j
 
         # Parse mode parameter; choose optimizer and fix arguments
-        # todo: limit methods for optimization. We have projected schrodinger objective not one energy. 
         if mode == "lstsq":
             optimizer = least_squares
             opt_kwargs.setdefault("xtol", 1.0e-8)
