@@ -1474,7 +1474,7 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
             opt_kwargs["options"].setdefault("xtol", 1.0e-9)
             opt_kwargs.setdefault("callback", self.print)
         else:
-            raise ValueError("Invalid mode parameter. Only 'root' and 'lstsq' are supported for the ProjectedSchrodingerPyCI class.")
+            raise ValueError("Invalid mode parameter. Only 'root' and 'lstsq' are supported for the ProjectedSchrodingerFanCI class.")
 
         # Run optimizer
         results = optimizer(*opt_args, **opt_kwargs)
