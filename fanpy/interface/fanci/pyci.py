@@ -805,32 +805,8 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("options", {})
             opt_kwargs["options"].setdefault("xtol", 1.0e-9)
             opt_kwargs.setdefault("callback", self.print)
-        elif mode == "cma":
-            optimizer = cma.fmin
-            opt_kwargs.setdefault("sigma0", 0.01)
-            opt_kwargs.setdefault("options", {})
-            opt_kwargs["options"].setdefault("ftarget", None)
-            opt_kwargs["options"].setdefault("timeout", np.inf)
-            opt_kwargs["options"].setdefault("tolfun", 1e-11)
-            opt_kwargs["options"].setdefault("verb_log", 0)
-            if self.objective_type != "energy":
-                raise ValueError("objective_type must be energy")
-        elif mode == "bfgs":
-            if self.objective_type != "energy":
-                raise ValueError("objective_type must be energy")
-            optimizer = minimize
-            opt_kwargs["method"] = "bfgs"
-            opt_kwargs.setdefault("options", {"gtol": 1e-8})
-            # opt_kwargs["options"]['schrodinger'] = objective
-            opt_kwargs.setdefault("callback", self.print)
-        elif mode == "trustregion":
-            raise NotImplementedError
-        elif mode == "trf":
-            if self.objective_type != "projected":
-                raise ValueError("objective_type must be energy")
-            raise NotImplementedError
         else:
-            raise ValueError("invalid mode parameter")
+            raise ValueError("Invalid mode parameter. Only 'root' and 'lstsq' are supported for the ProjectedSchrodingerPyCI class.")
 
         # Run optimizer
         results = optimizer(*opt_args, **opt_kwargs)
