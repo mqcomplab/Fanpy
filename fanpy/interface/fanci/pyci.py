@@ -406,7 +406,6 @@ class ProjectedSchrodingerPyCI(FanCI):
 
         return y
 
-    #todo: move to utility file. 
     def compute_overlap_double_deriv(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
         """
         Compute the FanCI overlap double derivative tensor.
