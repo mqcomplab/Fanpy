@@ -4,7 +4,6 @@ Based of the original class from FanCI code.
 """
 #todo: update docstrings
 
-from fanpy.tools import slater
 
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.base import BaseSchrodinger
