@@ -508,14 +508,13 @@ class ProjectedSchrodingerPyCI(FanCI):
             Jacobian matrix.
 
         """
-        if self.objective_type == "projected":
-            if self.nactive == self.nparam:
-                output = super().compute_jacobian(x)
-            else:
-                output = self.masked_compute_jacobian(x)
-            self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
-            if self.step_print:
-                print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
+        if self.nactive == self.nparam:
+            output = super().compute_jacobian(x)
+        else:
+            output = self.masked_compute_jacobian(x)
+        self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
+        if self.step_print:
+            print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
 
         if self.step_save:
             self.save_params()
