@@ -486,28 +486,6 @@ class ProjectedSchrodingerPyCI(FanCI):
                     print(
                         "(Mid Optimization) Cost from constraints: {}".format(self.print_queue["Cost from constraints"])
                     )
-        else: #todo: move to utility file. 
-            # NOTE: ignores energy and constraints
-            # Allocate objective vector
-            output = np.zeros(self.nproj, dtype=pyci.c_double)
-
-            # Compute overlaps of determinants in sspace:
-            #
-            #   c_m
-            #
-            ovlp = self.compute_overlap(x[:-1], "S")
-
-            # Compute objective function:
-            #
-            #   f_n = (\sum_n <\Psi|n> <n|H|\Psi>) / \sum_n <\Psi|n> <n|\Psi>
-            #
-            # Note: we update ovlp in-place here
-            self.ci_op(ovlp, out=output)
-            output = np.sum(output * ovlp[: self.nproj])
-            output /= np.sum(ovlp[: self.nproj] ** 2)
-            self.print_queue["Electronic Energy"] = output
-            if self.step_print:
-                print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
 
         if self.step_save:
             self.save_params()

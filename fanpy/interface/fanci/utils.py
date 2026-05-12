@@ -41,3 +41,29 @@ def convert_pyci_occs_to_fanpy_sds(occs_array: np.ndarray, nspatial: int):
             sd = slater.create(sd, *(occs + nspatial))
             sds.append(sd)
     return sds
+
+# todo: create utility function to calculate variational energy objective:
+# This is the objective function from the old interface class for objective type energy. 
+# Note: we do not have the features yet to implement this, thus it is staying here for now, until development on the variational interface is done. 
+#   else:
+#             # NOTE: ignores energy and constraints
+#             # Allocate objective vector
+#             output = np.zeros(self.nproj, dtype=pyci.c_double)
+
+#             # Compute overlaps of determinants in sspace:
+#             #
+#             #   c_m
+#             #
+#             ovlp = self.compute_overlap(x[:-1], "S")
+
+#             # Compute objective function:
+#             #
+#             #   f_n = (\sum_n <\Psi|n> <n|H|\Psi>) / \sum_n <\Psi|n> <n|\Psi>
+#             #
+#             # Note: we update ovlp in-place here
+#             self.ci_op(ovlp, out=output)
+#             output = np.sum(output * ovlp[: self.nproj])
+#             output /= np.sum(ovlp[: self.nproj] ** 2)
+#             self.print_queue["Electronic Energy"] = output
+#             if self.step_print:
+#                 print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
