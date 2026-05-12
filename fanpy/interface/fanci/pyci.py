@@ -474,18 +474,17 @@ class ProjectedSchrodingerPyCI(FanCI):
             Objective vector.
 
         """
-        if self.objective_type == "projected":
-            output = super().compute_objective(x)
-            self.print_queue["Electronic Energy"] = x[-1]
-            self.print_queue["Cost"] = np.sum(output[: self.nproj] ** 2)
-            self.print_queue["Cost from constraints"] = np.sum(output[self.nproj :] ** 2)
-            if self.step_print:
-                print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
-                print("(Mid Optimization) Cost: {}".format(self.print_queue["Cost"]))
-                if self.constraints:
-                    print(
-                        "(Mid Optimization) Cost from constraints: {}".format(self.print_queue["Cost from constraints"])
-                    )
+        output = super().compute_objective(x)
+        self.print_queue["Electronic Energy"] = x[-1]
+        self.print_queue["Cost"] = np.sum(output[: self.nproj] ** 2)
+        self.print_queue["Cost from constraints"] = np.sum(output[self.nproj :] ** 2)
+        if self.step_print:
+            print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
+            print("(Mid Optimization) Cost: {}".format(self.print_queue["Cost"]))
+            if self.constraints:
+                print(
+                    "(Mid Optimization) Cost from constraints: {}".format(self.print_queue["Cost from constraints"])
+                )
 
         if self.step_save:
             self.save_params()
