@@ -518,7 +518,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             self.save_params()
         return output
 
-    #todo: move to utility file. 
     # TODO: This implementation was needed because PyCI does not support frozen parameters.
     # TODO: It can be removed in the future if PyCI adds support.
     def masked_compute_jacobian(self, x: np.ndarray) -> np.ndarray:

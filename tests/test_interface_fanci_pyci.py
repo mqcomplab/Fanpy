@@ -193,6 +193,13 @@ def test_compute_overlap_double_deriv():
 
 ################# compute jacobian tests ###################################
 
+# compute masked jacobian tests
+# Mock the following: 
+# self.ci_op
+# compute overlap
+# compute overlap derivative 
+# that simplifies the testing procedure. 
+
 
 ################# optimize tests ###################################
 
