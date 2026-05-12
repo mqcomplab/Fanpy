@@ -785,7 +785,6 @@ class ProjectedSchrodingerPyCI(FanCI):
         if use_jac:
             opt_kwargs["jac"] = j
 
-        # todo: remove modes that do not work with projected Schrodinger equation. 
         # Parse mode parameter; choose optimizer and fix arguments
         if mode == "lstsq":
             optimizer = least_squares
