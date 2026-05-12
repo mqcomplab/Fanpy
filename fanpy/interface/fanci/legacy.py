@@ -1268,13 +1268,13 @@ class ProjectedSchrodingerFanCI(ProjectedSchrodingerLegacyFanCI):
         -------
         ovlp_hessian : np.ndarray
             Shape: (N_SD, nparam, nparam)
-        """
-        if occs_array == "P":
+       """
+        if isinstance(occs_array, np.ndarray):
+            pass
+        elif occs_array == "P":
             occs_array = self.pspace
         elif occs_array == "S":
             occs_array = self.sspace
-        elif isinstance(occs_array, np.ndarray):
-            pass
         else:
             raise ValueError("invalid `occs_array` argument")
         from fanpy.wfn.cc.base import BaseCC
