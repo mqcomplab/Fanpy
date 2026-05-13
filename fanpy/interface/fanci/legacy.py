@@ -18,9 +18,8 @@ import os
 import math
 
 import pyci
-import cma
 import numpy as np
-from scipy.optimize import OptimizeResult, least_squares, root, minimize
+from scipy.optimize import OptimizeResult, least_squares, root
 
 __all__ = [
     "ProjectedSchrodingerFanCI",
