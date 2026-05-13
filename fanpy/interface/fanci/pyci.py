@@ -1,8 +1,8 @@
 """
-Legacy version of FanCI objective class.
-Based of the original class from FanCI code.
+Projected Schrodinger objective class for PyCI calculations
+This class inherits from PyCI's FanCI class and defines methods 
+such as compute overlap with Fanpy functionality
 """
-#todo: update docstrings
 
 
 from fanpy.wfn.base import BaseWavefunction
@@ -19,9 +19,8 @@ import math
 import pyci
 from pyci.fanci import FanCI
 
-import cma
 import numpy as np
-from scipy.optimize import OptimizeResult, least_squares, root, minimize
+from scipy.optimize import OptimizeResult, least_squares, root
 
 __all__ = [
     "ProjectedSchrodingerFanCI",
@@ -657,7 +656,6 @@ class ProjectedSchrodingerPyCI(FanCI):
         """
         return np.hstack([comp.params.ravel()[inds] for comp, inds in self.param_selection.items()])
 
-    #todo: move to utility file. 
     def make_norm_constraint(self):
         def f(x: np.ndarray) -> float:
             """ "
