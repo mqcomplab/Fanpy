@@ -98,14 +98,6 @@ class ProjectedSchrodingerPyCI(FanCI):
         return self._param_selection
 
     @property
-    def objective_type(self) -> str:
-        """
-        Set objective type for the FanCI problem as "projected" or "energy".
-
-        """
-        return self._objective_type
-
-    @property
     def max_memory(self) -> int:
         """
         Maximum memory available for this calculations in Megabytes.
@@ -175,7 +167,6 @@ class ProjectedSchrodingerPyCI(FanCI):
         param_selection: dict,
         norm_param,
         norm_det,
-        objective_type: str,
         max_memory: int,
         step_print: bool,
         step_save: bool,
@@ -212,8 +203,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             Indices of parameters whose values to constrain, and the value to which to constrain them.
         norm_det : Sequence[Tuple[int, float]]
             Indices of determinant whose overlaps to constrain, and the value to which to constrain them.
-        objective_type: str
-            Set objective type for the FanCI problem as "projected" or "energy".
         max_memory = int
             Maximum memory available for this calculations in Megabytes.
             It is utilized in specific loops to avoid potential memory leaks.
@@ -245,7 +234,6 @@ class ProjectedSchrodingerPyCI(FanCI):
         self._step_save = step_save
         self._tmpfile = tmpfile
         self._param_selection = param_selection
-        self._objective_type = objective_type
         self._max_memory = max_memory
 
         self.print_queue = {}
@@ -789,8 +777,6 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("max_nfev", 1000 * self.nactive)
             opt_kwargs.setdefault("verbose", 2)
             # opt_kwargs.setdefault("callback", self.print)
-            if self.objective_type != "projected":
-                raise ValueError("objective_type must be projected")
         elif mode == "root":
             if self.nequation != self.nactive:
                 raise ValueError("'root' does not work with over-determined system")
@@ -919,7 +905,6 @@ class ProjectedSchrodingerPyCI(FanCI):
                 mask=mask,
                 constraints=constraints,
                 param_selection=self.param_selection,
-                objective_type=self.objective_type,
                 max_memory=self.max_memory,
                 step_print=self.step_print,
                 step_save=self.step_save,
