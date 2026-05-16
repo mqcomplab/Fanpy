@@ -5,16 +5,66 @@ from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
 
 class APG1roD(PCCD):
-    r"""APG1ro wavefunction with only double excitations.
+    r"""APG1ro wavefunction with generalized double excitations.
+
+    NOTE:
+    The excitation operator pool in this wavefunction consists exclusively
+    of double excitations that always annihilate paired occupied electron pairs 
+    :math: `(i, \bar{i})`, while the created virtual spin orbitals 
+    :math: `(p, q)` are unrestricted for their spin and spatial part.
 
     .. math::
 
-        \[\left| {{\Psi }_{APG1roD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a,b\in virt}^{{}}
-        {{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}} \right)}\left| {{\Phi }_{0}} \right\rangle \]
+    \left| \Psi_{\mathrm{APG1roD}} \right\rangle 
+    = \prod_{\mu \in \mathcal{E}}
+    \left(1 + t_\mu \tau_\mu \right) \left| \Phi_0 \right\rangle
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    where
+
+    .. math::
+
+    \mathcal{E} = \left\{\tau_{i\bar{i}}^{pq} \right\}
+
+    The excitation operator pool :math:\mathcal{E} consists of generalized
+    double excitations that
+        - annihilate paired occupied orbitals
+          :math:(i\bar{i})
+        - create electrons in arbitrary virtual spin orbitals
+          :math:(pq)
+
+    generated from the reference determinant.
+
+    Consequently, the ansatz includes both
+        - pair-preserving double excitations
+
+        .. math::
+
+        \tau_{i\bar{i}}^{a\bar{a}}
+
+        - and pair-breaking double excitations
+
+        .. math::
+
+        \tau_{i\bar{i}}^{ab}
+
+        where :math:b \neq \bar{a}.
+
+    Unlike AP1roG/PCCD, the virtual excitation space is not restricted to
+    paired spin complements. Consequently, this ansatz may break spin symmetry
+    and generate spin-contaminated determinants.
+
+    Although this class inherits the s_type infrastructure from PCCD,
+    the seniority-filtering conditions do not affect the present ansatz
+    because the excitation operator pool contains only double excitations.
+
+    This method constructs only a static pool of excitation operators
+    derived from the reference determinant.
+
+    The overlap routines later generate compatible combinations of these
+    excitation operators during determinant connections.
+
+    The reference wavefunction must be a seniority-0 Slater determinant.
+
 
     Attributes
     ----------

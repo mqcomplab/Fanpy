@@ -5,22 +5,102 @@ from fanpy.wfn.cc.apset1rog_d import APset1roGD
 
 
 class APset1roGSD(APset1roGD):
-    r"""APset1roG wavefunction with single and double excitations.
+    r"""AAPset1roG wavefunction with set-restricted single and double excitations.
+
+    NOTE:
+    The excitation operator pool in this wavefunction consists of
+    set-restricted spin-conserving single excitations together with
+    set-restricted double excitations inherited from APset1roGD.
 
     .. math::
 
-        \left| {{\Psi }_{APset1roGSD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{\begin{smallmatrix}a\in A \\b\in B\\A\bigcap B=\varnothing
-        \end{smallmatrix}}^{{}}{{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}}
-        \right)}\prod\limits_{i=1}^{N/2\;}{\left( 1+\sum\limits_{b\in B}^{{}}{{{t}_{\bar{i};b}}
-        \hat{\tau }_{i\bar{i}}^{ib}} \right)\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a\in A}^{{}}{{{t}_{i;a}}\hat{\tau }_{i\bar{i}}^{a\bar{i}}}
-        \right)}\left| {{\Phi }_{0}} \right\rangle }
+    \left| \Psi_{\mathrm{APset1roGSD}} \right\rangle
+    = \prod_{\mu \in \mathcal{E}} 
+    \left(1 + t_\mu \tilde{\tau}_\mu \right)
+    \left| \Phi_0 \right\rangle
 
+    where
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    .. math::
 
+    \mathcal{E} =
+    \left\{ \tau_i^a, \tau_{\bar{i}}^{b}, \tau_{i\bar{i}}^{ab} 
+    \; \middle| \; a \in A,\; b \in B,\; A \cap B = \varnothing
+    \right\}
+
+    The excitation operator pool :math:\mathcal{E} consists of
+        - set-restricted spin-conserving single excitations
+        :math:(\tau_i^a,\tau_{\bar{i}}^{b})
+
+        - set-restricted double excitations
+        :math:(\tau_{i\bar{i}}^{ab})
+
+    generated from the reference determinant.
+
+    The generalized doubles always annihilate paired occupied spin
+    complements :math:(i,\bar{i}), while creating electrons into two
+    disjoint sets of virtual spin orbitals :math:(A,B).
+
+    By default,
+    :math:A corresponds to virtual alpha spin orbitals,
+    :math:B corresponds to virtual beta spin orbitals,
+    thereby preserving spin projection symmetry.
+
+    Custom disjoint virtual sets may also be supplied through the
+    indices argument of :meth:assign_exops.
+
+    The effective single excitation operators :math:\tilde{\tau} may
+    additionally be constrained during overlap evaluation through the
+    s_type option implemented in the PCCD wavefunction class.
+
+    sen-o: Require breaking an occupied pair
+
+    .. math::
+
+        \tilde{\tau}_i^a = a_a^\dagger a_i \hat{n}_{\bar{i}}
+        \qquad
+        \tilde{\tau}_{\bar{i}}^{b} = a_b^\dagger a_{\bar{i}} \hat{n}_i
+
+    sen-v: Forbid formation of virtual pairs
+
+    .. math::
+
+        \tilde{\tau}_i^a = a_a^\dagger a_i \left(1 - \hat{n}_{\bar{a}} \right)
+        \qquad
+        \tilde{\tau}_{\bar{i}}^{b} = a_b^\dagger a_{\bar{i}}
+        \left(1 - \hat{n}_{\bar{b}} \right)
+
+    sen-ov: Apply both restrictions
+
+    .. math::
+
+        \tilde{\tau}_i^a = a_a^\dagger a_i
+        \left(1 - \hat{n}_{\bar{a}} \right) \hat{n}_{\bar{i}}
+        \qquad
+        \tilde{\tau}_{\bar{i}}^{b} = a_b^\dagger a_{\bar{i}}
+        \left(1 - \hat{n}_{\bar{b}}\right) \hat{n}_i
+
+    free: No seniority restrictions
+
+    .. math::
+
+        \tilde{\tau}_i^a = a_a^\dagger a_i
+        \qquad
+        \tilde{\tau}_{\bar{i}}^{b} =  a_b^\dagger a_{\bar{i}}
+
+    These restrictions are enforced dynamically during excitation-operator
+    combination filtering during overlap evaluation and are not encoded
+    directly into the stored excitation operators.
+
+    This method constructs only a static pool of excitation operators
+    derived from the reference determinant.
+
+    The overlap routines later generate compatible combinations of these
+    excitation operators during determinant connections.
+
+    The reference wavefunction must be a seniority-0 Slater determinant.
+
+    
     Attributes
     ----------
     nelec : int

@@ -5,18 +5,60 @@ from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
 
 class APset1roGD(PCCD):
-    r"""APset1roG wavefunction with only double excitations.
+    r"""APset1roG wavefunction with set-restricted double excitations.
+
+    NOTE:
+    The excitation operator pool in this wavefunction consists exclusively
+    of double excitations that annihilate paired occupied spin orbitals
+    while creating electrons into two disjoint sets of virtual spin orbitals.
 
     .. math::
 
-        \left| {{\Psi }_{APset1roGD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{\begin{smallmatrix}a\in A \\ b\in B \\ A\bigcap B=\varnothing
-        \end{smallmatrix}}^{{}}{{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}}
-        \right)}\left| {{\Phi }_{0}} \right\rangle
+    \left| \Psi_{\mathrm{APset1roGD}} \right\rangle
+    =  \prod_{\mu \in \mathcal{E}}
+    \left( 1 + t_\mu \tau_\mu \right)
+    \left| \Phi_0 \right\rangle
 
+    where
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    .. math::
+
+    \mathcal{E} = \left\{\tau_{i\bar{i}}^{ab}
+    \; \middle| \; a \in A,\; b \in B,\; A \cap B = \varnothing
+    \right\}
+
+    The excitation operator pool :math:\mathcal{E} consists of generalized
+    double excitations that
+        - annihilate paired occupied spin complements
+          :math:(i,\bar{i})
+        - create electrons into two disjoint sets of virtual spin orbitals
+          :math:(A,B)
+    generated from the reference determinant.
+
+    By default,
+    :math:A corresponds to virtual alpha spin orbitals,
+    :math:B corresponds to virtual beta spin orbitals,
+    thereby preserving spin projection symmetry.
+
+    Custom disjoint virtual sets may also be supplied through the
+    indices argument of :meth:assign_exops.
+
+    Unlike APG1roD, the virtual excitation space is constrained through
+    the disjoint-set structure :math:A \cap B = \varnothing, preventing
+    both created electrons from occupying the same virtual spin orbital set.
+
+    Although this class inherits the s_type infrastructure from PCCD,
+    the seniority-filtering conditions do not affect the present ansatz
+    because the excitation operator pool contains only double excitations.
+
+    This method constructs only a static pool of excitation operators
+    derived from the reference determinant.
+
+    The overlap routines later generate compatible combinations of these
+    excitation operators during determinant connections.
+
+    The reference wavefunction must be a seniority-0 Slater determinant.
+
 
     Attributes
     ----------

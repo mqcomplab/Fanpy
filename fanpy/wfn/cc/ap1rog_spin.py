@@ -1,23 +1,73 @@
-"""APG1ro wavefunction with single and double excitations."""
+"""AP1roG wavefunction with single and double excitations."""
 
 from fanpy.tools import slater
 from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
 
 class AP1roGSDSpin(PCCD):
-    r"""AP1roG wavefunction with single and double excitations, correct spin symmetry.
+    r"""AP1roG wavefunction with single and paired-double excitations, both preserving spin symmetry.
+    
+    NOTE: The excitation operator pool in this wavefunction consists of paired doubles 
+    inherited from PCCD together with spin-conserving single excitations.
 
     .. math::
 
-        \left| {{\Psi }_{APG1roSD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a,b\in virt}^{{}}{{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}}
-        \right)}\prod\limits_{i=1}^{N/2\;}{\left( 1+\sum\limits_{a\in virt}^{{}}{{{t}_{\bar{i};a}}
-        \hat{\tau }_{i\bar{i}}^{ia}} \right)\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a\in virt}^{{}}{{{t}_{i;a}}\hat{\tau }_{i\bar{i}}^{a\bar{i}}}
-        \right)}\left| {{\Phi }_{0}} \right\rangle }
+    \left| \Psi _{\mathrm{AP1roGSDSpin}} \right\rangle = \prod _{\mu \in \mathcal{E}} 
+        \left( 1+t_{\mu }\tilde{\tau }_{\mu }\right)| \Phi _{0} \rangle
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    where, 
+
+    .. math::
+    
+    \mathcal{E} = \left\{\tau_i^a,\tau_{\bar{i}}^{\bar{a}},\tau_{i\bar{i}}^{a\bar{a}}\right\}
+        
+    The excitation operator pool :math:\mathcal{E} consists of
+        - spin-conserving single excitations
+        :math:(\tau_i^a,\tau_{\bar{i}}^{\bar{a}})
+        - paired double excitations
+        :math:(\tau_{i\bar{i}}^{a\bar{a}})
+    generated from the reference determinant.
+    
+    The effective single excitation operators :math:\tilde{\tau} may additionally be 
+    constrained during overlap evaluation through the s_type option implemented in the PCCD wavefunction class.
+
+    sen-o  : Require breaking an occupied pair 
+    
+    .. math::
+
+        \tilde{\tau}_i^a = a_a^\dagger a_i \, \hat{n}_{\bar{i}}, 
+        \qquad 
+        \tilde{\tau}_{\bar{i}}^{\bar{a}} = a_{\bar{a}}^\dagger a_{\bar{i}} \, \hat{n}_i 
+
+    sen-v  : Forbid formation of virtual pairs
+
+    .. math::
+
+        \tilde{\tau}_i^a = a_a^\dagger a_i \left(1 - \hat{n}_{\bar{a}}\right), 
+        \qquad
+        \tilde{\tau}_{\bar{i}}^{\bar{a}} = a_{\bar{a}}^\dagger a_{\bar{i}} \left(1 - \hat{n}_a\right)
+
+    sen-ov : Apply both above restrictions
+
+    .. math::
+
+        \tilde{\tau}_i^a = a_a^\dagger a_i \left(1 - \hat{n}_{\bar{a}} \right) \hat{n}_{\bar{i}}, 
+        \qquad 
+        \tilde{\tau}_{\bar{i}}^{\bar{a}} = a_{\bar{a}}^\dagger a_{\bar{i}} 
+            \left(1 - \hat{n}_a \right) \hat{n}_i
+
+    free : No seniority restrictions
+
+    .. math::
+
+        \tilde{\tau}_i^a = a_a^\dagger a_i, 
+        \qquad 
+        \tilde{\tau}_{\bar{i}}^{\bar{a}} = a_{\bar{a}}^\dagger a_{\bar{i}} \]
+
+    These restrictions are enforced dynamically during excitation-operator combination filtering 
+    during overlap evaluation and are not encoded directly into the stored excitation operators.
+
+    The reference wavefunction can only be a single Slater determinant with seniority-0.
 
     Attributes
     ----------
@@ -143,6 +193,10 @@ class AP1roGSDSpin(PCCD):
         spin-orbitals to create.
         [a1, a2, ..., aN, c1, c2, ..., cN]
 
+
+        This method constructs only a static pool of excitation operators derived from 
+        the reference determinant. The overlap routines later generate compatible combinations 
+        of these excitation operators during determinant connections.
         """
         if indices is not None:
             raise TypeError(
