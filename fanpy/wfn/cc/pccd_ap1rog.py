@@ -45,6 +45,17 @@ class PCCD(BaseCC):
         dictionary, the keys are tuples with the indices of annihilation and creation
         operators, and the values are the excitation operators that allow to excite from the
         annihilation to the creation operators.
+    s_type : str
+        Option indicating how the single excitations are allowed to affect the seniority
+        of the occupied and/or virtual spaces.
+        free: no restrictions imposed.
+        sen-o: single excitations must break an occupied pair.
+               (only excite from spin-orbital i if its complement is occupied)
+        sen-v: single excitations cannot form a pair.
+                (only excite to a virtual spin-orbital a if its complement is empty)
+        sen-ov: single excitations must break an occupied pair and cannot form extra pairs
+                (only excite from spin-orbital i if its complement is occupied and only excite to a virtual spin-orbital a if its complement is empty)
+
 
     Properties
     ----------
@@ -101,7 +112,10 @@ class PCCD(BaseCC):
     generate_possible_exops(self, a_inds, c_inds):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
-
+    assign_s_type(self, s_type):
+        Assign the s_type option.
+    _olp_double_derivative(self, sd): int
+        Returns double derivative of overlap for a given sd
     """
 
     def __init__(
@@ -115,6 +129,7 @@ class PCCD(BaseCC):
         params=None,
         exop_combinations=None,
         refresh_exops=None,
+        s_type="sen-o",
     ):
         """Initialize the wavefunction.
 
@@ -152,6 +167,7 @@ class PCCD(BaseCC):
         super().__init__(
             nelec, nspin, memory=memory, params=params, exop_combinations=exop_combinations, refresh_exops=refresh_exops
         )
+        self.assign_s_type(s_type=s_type)
         self.assign_ranks(ranks=ranks)
         self.assign_exops(indices=indices)
         self.assign_refwfn(refwfn=refwfn)
@@ -224,6 +240,10 @@ class PCCD(BaseCC):
         spin-orbitals to create.
         [a1, a2, ..., aN, c1, c2, ..., cN]
 
+        # For pCCD: Pair excitations only; no single excitations are generated.
+        # Consequently, s_type-based seniority filtering is inactive for
+        # the standard PCCD excitation space.
+
         """
         if indices is not None:
             raise TypeError(
@@ -279,6 +299,41 @@ class PCCD(BaseCC):
             # TODO: check that refwfn has the right number of spin-orbs
             self.refwfn = refwfn
 
+    def assign_s_type(self, s_type):
+        """Assign the seniority option for single excitations.
+        Notes
+        -----
+        For doubles-only wavefunctions, these seniority restrictions
+        do not affect the overlap evaluation because the excitation operator
+        space contains only pair-double excitations and no singles.
+        The restrictions become relevant only when single excitations are
+        included in the excitation operator space.
+
+        Parameters
+        ----------
+        s_type : str
+        Option indicating how the single excitations are allowed to affect the seniority
+        of the occupied and/or virtual spaces.
+        free: no restrictions imposed.
+        sen-o: single excitations must break an occupied pair.
+               (only excite from spin-orbital i if its complement is occupied)
+        sen-v: single excitations cannot form a pair.
+                (only excite to a virtual spin-orbital a if its complement is empty)
+        sen-ov: single excitations must break an occupied pair and cannot form extra pairs
+
+        Raises
+        ------
+        ValueError
+            If s_type is none of 'free', 'sen-o', 'sen-v', 'sen-ov'.
+
+        """
+        allowed = ["free", "sen-o", "sen-v", "sen-ov"]
+
+        if s_type not in allowed:
+            raise ValueError("Invalid s_type")
+
+        self.s_type = s_type
+
     def _olp(self, sd):
         r"""Calculate the matrix element of the CC operator between the Slater determinants.
 
@@ -325,59 +380,199 @@ class PCCD(BaseCC):
             indices_multi = self.exop_combinations[tuple(a_inds + c_inds)]
             # FIXME: filter out rows whose excitation operators does not have annihilator that is
             # doubly occupied
-            occ_indices = set(slater.occ_indices(sd))
-            # print(indices_multi)
-            for exc_order in indices_multi:
-                indices_sign = indices_multi[exc_order]
-                selected_rows = []
-                for row_ind, row in enumerate(indices_sign):
-                    # occupied orbitals but have its spin composite also occupied
-                    # AND its composite CANNOT participate in other excitation operators
-                    trash = set([])
-                    skip_row = False
-                    for exop in (self.ind_exops[i] for i in row[:-1]):
-                        if len(exop) == 2:
-                            if exop[0] in trash:
-                                # skip
-                                skip_row = True
-                                break
-                            if exop[0] < self.nspatial:
-                                if exop[0] + self.nspatial not in occ_indices:
-                                    # skip
-                                    skip_row = True
-                                    break
-                                else:
-                                    # add to trash
-                                    trash.add(exop[0])
-                                    trash.add(exop[0] + self.nspatial)
-                            if exop[0] >= self.nspatial:
-                                if exop[0] - self.nspatial not in occ_indices:
-                                    # skip
-                                    skip_row = True
-                                    break
-                                else:
-                                    # add to trash
-                                    trash.add(exop[0])
-                                    trash.add(exop[0] - self.nspatial)
-                        # FIXME: not sure
-                        else:
-                            for j in exop[: len(exop) // 2]:
-                                if j in trash:
-                                    # skip
-                                    skip_row = True
-                                    break
-                                else:
-                                    trash.add(j)
-                            if skip_row:
-                                break
+            occ_indices = set(slater.occ_indices(sd2))
+        
+            # ------------------------------------------------------------------------------       
+            # NOTE:
+            # The seniority filtering options (s_type = "sen-o", "sen-v", "sen-ov")
+            # only affect excitation operators that contain single excitations
+            # (i.e. len(exop) == 2).
+            #
+            # Pure PCCD/AP1roG defines only pair-double excitation operators:
+            #     [i, i_bar, a, a_bar]
+            # which have len(exop) == 4 and automatically preserve seniority.
+            #
+            # Therefore, for standard PCCD wavefunctions, the s_type logic is
+            # effectively dormant unless single excitations are introduced into
+            # the excitation operator space.
+            # ------------------------------------------------------------------------------
 
-                    if not skip_row:
-                        selected_rows.append(row_ind)
+            # "Break occupied pairs"
+            if self.s_type == "sen-o":
+                for exc_order in indices_multi:
+                    indices_sign = indices_multi[exc_order]
+                    selected_rows = []
+                    for row_ind, row in enumerate(indices_sign):
+                        # occupied orbitals but have its spin composite also occupied
+                        # AND its composite CANNOT participate in other excitation operators
+                        trash = set([])
+                        skip_row = False
+                        for exop in (self.ind_exops[i] for i in row[:-1]):
+                            if len(exop) == 2:
+                                if exop[0] in trash:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                if exop[0] < self.nspatial:
+                                    if exop[0] + self.nspatial not in occ_indices:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        # add to trash
+                                        trash.add(exop[0])
+                                        trash.add(exop[0] + self.nspatial)
+                                if exop[0] >= self.nspatial:
+                                    if exop[0] - self.nspatial not in occ_indices:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        # add to trash
+                                        trash.add(exop[0])
+                                        trash.add(exop[0] - self.nspatial)
+                            # FIXME: not sure
+                            else:
+                                for j in exop[: len(exop) // 2]:
+                                    if j in trash:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        trash.add(j)
+                                if skip_row:
+                                    break
 
-                indices_multi[exc_order] = indices_sign[selected_rows]
-                # FIXME:
-                # print(selected_rows)
-                # print(indices_multi[exc_order])
+                        if not skip_row:
+                            selected_rows.append(row_ind)
+                    indices_multi[exc_order] = indices_sign[selected_rows]
+                    # FIXME:
+                    # print(selected_rows)
+                    # print(indices_multi[exc_order])
+            # "Don't form virtual pairs"
+            elif self.s_type == "sen-v":
+                for exc_order in indices_multi:
+                    indices_sign = indices_multi[exc_order]
+                    selected_rows = []
+                    for row_ind, row in enumerate(indices_sign):
+                        # occupied orbitals but have its spin composite also occupied
+                        # AND its composite CANNOT participate in other excitation operators
+                        trash = set([])
+                        skip_row = False
+                        for exop in (self.ind_exops[i] for i in row[:-1]):
+                            if len(exop) == 2:
+                                if exop[1] in trash:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                if exop[1] < self.nspatial:
+                                    if exop[1] + self.nspatial in occ_indices:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        # add to trash
+                                        trash.add(exop[1])
+                                        trash.add(exop[1] + self.nspatial)
+                                if exop[1] >= self.nspatial:
+                                    if exop[1] - self.nspatial in occ_indices:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        # add to trash
+                                        trash.add(exop[1])
+                                        trash.add(exop[1] - self.nspatial)
+                            # FIXME: not sure
+                            else:
+                                for j in exop[len(exop) // 2 :]:
+                                    if j in trash:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        trash.add(j)
+                                if skip_row:
+                                    break
+
+                        if not skip_row:
+                            selected_rows.append(row_ind)
+
+                    indices_multi[exc_order] = indices_sign[selected_rows]
+                    # FIXME:
+                    # print(selected_rows)
+                    # print(indices_multi[exc_order])
+            # "Break occupied pairs AND don't form virtual pairs"
+            elif self.s_type == "sen-ov":
+                for exc_order in indices_multi:
+                    indices_sign = indices_multi[exc_order]
+                    selected_rows = []
+                    for row_ind, row in enumerate(indices_sign):
+                        # occupied orbitals but have its spin composite also occupied
+                        # AND its composite CANNOT participate in other excitation operators
+                        trash = set([])
+                        skip_row = False
+                        for exop in (self.ind_exops[i] for i in row[:-1]):
+                            if len(exop) == 2:
+                                if exop[0] in trash or exop[1] in trash:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                if exop[0] < self.nspatial:
+                                    if exop[0] + self.nspatial not in occ_indices:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        # add to trash
+                                        trash.add(exop[0])
+                                        trash.add(exop[0] + self.nspatial)
+                                if exop[0] >= self.nspatial:
+                                    if exop[0] - self.nspatial not in occ_indices:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        # add to trash
+                                        trash.add(exop[0])
+                                        trash.add(exop[0] - self.nspatial)
+                                if exop[1] < self.nspatial:
+                                    if exop[1] + self.nspatial in occ_indices:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        # add to trash
+                                        trash.add(exop[1])
+                                        trash.add(exop[1] + self.nspatial)
+                                if exop[1] >= self.nspatial:
+                                    if exop[1] - self.nspatial in occ_indices:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        # add to trash
+                                        trash.add(exop[1])
+                                        trash.add(exop[1] - self.nspatial)
+                            # FIXME: not sure
+                            else:
+                                for j in exop:
+                                    if j in trash:
+                                        # skip
+                                        skip_row = True
+                                        break
+                                    else:
+                                        trash.add(j)
+                                if skip_row:
+                                    break
+
+                        if not skip_row:
+                            selected_rows.append(row_ind)
+
+                    indices_multi[exc_order] = indices_sign[selected_rows]
+                    # FIXME:
+                    # print(selected_rows)
+                    # print(indices_multi[exc_order])
 
             amplitudes = self.product_amplitudes_multi(indices_multi)
             # print(amplitudes)
@@ -433,7 +628,14 @@ class PCCD(BaseCC):
             indices_multi = self.exop_combinations[tuple(a_inds + c_inds)]
             # FIXME: filter out rows whose excitation operators do not have annihilator that is
             # doubly occupied
-            occ_indices = set(slater.occ_indices(sd2))
+
+            # NOTE:
+            # Retaining the original pccd_ap1rog_NEW implementation using
+            # `occ_indices(sd)` here (rather than `sd2`).
+            # The correct determinant to use for occupancy filtering during
+            # excitation validation requires further investigation
+            occ_indices = set(slater.occ_indices(sd))
+
             for exc_order in indices_multi:
                 indices_sign = indices_multi[exc_order]
                 selected_rows = []
@@ -508,3 +710,128 @@ class PCCD(BaseCC):
             return val
         else:
             return temp_olp(sd, self.refwfn)
+
+
+    def _olp_double_derivative(self, sd):
+        """Calculate the double derivative of the overlap with the Slater determinant.
+
+        .. math::
+
+        H_{ab} = \frac{\partial^2}{\partial t_a \partial t_b}
+            \left[ \langle \mathrm{SD} \mid \Psi_{\mathrm{CC}} \rangle \right]
+
+        Parameters
+        ----------
+        sd : int
+            Occupation vector of the left Slater determinant given as a bitstring.
+        
+        Returns
+        -------
+        olp double derivative: 2D numpy array with Hessian elements :math:`H_{ab}`.
+
+        """
+
+        def temp_olp_double_deriv(sd1, sd2):
+            if sd1 == sd2:
+                return np.zeros((self.nparams, self.nparams))
+            # FIXME: this should definitely be vectorized
+            c_inds, a_inds = slater.diff_orbs(sd1, sd2)
+            if isinstance(a_inds, np.ndarray):
+                a_inds = a_inds.tolist()
+            if isinstance(c_inds, np.ndarray):
+                c_inds = c_inds.tolist()
+            # NOTE: Indices of the annihilation (a_inds) and creation (c_inds) operators
+            # that need to be applied to sd2 to turn it into sd1
+
+            # get sign
+            sign = slater.sign_excite(sd2, a_inds, c_inds)
+
+            val = np.zeros(self.nparams)
+            if tuple(a_inds + c_inds) not in self.exop_combinations:
+                self.generate_possible_exops(a_inds, c_inds)
+
+            # FIXME: sometimes exop contains virtual orbitals in annihilators may need to explicitly
+            # excite
+            indices_multi = self.exop_combinations[tuple(a_inds + c_inds)]
+            # FIXME: filter out rows whose excitation operators do not have annihilator that is
+            # doubly occupied
+
+            # NOTE:
+            # Retaining the original pccd_ap1rog_NEW implementation 
+            # of the whole _olp_double_deriv function alogn with
+            # `occ_indices(sd)` line.
+            # The correct determinant to use (`sd` or `sd2`) for occupancy filtering during
+            # excitation validation requires further investigation
+            oocc_indices = set(slater.occ_indices(sd))
+
+            for exc_order in indices_multi:
+                indices_sign = indices_multi[exc_order]
+                selected_rows = []
+                for row_ind, row in enumerate(indices_sign):
+                    # occupied orbitals but have its spin composite also occupied
+                    # AND its composite CANNOT participate in other excitation operators
+                    trash = set([])
+                    skip_row = False
+                    for exop in (self.ind_exops[i] for i in row[:-1]):
+                        if len(exop) == 2:
+                            # skip because annihilator was used in a single excitation as the
+                            # opposite spin
+                            if exop[0] in trash:
+                                # skip
+                                skip_row = True
+                                break
+                            if exop[0] < self.nspatial:
+                                # skip because corresponding beta orbital is not occupied
+                                if exop[0] + self.nspatial not in occ_indices:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                # this annihilator and its beta component cannot be used again
+                                else:
+                                    # add to trash
+                                    trash.add(exop[0])
+                                    trash.add(exop[0] + self.nspatial)
+                            if exop[0] >= self.nspatial:
+                                # skip because corresponding alpha orbital is not occupied
+                                if exop[0] - self.nspatial not in occ_indices:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                # this annihilator and its alpha component cannot be used again
+                                else:
+                                    # add to trash
+                                    trash.add(exop[0])
+                                    trash.add(exop[0] - self.nspatial)
+                        # FIXME: not sure
+                        else:
+                            for j in exop[: len(exop) // 2]:
+                                # skip because annihilator was used before as part of a single
+                                # excitation or its opposite spin component
+                                if j in trash:
+                                    # skip
+                                    skip_row = True
+                                    break
+                                # not necessary because same orbital is not annihilated multiple
+                                # times by construction
+                                else:
+                                    trash.add(j)
+                            if skip_row:
+                                break
+
+                    if not skip_row:
+                        selected_rows.append(row_ind)
+
+                indices_multi[exc_order] = indices_sign[selected_rows]
+
+            hessian = self.product_amplitudes_multi_double_derivative(indices_multi)
+            val = sign * hessian
+            return val
+
+        if isinstance(self.refwfn, CIWavefunction):
+            val = np.zeros(self.nparams, self.nparams)
+            for refsd in self.refwfn.sd_vec:
+                val += temp_olp_double_deriv(sd, refsd) * self.refwfn.get_overlap(refsd)
+            return val
+        else:
+            return temp_olp_double_deriv(sd, self.refwfn)
+

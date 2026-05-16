@@ -5,19 +5,72 @@ from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
 
 class AP1roGSDGeneralized(PCCD):
-    r"""AP1roG wavefunction with single and double excitations, broken spin symmetry.
+    r"""AP1roG wavefunction with single excitations allowing broken spinsymmetry and paired-double excitations.
+    
+    NOTE: 
+    The excitation operator pool in this wavefunction consists of paired doubles 
+    inherited from PCCD together with generalized single excitations over all spin orbitals.
 
     .. math::
 
-        \left| {{\Psi }_{APG1roSD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a,b\in virt}^{{}}{{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}}
-        \right)}\prod\limits_{i=1}^{N/2\;}{\left( 1+\sum\limits_{a\in virt}^{{}}{{{t}_{\bar{i};a}}
-        \hat{\tau }_{i\bar{i}}^{ia}} \right)\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a\in virt}^{{}}{{{t}_{i;a}}\hat{\tau }_{i\bar{i}}^{a\bar{i}}}
-        \right)}\left| {{\Phi }_{0}} \right\rangle }
+    \left| \Psi_{\mathrm{AP1roGSDGeneralized}} \right\rangle = \prod_{\mu \in \mathcal{E}} 
+    \left( 1 + t_\mu \tilde{\tau}_\mu \right) \left| \Phi_0 \right\rangle
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    where
+
+    .. math::
+
+    \mathcal{E} = \left\{\tau_p^q, \tau_{i\bar{i}}^{a\bar{a}} \right\}
+
+    The excitation operator pool :math:\mathcal{E} consists of
+        - generalized single excitations
+          :math:(\tau_p^q)
+        - paired double excitations
+          :math:(\tau_{i\bar{i}}^{a\bar{a}})
+
+    generated from the reference determinant.
+
+    Unlike :class:AP1roGSDSpin, the generalized single excitations are not
+    restricted to spin-conserving excitations. Consequently, this ansatz allows
+        - broken spin symmetry,
+        - spin-flip excitations,
+        - spin-contaminated determinants.
+
+    The effective single excitation operators :math:\tilde{\tau} may additionally be 
+    constrained during overlap evaluation through the s_type option implemented in the PCCD wavefunction class.
+
+
+    sen-o: Require breaking an occupied pair
+
+    .. math::
+
+        \tilde{\tau}_p^q = a_q^\dagger a_p \hat{n}_{\bar{p}}
+
+    sen-v: Forbid formation of virtual pairs
+
+    .. math::
+
+        \tilde{\tau}_p^q = a_q^\dagger a_p
+        \left( 1 - \hat{n}_{\bar{q}} \right)
+
+    sen-ov: Apply both restrictions
+
+    .. math::
+
+        \tilde{\tau}_p^q = a_q^\dagger a_p
+        \left(1 - \hat{n}_{\bar{q}} \right) \hat{n}_{\bar{p}}
+
+    free: No seniority restrictions
+
+    .. math::
+
+        \tilde{\tau}_p^q = a_q^\dagger a_p
+
+    These restrictions are enforced dynamically during excitation-operator
+    combination filtering during overlap evaluation and are not encoded
+    directly into the stored excitation operators.
+
+    The reference wavefunction must be a seniority-0 Slater determinant.
 
     Attributes
     ----------
