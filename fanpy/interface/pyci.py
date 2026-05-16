@@ -1,6 +1,5 @@
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.eqn.projected import ProjectedSchrodinger
-from fanpy.interface.fanci import ProjectedSchrodingerFanCI
 from fanpy.tools.sd_list import sd_list
 
 import numpy as np

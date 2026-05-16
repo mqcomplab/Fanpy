@@ -1,14 +1,15 @@
 """
-Legacy version of FanCI objective class.
-Based of the original class from FanCI code.
+Projected Schrodinger objective class for PyCI calculations
+This class inherits from PyCI's FanCI class and defines methods 
+such as compute overlap with Fanpy functionality
 """
 
-from fanpy.tools import slater
 
 from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.base import BaseSchrodinger
 from fanpy.wfn.composite.product import ProductWavefunction
 from fanpy.tools.performance import current_memory
+from fanpy.interface.fanci.utils import convert_pyci_occs_to_fanpy_sds
 
 from typing import Any, Callable, List, Tuple, Union, Sequence
 
@@ -18,9 +19,8 @@ import math
 import pyci
 from pyci.fanci import FanCI
 
-import cma
 import numpy as np
-from scipy.optimize import OptimizeResult, least_squares, root, minimize
+from scipy.optimize import OptimizeResult, least_squares, root
 
 __all__ = [
     "ProjectedSchrodingerFanCI",
@@ -182,6 +182,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         tmpfile: str,
         **kwargs: Any,
     ) -> None:
+        # todo: add default values to some of these arguments.
         """
         Initialize the FanCI problem.
 
@@ -270,6 +271,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             **kwargs,
         )
 
+
     def compute_overlap(self, x: np.ndarray, occs_array: Union[np.ndarray, str]) -> np.ndarray:
         """
         Compute the FanCI overlap vector.
@@ -301,23 +303,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         # FIXME: converting occs_array to slater determinants to be converted back to indices is
         # a waste
         # convert slater determinants
-        sds = []
-        if isinstance(occs_array[0, 0], np.ndarray): # if pspace generated with FCI
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
-                sds.append(sd)
-        else: # if pspace generated with DOCI
-            for i, occs in enumerate(occs_array):
-                if occs.dtype == bool:
-                    occs = np.where(occs)
-                sd = slater.create(0, *occs)
-                sd = slater.create(sd, *(occs + self.fanpy_wfn.nspatial))
-                sds.append(sd)
+        sds = convert_pyci_occs_to_fanpy_sds(occs_array, nspatial=self.fanpy_wfn.nspatial)
 
         # Feed in parameters into fanpy wavefunction
         for component, indices in self.param_selection.items():
@@ -371,23 +357,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         # FIXME: converting occs_array to slater determinants to be converted back to indices is
         # a waste
         # convert slater determinants
-        sds = []
-        if isinstance(occs_array[0, 0], np.ndarray): # if pspace generated with FCI
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
-                sds.append(sd)
-        else: # if pspace generated with DOCI
-            for i, occs in enumerate(occs_array):
-                if occs.dtype == bool:
-                    occs = np.where(occs)
-                sd = slater.create(0, *occs)
-                sd = slater.create(sd, *(occs + self.fanpy_wfn.nspatial))
-                sds.append(sd)
+        sds = convert_pyci_occs_to_fanpy_sds(occs_array, nspatial=self.fanpy_wfn.nspatial)
 
         # Select sds according to selected chunks
         s_chunk, f_chunk = chunk_idx
@@ -451,12 +421,12 @@ class ProjectedSchrodingerPyCI(FanCI):
         ovlp_hessian : np.ndarray
             Shape: (N_SD, nparam, nparam)
         """
-        if occs_array == "P":
+        if isinstance(occs_array, np.ndarray):
+            pass
+        elif occs_array == "P":
             occs_array = self.pspace
         elif occs_array == "S":
             occs_array = self.sspace
-        elif isinstance(occs_array, np.ndarray):
-            pass
         else:
             raise ValueError("invalid `occs_array` argument")
         from fanpy.wfn.cc.base import BaseCC
@@ -467,22 +437,7 @@ class ProjectedSchrodingerPyCI(FanCI):
             raise NotImplementedError(f"{type(self.fanpy_wfn).__name__} is not supported for second derivative overlap. "
         "Must be a CC-type FanPy wavefunction (BaseCC) with "
         "`get_overlap_double_derivative(sd)` implemented.")
-        sds = []
-        if isinstance(occs_array[0, 0], np.ndarray):
-            for i, occs in enumerate(occs_array):
-                # FIXME: CHECK IF occs IS BOOLEAN OR INTEGERS
-                # convert occupation vector to sd
-                if occs.dtype == bool:
-                    occs = np.where(occs)[0]
-                sd = slater.create(0, *occs[0])
-                sd = slater.create(sd, *(occs[1] + self.fanpy_wfn.nspatial))
-                sds.append(sd)
-        else:
-            for i, occs in enumerate(occs_array):
-                if occs.dtype == bool:
-                    occs = np.where(occs)
-                sd = slater.create(0, *occs)
-                sds.append(sd)        
+        sds = convert_pyci_occs_to_fanpy_sds(occs_array, self.fanpy_wfn.nspatial)  
         
         # Update Fanpy params
         for component, indices in self.param_selection.items():
@@ -516,40 +471,17 @@ class ProjectedSchrodingerPyCI(FanCI):
             Objective vector.
 
         """
-        if self.objective_type == "projected":
-            output = super().compute_objective(x)
-            self.print_queue["Electronic Energy"] = x[-1]
-            self.print_queue["Cost"] = np.sum(output[: self.nproj] ** 2)
-            self.print_queue["Cost from constraints"] = np.sum(output[self.nproj :] ** 2)
-            if self.step_print:
-                print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
-                print("(Mid Optimization) Cost: {}".format(self.print_queue["Cost"]))
-                if self.constraints:
-                    print(
-                        "(Mid Optimization) Cost from constraints: {}".format(self.print_queue["Cost from constraints"])
-                    )
-        else:
-            # NOTE: ignores energy and constraints
-            # Allocate objective vector
-            output = np.zeros(self.nproj, dtype=pyci.c_double)
-
-            # Compute overlaps of determinants in sspace:
-            #
-            #   c_m
-            #
-            ovlp = self.compute_overlap(x[:-1], "S")
-
-            # Compute objective function:
-            #
-            #   f_n = (\sum_n <\Psi|n> <n|H|\Psi>) / \sum_n <\Psi|n> <n|\Psi>
-            #
-            # Note: we update ovlp in-place here
-            self.ci_op(ovlp, out=output)
-            output = np.sum(output * ovlp[: self.nproj])
-            output /= np.sum(ovlp[: self.nproj] ** 2)
-            self.print_queue["Electronic Energy"] = output
-            if self.step_print:
-                print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
+        output = super().compute_objective(x)
+        self.print_queue["Electronic Energy"] = x[-1]
+        self.print_queue["Cost"] = np.sum(output[: self.nproj] ** 2)
+        self.print_queue["Cost from constraints"] = np.sum(output[self.nproj :] ** 2)
+        if self.step_print:
+            print("(Mid Optimization) Electronic Energy: {}".format(self.print_queue["Electronic Energy"]))
+            print("(Mid Optimization) Cost: {}".format(self.print_queue["Cost"]))
+            if self.constraints:
+                print(
+                    "(Mid Optimization) Cost from constraints: {}".format(self.print_queue["Cost from constraints"])
+                )
 
         if self.step_save:
             self.save_params()
@@ -573,69 +505,13 @@ class ProjectedSchrodingerPyCI(FanCI):
             Jacobian matrix.
 
         """
-        if self.objective_type == "projected":
-            if self.nactive == self.nparam:
-                output = super().compute_jacobian(x)
-            else:
-                output = self.masked_compute_jacobian(x)
-            self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
-            if self.step_print:
-                print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
+        if self.nactive == self.nparam:
+            output = super().compute_jacobian(x)
         else:
-            # NOTE: ignores energy and constraints
-            # Allocate Jacobian matrix (in transpose memory order)
-            output = np.zeros((self.nproj, self.nactive), order="F", dtype=pyci.c_double)
-            integrals = np.zeros(self.nproj, dtype=pyci.c_double)
-
-            # Compute Jacobian:
-            #
-            #   J_{nk} = d(<n|H|\Psi>)/d(p_k) - E d(<n|\Psi>)/d(p_k) - dE/d(p_k) <n|\Psi>
-            #   J_{nk} = (\sum_n d<\Psi|n> <n|H|\Psi> + <\Psi|n> d<n|H|\Psi>) / \sum_n <\Psi|n>^2 -
-            #            (\sum_n <\Psi|n> <n|H|\Psi>) / (\sum_n <\Psi|n> <n|\Psi>)^2 * (2 \sum_n <\Psi|n>)
-            #   J_{nk} = ((\sum_n d<\Psi|n> <n|H|\Psi> + <\Psi|n> d<n|H|\Psi>) (\sum_n <\Psi|n>^2)
-            #             - (\sum_n <\Psi|n> <n|H|\Psi>) * (2 \sum_n <\Psi|n> d<\Psi|n>))
-            #            / (\sum_n <\Psi|n>^2)^2
-            #   J_{nk} = ((\sum_n d<\Psi|n> <n|H|\Psi> + <\Psi|n> d<n|H|\Psi>) N
-            #             - H * (2 \sum_n <\Psi|n> d<\Psi|n>))
-            #            / N^2
-            #   J_{nk} = (\sum_n N (d<\Psi|n> <n|H|\Psi> + <\Psi|n> d<n|H|\Psi>) - 2 H <\Psi|n> d<\Psi|n>)
-            #            / N^2
-            #
-            # Compute overlap derivatives in sspace:
-            #
-            #   d(c_m)/d(p_k)
-            #
-            overlaps = self.compute_overlap(x[:-1], "S")
-            norm = np.sum(overlaps[: self.nproj] ** 2)
-            self.ci_op(overlaps, out=integrals)
-            energy_integral = np.sum(overlaps[: self.nproj] * integrals)
-
-            d_ovlp = self.compute_overlap_deriv(x[:-1], "S")
-
-            # Iterate over remaining columns of Jacobian and d_ovlp
-            for output_col, d_ovlp_col in zip(output.transpose(), d_ovlp.transpose()):
-                #
-                # Compute each column of the Jacobian:
-                #
-                #   d(<n|H|\Psi>)/d(p_k) = <m|H|n> d(c_m)/d(p_k)
-                #
-                #   E d(<n|\Psi>)/d(p_k) = E \delta_{nk} d(c_n)/d(p_k)
-                #
-                # Note: we update d_ovlp in-place here
-                self.ci_op(d_ovlp_col, out=output_col)
-                output_col *= overlaps[: self.nproj]
-                output_col += d_ovlp_col[: self.nproj] * integrals
-                output_col *= norm
-                output_col -= 2 * energy_integral * overlaps[: self.nproj] * d_ovlp_col[: self.nproj]
-                output_col /= norm**2
-            output = np.sum(output, axis=0)
-            self.print_queue["Norm of the gradient of the energy"] = np.linalg.norm(output)
-            if self.step_print:
-                print(
-                    "(Mid Optimization) Norm of the gradient of the energy: {}".format(
-                        self.print_queue["Norm of the gradient of the energy"]
-                    )
-                )
+            output = self.masked_compute_jacobian(x)
+        self.print_queue["Norm of the Jacobian"] = np.linalg.norm(output)
+        if self.step_print:
+            print("(Mid Optimization) Norm of the Jacobian: {}".format(self.print_queue["Norm of the Jacobian"]))
 
         if self.step_save:
             self.save_params()
@@ -923,32 +799,8 @@ class ProjectedSchrodingerPyCI(FanCI):
             opt_kwargs.setdefault("options", {})
             opt_kwargs["options"].setdefault("xtol", 1.0e-9)
             opt_kwargs.setdefault("callback", self.print)
-        elif mode == "cma":
-            optimizer = cma.fmin
-            opt_kwargs.setdefault("sigma0", 0.01)
-            opt_kwargs.setdefault("options", {})
-            opt_kwargs["options"].setdefault("ftarget", None)
-            opt_kwargs["options"].setdefault("timeout", np.inf)
-            opt_kwargs["options"].setdefault("tolfun", 1e-11)
-            opt_kwargs["options"].setdefault("verb_log", 0)
-            if self.objective_type != "energy":
-                raise ValueError("objective_type must be energy")
-        elif mode == "bfgs":
-            if self.objective_type != "energy":
-                raise ValueError("objective_type must be energy")
-            optimizer = minimize
-            opt_kwargs["method"] = "bfgs"
-            opt_kwargs.setdefault("options", {"gtol": 1e-8})
-            # opt_kwargs["options"]['schrodinger'] = objective
-            opt_kwargs.setdefault("callback", self.print)
-        elif mode == "trustregion":
-            raise NotImplementedError
-        elif mode == "trf":
-            if self.objective_type != "projected":
-                raise ValueError("objective_type must be energy")
-            raise NotImplementedError
         else:
-            raise ValueError("invalid mode parameter")
+            raise ValueError("Invalid mode parameter. Only 'root' and 'lstsq' are supported for the ProjectedSchrodingerPyCI class.")
 
         # Run optimizer
         results = optimizer(*opt_args, **opt_kwargs)
