@@ -88,7 +88,6 @@ class PYCI:
         self.tmpfile = fanpy_objective.tmpfile
         self.param_selection = fanpy_objective.indices_component_params
 
-        self.objective_type = "projected"  # TODO: Should it follow fanpy_objective type?
         self.kwargs = kwargs
 
         # Build PyCI Hamiltonian Object
@@ -272,7 +271,6 @@ class PYCI:
                 constraints=self.constraints,
                 param_selection=self.param_selection,
                 norm_det=self.norm_det,
-                objective_type=self.objective_type,
                 max_memory=self.max_memory,
                 step_print=self.step_print,
                 step_save=self.step_save,
@@ -296,7 +294,6 @@ class PYCI:
                 param_selection=self.param_selection,
                 norm_param=self.norm_param,
                 norm_det=self.norm_det,
-                objective_type=self.objective_type,
                 max_memory=self.max_memory,
                 step_print=self.step_print,
                 step_save=self.step_save,

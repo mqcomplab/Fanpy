@@ -62,7 +62,6 @@ def make_test_instance(**overrides):
         "param_selection": obj.indices_component_params,
         "norm_param": None,
         "norm_det": None,
-        "objective_type": "projected",
         "max_memory": 8000,
         "step_print": False,
         "step_save": False,

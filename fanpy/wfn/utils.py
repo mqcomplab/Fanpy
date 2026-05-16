@@ -171,7 +171,7 @@ def convert_to_fanci(
     tmpfile=None,
     param_selection=None,
     mask=None,
-    objective_type=None,
+    objective_type=None, #TODO: FanCI classes in interface no longer take objective_type as kwarg. Convert to fanci must be updated with GeneratedFanCI class
     constraints=None,
     norm_det=None,
     max_memory=8192,
