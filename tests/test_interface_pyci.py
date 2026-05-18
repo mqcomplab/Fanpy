@@ -4,13 +4,12 @@ import numpy as np
 from utils import find_datafile
 
 from fanpy.interface.pyci import PYCI
-from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.projected import ProjectedSchrodinger
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
-from fanpy.ham.base import BaseHamiltonian
 from fanpy.wfn.cc.standard_cc import StandardCC
 from fanpy.tools.sd_list import sd_list
 from fanpy.tools.performance import current_memory
+from interface_utils import FakeWavefunction, FakeHamiltonian
 
 
 @pytest.mark.parametrize("legacy_fanci", [True, False])
@@ -55,80 +54,6 @@ def test_norm_constraint_chunking(legacy_fanci):
     # compare jacobians
     assert np.allclose(jac_constraint, jac_constraint_chunk)
 
-class FakeWavefunction(BaseWavefunction):
-    """ A fake wavefunction for testing purposes.
-    """
-
-    def __init__(self, nelec, nspin, params):
-        """ Initialize FakeWavefunction.
-
-        Args:
-            nelec (int): Number of electrons.
-            nspin (int): Number of spin orbitals.
-        """
-        self.assign_params(params)
-        super().__init__(nelec, nspin)
-
-    def get_overlap(self, sd, deriv=None):
-        """ Get overlap with a Slater determinant.
-
-        Args:
-            sd (int): Slater determinant in integer representation. -> not used for fake implementation.
-            deriv (np.ndarray, optional): If provided, compute the derivative of the overlap.
-
-        Returns:
-            float: Overlap value.
-        """
-        if deriv is not None:
-            return np.zeros(len(deriv))
-        else:
-            return 1.0 
-        
-    def assign_params(self, params):
-        """ Assign parameters to the wavefunction.
-
-        Args:
-            params (np.ndarray): Parameters to assign.
-        """
-        self.params = params
-
-class FakeHamiltonian(BaseHamiltonian):
-    """ A fake Hamiltonian for testing purposes.
-    """
-    def __init__(self, one_int, two_int):
-        """ Initialize FakeHamiltonian.
-
-        Args:
-            one_int (np.ndarray): One-electron integrals.
-            two_int (np.ndarray): Two-electron integrals.
-        """
-        self.one_int = one_int
-        self.two_int = two_int
-        self._nspin = one_int.shape[0] * 2 # assuming one_int is square and its size corresponds to the orbital space
-    @property
-    def nspin(self):
-        """ Return the number of spin orbitals.
-
-        Returns:
-            int: Number of spin orbitals.
-        """
-        return self._nspin
-    
-    def integrate_sd_sd(self, sd1, sd2, deriv=None):
-        """ Integrate the Hamiltonian with against two Slater determinants.
-
-        Args:
-            sd1 (int): First Slater determinant in integer representation. -> not used for fake implementation.
-            sd2 (int): Second Slater determinant in integer representation. -> not used for fake implementation.
-            deriv (np.ndarray, optional): If provided, compute the derivative of the integral.
-
-        Returns:
-            float: Integral value.
-        """
-        if deriv is not None:
-            return np.zeros(len(deriv))
-        else:
-            return 1.0
 
 class PyCITestSetup:
     """ A test setup for PyCI interface. It sets up the Restricted Hamiltonian and a fake wavefunction.

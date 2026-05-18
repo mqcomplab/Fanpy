@@ -6,30 +6,9 @@ import pytest
 from fanpy.interface.fanci.pyci import ProjectedSchrodingerPyCI
 import pyci
 
-from test_interface_pyci import FakeHamiltonian, FakeWavefunction
-
-from fanpy.eqn.projected import BaseSchrodinger
-from fanpy.wfn.cc.standard_cc import StandardCC
+from interface_utils import FakeHamiltonian, FakeWavefunction, FakeSchrodinger, FakeCC
 
 ############## Tools for testing purposes #########################
-
-class FakeSchrodinger(BaseSchrodinger):
-    """fake fanpy objective for testing purposes"""
-    def __init__(self, wfn, ham):
-        super().__init__(wfn, ham)
-    def objective(self, params):
-        return 3.08
-
-class FakeCC(StandardCC):
-    """fake CC wavefunction for testing purposes
-    This is used to test the double derivative of the overlap.
-    """
-    def __init__(self, nelec, nspin):
-        super().__init__(nelec, nspin)
-
-    def get_overlap_double_derivative(self, sd):
-        double_deriv = np.ones((self.nparams, self.nparams))
-        return double_deriv
 
 def make_test_instance(**overrides):
     """make test instance of ProjectedSchrodingerPyCI with fake fanpy objective and fake pyci hamiltonian and wavefunction

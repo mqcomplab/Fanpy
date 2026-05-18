@@ -5,6 +5,108 @@ from subprocess import call
 
 import numpy as np
 
+from fanpy.eqn.projected import BaseSchrodinger
+from fanpy.wfn.cc.standard_cc import StandardCC
+from fanpy.wfn.base import BaseWavefunction
+from fanpy.ham.base import BaseHamiltonian
+
+#################### FAKE CLASSES ######################################
+
+class FakeSchrodinger(BaseSchrodinger):
+    """fake fanpy objective for testing purposes"""
+    def __init__(self, wfn, ham):
+        super().__init__(wfn, ham)
+    def objective(self, params):
+        return 3.08
+
+class FakeCC(StandardCC):
+    """fake CC wavefunction for testing purposes
+    This is used to test the double derivative of the overlap.
+    """
+    def __init__(self, nelec, nspin):
+        super().__init__(nelec, nspin)
+
+    def get_overlap_double_derivative(self, sd):
+        double_deriv = np.ones((self.nparams, self.nparams))
+        return double_deriv
+
+class FakeWavefunction(BaseWavefunction):
+    """ A fake wavefunction for testing purposes.
+    """
+
+    def __init__(self, nelec, nspin, params):
+        """ Initialize FakeWavefunction.
+
+        Args:
+            nelec (int): Number of electrons.
+            nspin (int): Number of spin orbitals.
+        """
+        self.assign_params(params)
+        super().__init__(nelec, nspin)
+
+    def get_overlap(self, sd, deriv=None):
+        """ Get overlap with a Slater determinant.
+
+        Args:
+            sd (int): Slater determinant in integer representation. -> not used for fake implementation.
+            deriv (np.ndarray, optional): If provided, compute the derivative of the overlap.
+
+        Returns:
+            float: Overlap value.
+        """
+        if deriv is not None:
+            return np.zeros(len(deriv))
+        else:
+            return 1.0 
+        
+    def assign_params(self, params):
+        """ Assign parameters to the wavefunction.
+
+        Args:
+            params (np.ndarray): Parameters to assign.
+        """
+        self.params = params
+
+class FakeHamiltonian(BaseHamiltonian):
+    """ A fake Hamiltonian for testing purposes.
+    """
+    def __init__(self, one_int, two_int):
+        """ Initialize FakeHamiltonian.
+
+        Args:
+            one_int (np.ndarray): One-electron integrals.
+            two_int (np.ndarray): Two-electron integrals.
+        """
+        self.one_int = one_int
+        self.two_int = two_int
+        self._nspin = one_int.shape[0] * 2 # assuming one_int is square and its size corresponds to the orbital space
+    @property
+    def nspin(self):
+        """ Return the number of spin orbitals.
+
+        Returns:
+            int: Number of spin orbitals.
+        """
+        return self._nspin
+    
+    def integrate_sd_sd(self, sd1, sd2, deriv=None):
+        """ Integrate the Hamiltonian with against two Slater determinants.
+
+        Args:
+            sd1 (int): First Slater determinant in integer representation. -> not used for fake implementation.
+            sd2 (int): Second Slater determinant in integer representation. -> not used for fake implementation.
+            deriv (np.ndarray, optional): If provided, compute the derivative of the integral.
+
+        Returns:
+            float: Integral value.
+        """
+        if deriv is not None:
+            return np.zeros(len(deriv))
+        else:
+            return 1.0
+
+
+###################### HF DATA CHECKS ##################################
 
 def check_data_h2_rhf_sto6g(el_energy, nuc_nuc_energy, one_int, two_int):
     """Check data for h2 rhf sto6g calculation."""
