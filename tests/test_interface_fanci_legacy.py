@@ -8,6 +8,31 @@ import pyci
 
 from interface_utils import FakeCC, FakeSchrodinger, FakeHamiltonian, FakeWavefunction
 
+# todo: missing lines: based on this test only! 
+# __init__ 206, 210, 216-217, 219-220, 224, 229-230, 
+# norm constraint 282-285, 292-306, 
+# optimize 338-378, 
+# optimize stochastic 415-461, 
+# add constraint 479-482, 
+# remove constraint 494-497, 
+# freeze and unfreeze parameter 509-513, 525-529, 
+# compute objective 549-579, 
+# compute jacobian 600-652, 
+# make param constraint 675-692, 
+# make det constraint 715-732, 
+# mask function 751-763,
+# abstract compute olp, olp deriv, olp double deriv  785, 807, 829, 
+# fill wfn 850-853, 860, 874-885, 888, 892, 
+# compute olp 1118, 
+# compute olp deriv 1180, 1190-1197, 1199, 
+# compute objective 1276-1291, 
+# compute jac 1310-1317, 
+# save params 1329-1342, 
+# optimize 1412-1469, 
+# print 1472-1473, 
+# optimize stochastic 1510-1586, 
+# olp deriv chunks 1589-1601
+
 ############## Tools for testing purposes #########################
 
 
