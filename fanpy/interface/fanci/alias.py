@@ -3,6 +3,7 @@
 """
 
 import numpy as np
+import warnings
 
 
 class Alias:
@@ -25,7 +26,14 @@ class Alias:
             Probability vector.
 
         """
-
+        # checks for pvec
+        if not isinstance(pvec, np.ndarray):
+            raise TypeError("The probability vector must be a numpy array.")
+        if not np.all((pvec >= 0.0) & (pvec <= 1.0)):
+            raise ValueError("Probability distribution must be between 0 and 1.")
+        if pvec.ndim > 1:
+            warnings.warn("Probability vector is not 1D --> flattening array.")
+            pvec = pvec.flatten()
         # Declare size of probability vector
         self.n = pvec.size
 
@@ -64,6 +72,14 @@ class Alias:
         """
 
         out = set()
+
+        # check input n 
+        # we should not be able to generate more random idx than the size of the distribution
+        if not isinstance(n, int):
+            raise TypeError("n must be an integer.")
+        if n > self.n or n < 1:
+            raise ValueError(f"Cannot generate more than {self.n} or less than 1 random index.")
+
         while len(out) < n:
             i = int(np.random.rand() * self.n)
             out.add(self.ivec[i] if np.random.rand() > self.cvec[i] else i)
