@@ -291,3 +291,53 @@ def test_update_objective_pyci_ham():
     # check if PyCI ham got updated
     assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
     assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+
+def test_pyci_ham_setter():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    # setting it with pyci ham
+    one_int =  np.random.rand(2, 2)
+    two_int = np.random.rand(2, 2, 2, 2)
+    new_ham = pyci.hamiltonian(0.0, one_int, two_int)
+    pyci_obj.pyci_ham = new_ham
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+    # setting it with fanpy ham
+    one_int =  np.ones((2, 2))
+    two_int = np.ones((2, 2, 2, 2))
+    new_ham = RestrictedMolecularHamiltonian(one_int, two_int)
+    pyci_obj.pyci_ham = new_ham
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+def test_fanpy_ham_setter():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    # setting it with pyci ham
+    one_int =  np.random.rand(2, 2)
+    two_int = np.random.rand(2, 2, 2, 2)
+    new_ham = pyci.hamiltonian(0.0, one_int, two_int)
+    pyci_obj.fanpy_ham = new_ham
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+    # setting it with fanpy ham
+    one_int =  np.ones((2, 2))
+    two_int = np.ones((2, 2, 2, 2))
+    new_ham = RestrictedMolecularHamiltonian(one_int, two_int)
+    pyci_obj.fanpy_ham = new_ham
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
