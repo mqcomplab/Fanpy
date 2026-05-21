@@ -247,7 +247,7 @@ class PYCI:
             self.objective._ham = self._pyci_ham
 
         elif isinstance(new_ham, pyci.hamiltonian):
-            self.fanpy_ham(new_ham)
+            self.pyci_ham = new_ham
 
     def build_pyci_objective(self):
         """
