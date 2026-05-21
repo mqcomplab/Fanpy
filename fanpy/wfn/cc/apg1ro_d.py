@@ -7,64 +7,30 @@ from fanpy.wfn.cc.pccd_ap1rog import PCCD
 class APG1roD(PCCD):
     r"""APG1ro wavefunction with generalized double excitations.
 
-    NOTE:
-    The excitation operator pool in this wavefunction consists exclusively
-    of double excitations that always annihilate paired occupied electron pairs 
-    :math: `(i, \bar{i})`, while the created virtual spin orbitals 
-    :math: `(p, q)` are unrestricted for their spin and spatial part.
+ The wavefunction is parameterized as
 
     .. math::
 
-    \left| \Psi_{\mathrm{APG1roD}} \right\rangle 
-    = \prod_{\mu \in \mathcal{E}}
-    \left(1 + t_\mu \tau_\mu \right) \left| \Phi_0 \right\rangle
+        \left| \Psi_{\mathrm{APG1roD}} \right\rangle
+        = \prod_{\mu \in \mathcal{E}}
+          \left( 1 + t_\mu\, \tau_\mu \right) \left| \Phi_0 \right\rangle,
+        \qquad
+        \mathcal{E} = \left\{ \tau_{i\bar{i}}^{ab} \right\},
 
-    where
+    where :math:`i, j, k, \ldots` index occupied spin orbitals, and 
+    :math:`a, b, c, \ldots` index virtual spin orbitals. The excitation pool
+    :math:`\mathcal{E}` consists of generalized double excitations that
+    annihilate a paired occupied pair :math:`(i, \bar{i})` and create
+    electrons in arbitrary virtual spin orbitals :math:`(a, b)`. This
+    covers both pair-preserving excitations (:math:`b = \bar{a}`) 
+    and pair-breaking excitations (:math:`b \neq = \bar{a}`); 
+    because the virtual creation indices are unrestricted, 
+    the ansatz may break spin symmetry.
 
-    .. math::
+    The reference wavefunction (``refwfn``) must be a seniority-0 Slater
+    determinant.
 
-    \mathcal{E} = \left\{\tau_{i\bar{i}}^{pq} \right\}
-
-    The excitation operator pool :math:\mathcal{E} consists of generalized
-    double excitations that
-        - annihilate paired occupied orbitals
-          :math:(i\bar{i})
-        - create electrons in arbitrary virtual spin orbitals
-          :math:(pq)
-
-    generated from the reference determinant.
-
-    Consequently, the ansatz includes both
-        - pair-preserving double excitations
-
-        .. math::
-
-        \tau_{i\bar{i}}^{a\bar{a}}
-
-        - and pair-breaking double excitations
-
-        .. math::
-
-        \tau_{i\bar{i}}^{ab}
-
-        where :math:b \neq \bar{a}.
-
-    Unlike AP1roG/PCCD, the virtual excitation space is not restricted to
-    paired spin complements. Consequently, this ansatz may break spin symmetry
-    and generate spin-contaminated determinants.
-
-    Although this class inherits the s_type infrastructure from PCCD,
-    the seniority-filtering conditions do not affect the present ansatz
-    because the excitation operator pool contains only double excitations.
-
-    This method constructs only a static pool of excitation operators
-    derived from the reference determinant.
-
-    The overlap routines later generate compatible combinations of these
-    excitation operators during determinant connections.
-
-    The reference wavefunction must be a seniority-0 Slater determinant.
-
+    See Ref. [1]_ for the full theoretical background.
 
     Attributes
     ----------
@@ -146,6 +112,12 @@ class APG1roD(PCCD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_exops(self, indices=None):
