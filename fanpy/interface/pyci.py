@@ -223,7 +223,7 @@ class PYCI:
             self.fanpy_objective.ham = self._fanpy_ham
 
         elif isinstance(new_ham, RestrictedMolecularHamiltonian):
-            self.fanpy_ham(new_ham)
+            self.fanpy_ham = new_ham
 
     @fanpy_ham.setter
     def fanpy_ham(self, new_ham):
