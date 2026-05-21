@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import pyci
 
 from utils import find_datafile
 
@@ -101,6 +102,10 @@ def test_pspace_trimming(legacy_fanci):
     # interface setup
     interface = PYCI(eqn, setup_data.e_nuc, legacy_fanci=legacy_fanci)
     assert interface.nproj == len(pspace_restr)
+
+    # check that pspace wfn is pyci 
+    # FakeWavefunction has seniority = None
+    assert isinstance(interface.pspace_wfn, pyci.fullci_wfn)
 
 @pytest.mark.parametrize("legacy_fanci", [True, False])
 def test_mask(legacy_fanci):
@@ -237,3 +242,16 @@ def test_projected_check():
     with pytest.raises(TypeError):
         PYCI(objective, 0.0)
     
+def test_fill_seniority():
+    from fanpy.wfn.geminal.apig import APIG
+    sen_o_wfn = APIG(4, 8)
+    one_int = np.random.rand(4, 4)
+    two_int = np.random.rand(4, 4, 4, 4)
+    test_ham = RestrictedMolecularHamiltonian(
+        one_int, two_int
+    )
+    pspace = sd_list(4, 8, num_limit=None, exc_orders=[1, 2], spin=0, seniority=0)
+    fanpy_objective = ProjectedSchrodinger(sen_o_wfn, test_ham, energy_type="compute", pspace = pspace)
+    interface = PYCI(fanpy_objective, 0.0)
+    assert interface.nproj == len(pspace)
+    assert isinstance(interface.pspace_wfn, pyci.doci_wfn)
