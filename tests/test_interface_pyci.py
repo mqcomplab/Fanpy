@@ -341,3 +341,13 @@ def test_fanpy_ham_setter():
     assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
     assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
     assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+def test_ham_setter_type_check():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    with pytest.raises(TypeError):
+        pyci_obj.fanpy_ham = "not a Hamiltonian"
+    with pytest.raises(TypeError):
+        pyci_obj.pyci_ham = "not a Hamiltonian"
