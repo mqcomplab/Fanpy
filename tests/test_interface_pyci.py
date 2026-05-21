@@ -5,6 +5,7 @@ from utils import find_datafile
 
 from fanpy.interface.pyci import PYCI
 from fanpy.eqn.projected import ProjectedSchrodinger
+from fanpy.eqn.energy_oneside import EnergyOneSideProjection
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.wfn.cc.standard_cc import StandardCC
 from fanpy.tools.sd_list import sd_list
@@ -227,3 +228,12 @@ def test_behavior_regression_small_system(legacy_fanci):
     results = interface.objective.optimize(x0=x0)
     assert results["cost"] < initial_cost # optimization should reduce cost
     assert not np.allclose(results['energy'], expected_obj[-1], atol=10**-3) # energy should be different from initial objective value
+
+
+def test_projected_check():
+    """make sure we cannot initialize PYCI class with an objective that is not the projected schrodinger equation"""
+    setup_data = PyCITestSetup()
+    objective = EnergyOneSideProjection(setup_data.wfn, setup_data.ham)
+    with pytest.raises(TypeError):
+        PYCI(objective, 0.0)
+    
