@@ -255,3 +255,39 @@ def test_fill_seniority():
     interface = PYCI(fanpy_objective, 0.0)
     assert interface.nproj == len(pspace)
     assert isinstance(interface.pspace_wfn, pyci.doci_wfn)
+
+def test_update_objective_fanpy_ham():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn , setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    one_int =  np.random.rand(2, 2)
+    two_int = np.random.rand(2, 2, 2, 2)
+    new_ham = RestrictedMolecularHamiltonian(one_int, two_int)
+    pyci_obj.update_objective(new_ham)
+
+    # check if Fanpy ham got updated
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+    # check if PyCI ham got updated
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+
+def test_update_objective_pyci_ham():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    one_int =  np.random.rand(2, 2)
+    two_int = np.random.rand(2, 2, 2, 2)
+    new_ham = pyci.hamiltonian(0.0, one_int, two_int)
+    pyci_obj.update_objective(new_ham)
+
+    # check if Fanpy ham got updated
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+    # check if PyCI ham got updated
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
