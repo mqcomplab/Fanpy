@@ -162,7 +162,7 @@ class ProjectedSchrodingerPyCI(FanCI):
         seniority: int,
         nproj: int,
         fill: str,
-        mask: list,
+        mask: np.ndarray,
         constraints: dict,
         param_selection: dict,
         norm_param,
@@ -193,8 +193,8 @@ class ProjectedSchrodingerPyCI(FanCI):
             Number of determinants in projection ("P") space.
         fill : ('excitation' | 'seniority' | None)
             Whether to fill the projection ("P") space by excitation level, by seniority, or not at all (in which case ``wfn`` must already be filled).
-        mask : list
-            List of parameters to freeze.
+        mask : np.ndarray of bools
+            List of parameters to freeze. E.g. [True, False, True] would freeze the second parameter. 
         constraints : dict
             Pairs of functions (f, dfdx) corresponding to additional constraints.
         param_selection : dict
