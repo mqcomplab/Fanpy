@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from unittest.mock import patch 
 
 from fanpy.interface.fanci.pyci import ProjectedSchrodingerPyCI
 import pyci
@@ -36,7 +37,7 @@ def make_test_instance(**overrides):
         "seniority": wfn.seniority,
         "nproj": 1,
         "fill": "excitation",
-        "mask": np.ones(wfn.params.shape, dtype=int),
+        "mask": np.ones(wfn.params.shape[0]+1, dtype=bool),
         "constraints": {},
         "param_selection": obj.indices_component_params,
         "norm_param": None,
@@ -168,15 +169,52 @@ def test_compute_overlap_double_deriv():
 
 ################# compute objective tests ###################################
 
+def test_compute_objective():
+    pyci_obj = make_test_instance()
+
+    params = np.random.rand(pyci_obj.nactive)
+    mock_result = np.ones(pyci_obj.nactive) * 42.0
+
+    # patch the compute objective method from PyCI to return a fixed value. 
+    # we just need to check if we call the correct method with the parameters
+    # the rest is up to PyCI
+    with patch.object(pyci.fanci.FanCI, "compute_objective", return_value=mock_result) as mock_method:
+        result = pyci_obj.compute_objective(params)
+        mock_method.assert_called_once_with(params)
+    
+    assert np.allclose(result, mock_result)
+
 
 ################# compute jacobian tests ###################################
 
-# compute masked jacobian tests
-# Mock the following: 
-# self.ci_op
-# compute overlap
-# compute overlap derivative 
-# that simplifies the testing procedure. 
+def test_compute_jacobian():
+    pyci_obj = make_test_instance()
+    params = np.random.rand(pyci_obj.nactive)
+    mock_result = np.ones((pyci_obj.nactive, pyci_obj.nproj)) * 42.0 # this is likely the wrong dimension. Just checking here that 2D arrays work. 
+
+    # patch the compute jacobian method from PyCI to return a fixed value (mock result). 
+    # we just need to check if we call the correct method with the parameters
+    # the rest is up to PyCI
+    with patch.object(pyci.fanci.FanCI, "compute_jacobian", return_value=mock_result) as mock_method:
+        result = pyci_obj.compute_jacobian(params)
+        mock_method.assert_called_once_with(params)
+    
+    assert np.allclose(result, mock_result)
+
+@pytest.mark.parametrize("mask", [np.asarray([1, 0, 1, 0, 0], dtype=bool), np.asarray([1, 0, 1, 0, 1], dtype=bool)])
+def test_compute_masked_jacobian(mask):
+    pyci_obj = make_test_instance() # wfn has four params
+
+    pyci_obj_masked = make_test_instance(mask=mask)
+    x = np.random.rand(5)
+    jac = pyci_obj.compute_jacobian(x)
+    print("DEBUG >>> normal jac shape: ", jac.shape)
+    masked_jac = pyci_obj_masked.compute_jacobian(x)
+    cols = [i for i in range(len(mask)) if mask[i]]
+    jac_sliced = jac[:, cols]
+    print(jac)
+    assert masked_jac.shape[1] == sum(mask)
+    assert np.allclose(jac_sliced, masked_jac) # todo this is checking a ton, as olp deriv is 0. Only energy is -1. Having a check similar to this with an actual H might be useful 
 
 
 ################# optimize tests ###################################
