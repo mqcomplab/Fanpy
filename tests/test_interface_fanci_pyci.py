@@ -5,6 +5,8 @@ import pytest
 from unittest.mock import patch 
 
 from fanpy.interface.fanci.pyci import ProjectedSchrodingerPyCI
+from fanpy.eqn.projected import ProjectedSchrodinger
+from fanpy.tools.sd_list import sd_list
 import pyci
 
 from interface_utils import FakeHamiltonian, FakeWavefunction, FakeSchrodinger, FakeCC
@@ -201,6 +203,7 @@ def test_compute_jacobian():
     
     assert np.allclose(result, mock_result)
 
+# the last index of the mask corresponds to the energy, so we check both cases where E is active or inactive. 
 @pytest.mark.parametrize("mask", [np.asarray([1, 0, 1, 0, 0], dtype=bool), np.asarray([1, 0, 1, 0, 1], dtype=bool)])
 def test_compute_masked_jacobian(mask):
     pyci_obj = make_test_instance() # wfn has four params
@@ -218,6 +221,51 @@ def test_compute_masked_jacobian(mask):
 
 
 ################# optimize tests ###################################
+
+# NOTE: none of these tests check if we get sensible results, the point here is to check that we can run optimizers successfully with different modes and parameter masks
+
+@pytest.mark.parametrize("mask", [np.ones(5, dtype=int), np.asarray([1, 0, 1, 0, 0], dtype=bool), np.asarray([1, 0, 1, 0, 1], dtype=bool)])
+def test_optimize_lstsq(mask):
+    """ Check if optimize method runs without errors and energy is one of the keys"""
+    pyci_obj = make_test_instance(mask=mask)
+    initial_guess = np.random.rand(pyci_obj.fanpy_wfn.nparams+1)
+    results = pyci_obj.optimize(initial_guess, mode="lstsq")
+    assert "energy" in results.keys()
+
+def test_optimize_root():
+    """ Check if optimize method runs without errors and energy is one of the keys"""
+    # set up objective with less wfn params. We cannot generate 5 or more projections
+    # changing the FakeWavefunction in setup step is more complicated with hardcoded 4 params. 
+    wfn = FakeWavefunction(2, 4, np.ones(3))
+    ham = FakeHamiltonian(np.ones((2, 2)), np.ones((2, 2, 2, 2)))
+    obj = FakeSchrodinger(wfn, ham)
+    mask = np.ones(wfn.nparams + 1, dtype=bool) # determines nactive in PyCI object
+    param_sel = obj.indices_component_params # parameter selection based on fanpy objective
+
+    pyci_obj = make_test_instance(fanpy_objective=obj, nproj=wfn.nparams + 1, mask=mask, param_selection=param_sel)
+
+    # initial guess
+    x0 = np.random.rand(pyci_obj.nactive)
+
+    results = pyci_obj.optimize(x0, mode='root')
+
+    assert "energy" in results.keys()
+
+def test_optimize_errors():
+    pyci_obj = make_test_instance()
+    initial_guess = np.random.rand(pyci_obj.nactive)
+    with pytest.raises(ValueError):
+        pyci_obj.optimize(initial_guess, "not a mode")
+    with pytest.raises(ValueError): # default is an overdetermined system
+        pyci_obj.optimize(initial_guess, "root")
+
+def test_optimize_norm_const():
+    pyci_obj = make_test_instance(constraints=None)
+
+    initial_guess = np.random.rand(pyci_obj.nactive)
+    results = pyci_obj.optimize(initial_guess, mode='lstsq')
+    assert "energy" in results.keys()
+
 
 
 ################# utility methods tests ###################################
