@@ -12,8 +12,12 @@ from interface_utils import FakeHamiltonian, FakeWavefunction, FakeSchrodinger, 
 ############## Tools for testing purposes #########################
 
 def make_test_instance(**overrides):
-    """make test instance of ProjectedSchrodingerPyCI with fake fanpy objective and fake pyci hamiltonian and wavefunction
-    This helps set up a class that requires a lot of parameters.
+    """Build a ProjectedSchrodingerPyCI test instance with fake dependencies.
+    
+    Parameters
+    ----------
+    overrides : dict
+        override kwargs for the PyCI objetive. 
     """
     # build Fake fanpy objective
     wfn = FakeWavefunction(2, 4, np.ones(4))
@@ -52,6 +56,7 @@ def make_test_instance(**overrides):
 
 ################# init tests ###################################
 def test_init():
+    """Validate initialization and default normalization constraints."""
     # errors
     ham = "non_pyci_hamiltonian"
     with pytest.raises(TypeError):
@@ -72,6 +77,7 @@ def test_init():
 ################# compute overlap tests ###################################
 
 def test_compute_overlap():
+    """Verify overlap values for p-space, s-space, and explicit determinants."""
     pyci_obj = make_test_instance()
 
     # compute overlap between the pyci wavefunction and a random vector
@@ -103,6 +109,7 @@ def test_compute_overlap():
     assert np.allclose(overlap, np.ones(olp_size))
 
 def test_compute_overlap_type_check():
+    """Ensure overlap rejects inputs that are not vector-like."""
     pyci_obj = make_test_instance()
     with pytest.raises(ValueError):
         pyci_obj.compute_overlap(np.array([[0, 1]]), "not_a_vector")
@@ -111,6 +118,7 @@ def test_compute_overlap_type_check():
 ################# compute overlap deriv tests ###################################
 
 def test_compute_overlap_deriv():
+    """Verify overlap derivative shapes and values for supported inputs."""
     pyci_obj = make_test_instance()
     # compute overlap derivatives between the pyci wavefunction and a random vector
     overlap_deriv = pyci_obj.compute_overlap_deriv(np.random.rand(4), "P")
@@ -129,6 +137,7 @@ def test_compute_overlap_deriv():
     assert np.allclose(overlap_deriv, np.zeros(overlap_deriv.shape))
 
 def test_compute_overlap_deriv_type_check():
+    """Ensure overlap derivatives reject non-vector inputs."""
     pyci_obj = make_test_instance()
     with pytest.raises(ValueError):
         pyci_obj.compute_overlap_deriv(np.array([[0, 1]]), "not_a_vector")
@@ -136,6 +145,7 @@ def test_compute_overlap_deriv_type_check():
 ################# compute overlap double derivtests ###################################
 
 def test_compute_overlap_double_deriv_errors():
+    """Verify double-derivative error paths for invalid and unsupported inputs."""
     pyci_obj = make_test_instance()
     with pytest.raises(ValueError):
         pyci_obj.compute_overlap_double_deriv(np.random.rand(4), "not_a_vector")
@@ -144,6 +154,7 @@ def test_compute_overlap_double_deriv_errors():
         pyci_obj.compute_overlap_double_deriv(np.random.rand(4), "P")
 
 def test_compute_overlap_double_deriv():
+    """Verify double overlap derivative shapes and values for CC wavefunctions."""
 
     # build python objective with CC wfn
     wfn = FakeCC(nelec=2, nspin=4)
@@ -170,6 +181,7 @@ def test_compute_overlap_double_deriv():
 ################# compute objective tests ###################################
 
 def test_compute_objective():
+    """Check that objective evaluation delegates to the PyCI implementation."""
     pyci_obj = make_test_instance()
 
     params = np.random.rand(pyci_obj.nactive)
@@ -184,7 +196,8 @@ def test_compute_objective():
     
     assert np.allclose(result, mock_result)
 
-def test_step_save(tmp_path):
+def test_compute_objective_step_save(tmp_path):
+    """Verify objective evaluation saves the wavefunction parameters when enabled."""
     outfile = tmp_path / "output"
     pyci_obj = make_test_instance(step_save=True, tmpfile=outfile)
     new_params = np.random.rand(pyci_obj.nactive)
@@ -201,6 +214,7 @@ def test_step_save(tmp_path):
 ################# compute jacobian tests ###################################
 
 def test_compute_jacobian():
+    """Check that Jacobian evaluation delegates to the PyCI implementation."""
     pyci_obj = make_test_instance()
     params = np.random.rand(pyci_obj.nactive)
     mock_result = np.ones((pyci_obj.nactive, pyci_obj.nproj)) * 42.0 # this is likely the wrong dimension. Just checking here that 2D arrays work. 
@@ -217,6 +231,13 @@ def test_compute_jacobian():
 # the last index of the mask corresponds to the energy, so we check both cases where E is active or inactive. 
 @pytest.mark.parametrize("mask", [np.asarray([1, 0, 1, 0, 0], dtype=bool), np.asarray([1, 0, 1, 0, 1], dtype=bool)])
 def test_compute_masked_jacobian(mask):
+    """Verify masked Jacobians match sliced unmasked Jacobians.
+        
+    Parameters
+    ----------
+    mask : np.ndarray with dtype bool
+        List of parameters to freeze. E.g. [True, False, True] would freeze the second parameter. 
+    """
     pyci_obj = make_test_instance() # wfn has four params
 
     pyci_obj_masked = make_test_instance(mask=mask)
@@ -231,6 +252,7 @@ def test_compute_masked_jacobian(mask):
     assert np.allclose(jac_sliced, masked_jac) # todo this is not checking a ton, as olp deriv is 0. Only energy is -1. Having a check similar to this with an actual H might be useful 
 
 def test_compute_jac_step_save(tmp_path):
+    """Verify Jacobian evaluation also persists wavefunction parameters when enabled."""
     outfile = tmp_path / "output"
     pyci_obj = make_test_instance(step_save=True, tmpfile=outfile)
     new_params = np.random.rand(pyci_obj.nactive)
@@ -250,7 +272,13 @@ def test_compute_jac_step_save(tmp_path):
 
 @pytest.mark.parametrize("mask", [np.ones(5, dtype=int), np.asarray([1, 0, 1, 0, 0], dtype=bool), np.asarray([1, 0, 1, 0, 1], dtype=bool)])
 def test_optimize_lstsq(mask):
-    """ Check if optimize method runs without errors and energy is one of the keys"""
+    """ Check if optimize method runs without errors and energy is one of the keys.
+    
+    Parameters
+    ----------
+    mask : np.ndarray with dtype bool
+        List of parameters to freeze. E.g. [True, False, True] would freeze the second parameter. 
+    """
     pyci_obj = make_test_instance(mask=mask)
     initial_guess = np.random.rand(pyci_obj.fanpy_wfn.nparams+1)
     results = pyci_obj.optimize(initial_guess, mode="lstsq")
@@ -276,6 +304,7 @@ def test_optimize_root():
     assert "energy" in results.keys()
 
 def test_optimize_errors():
+    """Ensure optimize rejects invalid modes and incompatible parameter shapes."""
     pyci_obj = make_test_instance()
     initial_guess = np.random.rand(pyci_obj.nactive)
     with pytest.raises(ValueError):
@@ -287,6 +316,8 @@ def test_optimize_errors():
         pyci_obj.optimize(wrong_params, "lstsq")
 
 def test_optimize_norm_const():
+    """Verify optimization succeeds when normalization constraint is generated with default kwargs."""
+    # NOTE: by default constraints is None, which generates the norm constraint as long as norm det is also None
     pyci_obj = make_test_instance(constraints=None)
 
     initial_guess = np.random.rand(pyci_obj.nactive)
@@ -294,6 +325,7 @@ def test_optimize_norm_const():
     assert "energy" in results.keys()
 
 def test_optimize_use_jac():
+    """Verify optimization succeeds when the Jacobian path is enabled."""
     pyci_obj = make_test_instance(constraints=None)
 
     initial_guess = np.random.rand(pyci_obj.nactive)
@@ -304,7 +336,7 @@ def test_optimize_use_jac():
 
 # todo: this test fails because stochastic optimizer has bugs in it. It has not been updated to the new interface class, so the re-initialization does not work. Additionally, there are other bugs in the code as well. 
 @pytest.mark.xfail()
-def test_optimize_stochasitc_lstsq(mask):
+def test_optimize_stochasitc_lstsq():
     """ Check if optimize method runs without errors and energy is one of the keys"""
     mask = np.ones(5, dtype=int)
     pyci_obj = make_test_instance(mask=mask)
@@ -316,6 +348,7 @@ def test_optimize_stochasitc_lstsq(mask):
 
 @pytest.mark.parametrize("freeze_idx", [[2], [1, 3, 4], [0, 1, 2, 3, 4]])
 def test_freeze_parameters(freeze_idx):
+    """Verify parameter freezing and unfreezing update the active mask."""
     pyci_obj = make_test_instance()
     mask = np.ones(pyci_obj.nparam, dtype=bool)
     freeze_idx = [2]
