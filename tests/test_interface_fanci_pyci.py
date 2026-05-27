@@ -278,3 +278,16 @@ def test_optimize_stochasitc_lstsq(mask):
 
 ################# utility methods tests ###################################
 
+@pytest.mark.parametrize("freeze_idx", [[2], [1, 3, 4], [0, 1, 2, 3, 4]])
+def test_freeze_parameters(freeze_idx):
+    pyci_obj = make_test_instance()
+    mask = np.ones(pyci_obj.nparam, dtype=bool)
+    freeze_idx = [2]
+    pyci_obj.freeze_parameter(freeze_idx)
+    # manually update mask
+    mask[freeze_idx] = np.zeros(len(freeze_idx), dtype=bool)
+    assert np.all(np.equal(mask, pyci_obj.mask))
+
+    # unfreeze parameters:
+    pyci_obj.unfreeze_parameter(freeze_idx)
+    assert np.all(np.equal(np.ones(pyci_obj.nparam, dtype=bool), pyci_obj.mask)) # all parameters are unfrozen --> mask is all 1
