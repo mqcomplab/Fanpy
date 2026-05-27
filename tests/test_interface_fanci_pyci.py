@@ -5,8 +5,6 @@ import pytest
 from unittest.mock import patch 
 
 from fanpy.interface.fanci.pyci import ProjectedSchrodingerPyCI
-from fanpy.eqn.projected import ProjectedSchrodinger
-from fanpy.tools.sd_list import sd_list
 import pyci
 
 from interface_utils import FakeHamiltonian, FakeWavefunction, FakeSchrodinger, FakeCC
@@ -266,7 +264,17 @@ def test_optimize_norm_const():
     results = pyci_obj.optimize(initial_guess, mode='lstsq')
     assert "energy" in results.keys()
 
+################# optimize stochastic tests ###################################
 
+# todo: this test fails because stochastic optimizer has bugs in it. It has not been updated to the new interface class, so the re-initialization does not work. Additionally, there are other bugs in the code as well. 
+@pytest.mark.xfail()
+def test_optimize_stochasitc_lstsq(mask):
+    """ Check if optimize method runs without errors and energy is one of the keys"""
+    mask = np.ones(5, dtype=int)
+    pyci_obj = make_test_instance(mask=mask)
+    initial_guess = np.random.rand(pyci_obj.fanpy_wfn.nparams+1)
+    results = pyci_obj.optimize_stochastic(nsamp=3, x0=initial_guess, mode="lstsq", fill = pyci_obj.fill)
+    assert "energy" in results.keys()
 
 ################# utility methods tests ###################################
 
