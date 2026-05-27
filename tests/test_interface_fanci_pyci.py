@@ -184,6 +184,19 @@ def test_compute_objective():
     
     assert np.allclose(result, mock_result)
 
+def test_step_save(tmp_path):
+    outfile = tmp_path / "output"
+    pyci_obj = make_test_instance(step_save=True, tmpfile=outfile)
+    new_params = np.random.rand(pyci_obj.nactive)
+    _ = pyci_obj.compute_objective(new_params)
+
+    # default filename is <user specified name>_wfnClassName.npy
+    filename = tmp_path / "output_FakeWavefunction.npy"
+    saved_wfn_params = np.load(filename)
+
+    # compare saved wfn params to input of objective 
+    # NOTE: new_params[-1] is the energy
+    assert np.allclose(saved_wfn_params, new_params[:-1]) 
 
 ################# compute jacobian tests ###################################
 
@@ -215,8 +228,21 @@ def test_compute_masked_jacobian(mask):
     jac_sliced = jac[:, cols]
     print(jac)
     assert masked_jac.shape[1] == sum(mask)
-    assert np.allclose(jac_sliced, masked_jac) # todo this is checking a ton, as olp deriv is 0. Only energy is -1. Having a check similar to this with an actual H might be useful 
+    assert np.allclose(jac_sliced, masked_jac) # todo this is not checking a ton, as olp deriv is 0. Only energy is -1. Having a check similar to this with an actual H might be useful 
 
+def test_compute_jac_step_save(tmp_path):
+    outfile = tmp_path / "output"
+    pyci_obj = make_test_instance(step_save=True, tmpfile=outfile)
+    new_params = np.random.rand(pyci_obj.nactive)
+    _ = pyci_obj.compute_jacobian(new_params)
+
+    # default filename is <user specified name>_wfnClassName.npy
+    filename = tmp_path / "output_FakeWavefunction.npy"
+    saved_wfn_params = np.load(filename)
+
+    # compare saved wfn params to input of objective 
+    # NOTE: new_params[-1] is the energy
+    assert np.allclose(saved_wfn_params, new_params[:-1]) 
 
 ################# optimize tests ###################################
 
@@ -256,12 +282,22 @@ def test_optimize_errors():
         pyci_obj.optimize(initial_guess, "not a mode")
     with pytest.raises(ValueError): # default is an overdetermined system
         pyci_obj.optimize(initial_guess, "root")
+    wrong_params = np.random.rand(pyci_obj.nactive+10)
+    with pytest.raises(ValueError):
+        pyci_obj.optimize(wrong_params, "lstsq")
 
 def test_optimize_norm_const():
     pyci_obj = make_test_instance(constraints=None)
 
     initial_guess = np.random.rand(pyci_obj.nactive)
     results = pyci_obj.optimize(initial_guess, mode='lstsq')
+    assert "energy" in results.keys()
+
+def test_optimize_use_jac():
+    pyci_obj = make_test_instance(constraints=None)
+
+    initial_guess = np.random.rand(pyci_obj.nactive)
+    results = pyci_obj.optimize(initial_guess, mode='lstsq', use_jac=True)
     assert "energy" in results.keys()
 
 ################# optimize stochastic tests ###################################
