@@ -13,6 +13,7 @@ from scipy.special import comb
 from fanci.fanpt_wrapper import reduce_to_fock, solve_fanpt
 
 # NOTE: this example has not been updated to the latest fanpy version and will not work as is. It is left here for archival purposes only.
+# NOTE: convert_to_fanci has been removed from the latest fanpy version. 
 
 # Number of electrons
 nelec = 16
