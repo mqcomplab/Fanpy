@@ -248,7 +248,6 @@ def test_compute_masked_jacobian(mask):
     pyci_obj_masked = make_test_instance(mask=mask)
     x = np.random.rand(5)
     jac = pyci_obj.compute_jacobian(x)
-    print("DEBUG >>> normal jac shape: ", jac.shape)
     masked_jac = pyci_obj_masked.compute_jacobian(x)
     cols = [i for i in range(len(mask)) if mask[i]]
     jac_sliced = jac[:, cols]
