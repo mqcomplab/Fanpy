@@ -378,3 +378,23 @@ def test_constraints_init():
         # check if we passed the expected elements of x
         adapted_x = x[:-1]
         assert np.allclose(mock_method.call_args[0][0], adapted_x)
+
+def test_ham_update():
+    setup_data = PyCITestSetup()
+    norm_const = NormConstraint(setup_data.wfn)
+    e_const = EnergyConstraint(setup_data.wfn, setup_data.ham)
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham, constraints=[norm_const, e_const])
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    norb = setup_data.ham.one_int.shape[0]
+    one_int = np.random.rand(norb, norb)
+    two_int = np.random.rand(norb, norb, norb, norb)
+    new_ham = FakeHamiltonian(one_int, two_int)
+    pyci_obj.update_objective(new_ham)
+    assert len(pyci_obj.fanpy_objective.constraints) == 2
+    # NOTE: this assumes that energy constraint is the second in the list.
+    # this is because we set up the constraints to be [norm, e] for the fanpy obj in this test case
+    new_energy_const = pyci_obj.fanpy_objective.constraints[1] 
+    assert type(new_energy_const.ham) == type(new_ham)
+    assert np.allclose(new_energy_const.ham.one_int, new_ham.one_int)
+    assert np.allclose(new_energy_const.ham.two_int, new_ham.two_int)
