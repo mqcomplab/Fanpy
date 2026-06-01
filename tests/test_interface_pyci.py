@@ -356,6 +356,7 @@ def test_ham_setter_type_check():
         pyci_obj.pyci_ham = "not a Hamiltonian"
 
 def test_constraints_init():
+    """ Check if constraints are set up properly"""
     setup_data = PyCITestSetup()
     norm_const = NormConstraint(setup_data.wfn)
     e_const = EnergyConstraint(setup_data.wfn, setup_data.ham)
@@ -363,6 +364,7 @@ def test_constraints_init():
     pyci_obj = PYCI(fanpy_obj, 0.0)
     n_pyci_consts = len(pyci_obj.objective.constraints)
     assert n_pyci_consts == 2
+    # check for compute objective 
     with patch.object(EnergyConstraint, "objective", return_value = 3.08 ) as mock_method:
         x = np.random.rand(pyci_obj.objective.nactive)
         res = pyci_obj.objective.compute_objective(x)
@@ -380,6 +382,7 @@ def test_constraints_init():
         assert np.allclose(mock_method.call_args[0][0], adapted_x)
 
 def test_ham_update():
+    """ Make sure the hamiltonian gets updated in constraints that have a ham attribute."""
     setup_data = PyCITestSetup()
     norm_const = NormConstraint(setup_data.wfn)
     e_const = EnergyConstraint(setup_data.wfn, setup_data.ham)
