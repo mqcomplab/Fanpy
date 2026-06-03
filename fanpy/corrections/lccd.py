@@ -29,8 +29,33 @@
 # this should be what the user calls when calculating corrections. 
 # It should compute the energy correction as per eq. (7) of the overleaf document
 
+import numpy as np
+
+from fanpy.wfn.geminal.ap1rog import AP1roG
+from fanpy.tools import slater
 
 class LCCD:
+    """
+    Attributes:
+    wfn : AP1roG
+    ham : BaseHamiltonian or ??
+    ref_sd : int
+        Reference SD from AP1roG
+    nspatial : int
+    nspin : int
+    exops : dict
+    nparams : int
+    params : np.ndarray with amplitudes
+
+    Methods:
+    __init__(self, wfn, ham)
+    generate_exops(self)
+
+
+    """
+
+
+
     def __init__(self, wfn, ham):
         # check if wfn is AP1roG --> currently, we are only implementing the correction for this
 
@@ -40,10 +65,49 @@ class LCCD:
 
         # generate pool of double excitation operators 
         
-        pass
+        if not isinstance(wfn, AP1roG):
+            raise TypeError("Current LCCD implementation only supports AP1roG.")
+
+        self.wfn = wfn
+        self.ham = ham
+
+        self.ref_sd = wfn.ref_sd
+        self.nspatial = wfn.nspatial
+        self.nspin = wfn.nspin
+
+        self.generate_exops()
+    
 
     def generate_exops(self):
-        pass
+        # Get occupied and virtual orbital indices from reference SD
+        occ_indices = slater.occ_indices(self.ref_sd)
+        vir_indices = slater.vir_indices(self.ref_sd, self.nspin)
+        
+        self.exops = {}
+        param_ind = 0
+        
+        for i_ind, i in enumerate(occ_indices):
+            for j in occ_indices[i_ind + 1:]:
+                for a_ind, a in enumerate(vir_indices):
+                    for b in vir_indices[a_ind + 1:]:
+                        if self._is_pair_excitation(i, j, a, b):
+                            continue
+                        
+                        # Store excitation operator: (i,j,a,b) -> parameter index
+                        self.exops[(i, j, a, b)] = param_ind
+                        param_ind += 1
+        
+        # Initialize cluster amplitude parameters
+        self.nparams = len(self.exops)
+        self.params = np.zeros(self.nparams)
+        
+    def _is_pair_excitation(self, i, j, a ,b):
+        if j == i + self.nspatial and b == a + self.nspatial:
+            return True
+        if i == j + self.nspatial and a == b + self.nspatial:
+            return True
+        return False
+
     
     def calculate_b(self):
         pass
