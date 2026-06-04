@@ -135,7 +135,7 @@ def make_script(  # pylint: disable=R1710,R0912,R0915
     )
     # imports and kwargs for script 
     imports = ["numpy as np", "os", "sys", "pyci", "fanpy.interface as interface"]
-    from_imports = [("fanpy.wfn.utils", "convert_to_fanci")]
+    from_imports = []
 
     wfn_type = wfn_type.lower()
 

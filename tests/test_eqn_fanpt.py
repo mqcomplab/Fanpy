@@ -1,6 +1,5 @@
 import numpy as np
 import pyci
-from fanpy.wfn.utils import convert_to_fanci
 from fanpy.wfn.geminal.ap1rog import AP1roG
 from fanpy.wfn.ci.base import CIWavefunction
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
@@ -27,6 +26,8 @@ def test_fock_energy():
 
     orig = RestrictedMolecularHamiltonian(one_int, two_int, update_prev_params=True)
     pyci_ham_orig = pyci.hamiltonian(0, orig.one_int, orig.two_int)
+    # fixme: convert to fanci should be switched to the new interface
+    # This test is being skipped, so it is not an issue that we do not import convert to fanci. 
     fanci_wfn_orig = convert_to_fanci(wfn, pyci_ham_orig, seniority=wfn.seniority, param_selection=None, nproj=nproj, objective_type='projected')
     integrals_orig = np.zeros(fanci_wfn_orig._nproj, dtype=pyci.c_double)
     olps_orig = fanci_wfn_orig.compute_overlap(fanci_wfn_orig.active_params, 'S')[:fanci_wfn_orig._nproj]
@@ -46,6 +47,8 @@ def test_fock_energy():
     ##one_int -= np.einsum("piiq->pq", two_int)
     #two_int = np.zeros_like(pyci_ham_orig.two_mo, dtype=pyci_ham_orig.two_mo.dtype)
     #pyci_ham_fock = pyci.hamiltonian(0, one_int, two_int)
+    # fixme: convert to fanci should be switched to the new interface
+    # This test is being skipped, so it is not an issue that we do not import convert to fanci. 
     fanci_wfn_fock = convert_to_fanci(wfn, pyci_ham_fock, seniority=wfn.seniority, param_selection=None, nproj=nproj, objective_type='projected')
     integrals_fock = np.zeros(fanci_wfn_fock._nproj, dtype=pyci.c_double)
     olps_fock = fanci_wfn_fock.compute_overlap(fanci_wfn_fock.active_params, 'S')[:fanci_wfn_fock._nproj]
@@ -81,6 +84,8 @@ def test_fock_objective():
     ##one_int -= np.einsum("piiq->pq", pyci_ham_orig.two_mo)
     #two_int = np.zeros_like(pyci_ham_orig.two_mo, dtype=pyci_ham_orig.two_mo.dtype)
     #pyci_ham_fock = pyci.hamiltonian(0, one_int, two_int)
+    # fixme: convert to fanci should be switched to the new interface
+    # This test is being skipped, so it is not an issue that we do not import convert to fanci. 
     fanci_wfn_fock = convert_to_fanci(wfn, pyci_ham_fock, seniority=wfn.seniority, param_selection=None, nproj=nproj, objective_type='projected', norm_det=[(0, 1)])
     integrals_fock = np.zeros(fanci_wfn_fock._nproj, dtype=pyci.c_double)
     olps_fock = fanci_wfn_fock.compute_overlap(fanci_wfn_fock.active_params, 'S')[:fanci_wfn_fock._nproj]
@@ -149,6 +154,8 @@ def test_fock_rotation():
     # original before orbital rotation
     orig = RestrictedMolecularHamiltonian(one_int, two_int, update_prev_params=True)
     pyci_ham_orig = pyci.hamiltonian(0, orig.one_int, orig.two_int)
+    # fixme: convert to fanci should be switched to the new interface
+    # This test is being skipped, so it is not an issue that we do not import convert to fanci. 
     fanci_wfn_orig = convert_to_fanci(wfn, pyci_ham_orig, seniority=wfn.seniority, param_selection=None, nproj=nproj, objective_type='projected')
     integrals_orig = np.zeros(fanci_wfn_orig._nproj, dtype=pyci.c_double)
     olps_orig = fanci_wfn_orig.compute_overlap(fanci_wfn_orig.active_params, 'S')[:fanci_wfn_orig._nproj]
@@ -173,6 +180,8 @@ def test_fock_rotation():
     # check that fock and hamiltonian gives same energy for initial state hf ground state
     orbrot = RestrictedMolecularHamiltonian(one_int, two_int, update_prev_params=True)
     pyci_ham_orbrot = pyci.hamiltonian(0, orbrot.one_int, orbrot.two_int)
+    # fixme: convert to fanci should be switched to the new interface
+    # This test is being skipped, so it is not an issue that we do not import convert to fanci. 
     fanci_wfn_orbrot = convert_to_fanci(wfn, pyci_ham_orbrot, seniority=wfn.seniority, param_selection=None, nproj=nproj, objective_type='projected')
     integrals_orbrot = np.zeros(fanci_wfn_orbrot._nproj, dtype=pyci.c_double)
     olps_orbrot = fanci_wfn_orbrot.compute_overlap(fanci_wfn_orbrot.active_params, 'S')[:fanci_wfn_orbrot._nproj]
@@ -192,6 +201,8 @@ def test_fock_rotation():
     ##one_int -= np.einsum("piiq->pq", pyci_ham_orig.two_mo)
     #two_int = np.zeros_like(pyci_ham_orig.two_mo, dtype=pyci_ham_orig.two_mo.dtype)
     #pyci_ham_fock = pyci.hamiltonian(0, one_int, two_int)
+    # fixme: convert to fanci should be switched to the new interface
+    # This test is being skipped, so it is not an issue that we do not import convert to fanci. 
     fanci_wfn_fock = convert_to_fanci(wfn, pyci_ham_fock, seniority=wfn.seniority, param_selection=None, nproj=nproj, objective_type='projected')
     integrals_fock = np.zeros(fanci_wfn_fock._nproj, dtype=pyci.c_double)
     olps_fock = fanci_wfn_fock.compute_overlap(fanci_wfn_fock.active_params, 'S')[:fanci_wfn_fock._nproj]
