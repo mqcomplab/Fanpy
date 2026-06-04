@@ -223,7 +223,9 @@ class PYCI:
             self.fanpy_objective.ham = self._fanpy_ham
 
         elif isinstance(new_ham, RestrictedMolecularHamiltonian):
-            self.fanpy_ham(new_ham)
+            self.fanpy_ham = new_ham
+        else:
+            raise TypeError("new_ham must be pyci.hamiltonian or RestrictedMolecularHamiltonian.")
 
     @fanpy_ham.setter
     def fanpy_ham(self, new_ham):
@@ -247,7 +249,9 @@ class PYCI:
             self.objective._ham = self._pyci_ham
 
         elif isinstance(new_ham, pyci.hamiltonian):
-            self.fanpy_ham(new_ham)
+            self.pyci_ham = new_ham
+        else:
+            raise TypeError("new_ham must be pyci.hamiltonian or RestrictedMolecularHamiltonian.")
 
     def build_pyci_objective(self):
         """
