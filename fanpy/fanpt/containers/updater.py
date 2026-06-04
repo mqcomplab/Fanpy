@@ -4,6 +4,7 @@ from functools import partial
 from math import factorial
 
 import numpy as np
+from scipy.optimize import lsq_linear
 
 import pyci
 
@@ -259,8 +260,8 @@ class FANPTUpdater:
     def assign_solver(self, solver):
         r"""Assign solver."""
         if solver is None:
-            # self.solver = partial(np.linalg.lstsq, rcond=None)
-            self.solver = partial(np.linalg.lstsq, rcond=1e-6)
+            # scipy seems to work better with solver=lsmr than the numpy's least squares solver
+            self.solver = partial(lsq_linear, verbose=1, lsq_solver='lsmr')
 
     def get_responses(self):
         r"""Find the responses up to the final order.
@@ -281,7 +282,7 @@ class FANPTUpdater:
                 quasi_approximation_order=self.quasi_approximation_order,
             )
             constant_terms = c_terms.constant_terms
-            resp_matrix[o - 1] = self.solver(self.fanpt_container.c_matrix, constant_terms)[0]
+            resp_matrix[o - 1] = self.solver(self.fanpt_container.c_matrix, constant_terms)["x"]
         self.responses = resp_matrix
 
     def params_updater(self):
