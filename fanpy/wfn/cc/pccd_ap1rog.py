@@ -1,4 +1,4 @@
-"""Pair Coupled Cluster Doubles-AP1roG wavefunction."""
+"""Pair Coupled Cluster Doubles (pCCD)/AP1roG wavefunction."""
 
 import numpy as np
 from fanpy.tools import slater
@@ -7,20 +7,30 @@ from fanpy.wfn.ci.base import CIWavefunction
 
 
 class PCCD(BaseCC):
-    r"""Pair CC doubles-AP1roG wavefunction.
+    r"""Pair coupled-cluster doubles (pCCD/AP1roG) wavefunction.
+
+    The wavefunction is parameterized as
 
     .. math::
 
-        \begin{align}
-        & \left| {{\Psi }_{AP1roG}} \right\rangle =\prod\limits_{i}
-        {\left( a_{i}^{\dagger }a_{{\bar{i}}}^{\dagger }+
-        \sum\nolimits_{a}{t_{i}^{a}a_{a}^{\dagger }a_{{\bar{a}}}^{\dagger }}
-        \right)}\left| \theta  \right\rangle  \\ & =\prod\limits_{i}
-        {\left( 1+\sum\nolimits_{a}{t_{i}^{a}a_{a}^{\dagger }a_{{\bar{a}}}^{\dagger }{{a}_
-        {{\bar{i}}}}{{a}_{i}}} \right)}\left| {{\Phi }_{0}} \right\rangle  \\ \end{align}
+        \left| \Psi_{\mathrm{pCCD}} \right\rangle
+        = \prod_{\mu \in \mathcal{E}}
+          \left( 1 + t_\mu\, \tau_\mu \right) \left| \Phi_0 \right\rangle,
+        \qquad
+        \mathcal{E} = \left\{ \tau_{i\bar{i}}^{a\bar{a}} \right\},
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    where :math:`i, j, k, \ldots` index occupied spin orbitals and
+    :math:`a, b, c, \ldots` index virtual spin orbitals. The excitation
+    pool :math:`\mathcal{E}` consists exclusively of pair-preserving double
+    excitations that annihilate an occupied pair :math:`(i, \bar{i})` and
+    create electrons in a virtual pair :math:`(a, \bar{a})`, equivalent to
+    the AP1roG geminal formalism via the one-reference orbital construction
+    of Limacher et al.[1_]
+
+    The reference wavefunction (``refwfn``) must be a seniority-0 Slater
+    determinant.
+
+    See Ref. [2]_ for the full theoretical background.
 
     Attributes
     ----------
@@ -96,6 +106,8 @@ class PCCD(BaseCC):
         Assign the reference wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign the parameters of the CC wavefunction.
+    assign_s_type(self, s_type):
+        Assign the option of seniority-breaking condition used for single excitations.
     get_ind(self, exop) : int
         Return the parameter index that corresponds to a given excitation operator.
     get_exop(self, ind) : list of int
@@ -112,10 +124,21 @@ class PCCD(BaseCC):
     generate_possible_exops(self, a_inds, c_inds):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
-    assign_s_type(self, s_type):
-        Assign the s_type option.
     _olp_double_derivative(self, sd): int
         Returns double derivative of overlap for a given sd
+
+    References
+    ----------
+    .. [1] P. A. Limacher, P. W. Ayers, P. A. Johnson, S. De Baerdemacker, D. Van Neck, and
+           P. Bultinck, "A new mean-field method suitable for strongly correlated electrons: 
+           Computationally facile antisymmetric products of nonorthogonal geminals," 
+           *J. Chem. Theory Comput.*, **9**, 1394-1401 (2013).
+           https://doi.org/10.1021/ct300902c
+
+    .. [2] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz,
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def __init__(
@@ -319,8 +342,9 @@ class PCCD(BaseCC):
                (only excite from spin-orbital i if its complement is occupied)
         sen-v: single excitations cannot form a pair.
                 (only excite to a virtual spin-orbital a if its complement is empty)
-        sen-ov: single excitations must break an occupied pair and cannot form extra pairs
-
+        sen-ov: single excitations must break an occupied pair and cannot form extra pairs.
+                (only excite from spin-orbital i if its complement is occupied AND
+                only excite to a virtual spin-orbital a if its complement is empty)
         Raises
         ------
         ValueError
