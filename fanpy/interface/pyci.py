@@ -1,5 +1,7 @@
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.eqn.projected import ProjectedSchrodinger
+from fanpy.eqn.constraints.norm import NormConstraint
+from fanpy.interface.pyci_utils import ConstraintAdapter
 from fanpy.tools.sd_list import sd_list
 
 import numpy as np
@@ -25,7 +27,6 @@ class PYCI:
         energy_nuc,
         norm_det=None,
         norm_param=None,
-        constraints=None,
         mask=None,
         max_memory=8192,
         legacy_fanci=False,
@@ -45,8 +46,6 @@ class PYCI:
             Determinant normalization from FanCI PyCI objective.
         norm_param : (optional)
             Parameters normalization from FanCI PyCI objective.
-        constraints : (optional)
-            Constraints conditions from FanCI PyCI objective.
         mask : Sequence[int] or Sequence[bool], optional
             List of parameters to freeze. If the list contains ints, then each element corresponds
             to a frozen parameter. If the list contains bools, then each element indicates whether
@@ -101,7 +100,6 @@ class PYCI:
         # Define default parameters to buld FanCI object
         self.norm_det = norm_det
         self.norm_param = norm_param
-        self.constraints = constraints
         self.max_memory = max_memory
 
         # Build list of indices for objective parameters
@@ -272,7 +270,7 @@ class PYCI:
                 nproj=self.nproj,
                 fill=self.fill,
                 mask=self.mask,
-                constraints=self.constraints,
+                constraints=None,
                 param_selection=self.param_selection,
                 norm_det=self.norm_det,
                 max_memory=self.max_memory,
@@ -294,7 +292,7 @@ class PYCI:
                 nproj=self.nproj,
                 fill=self.fill,
                 mask=self.mask,
-                constraints=self.constraints,
+                constraints=None,
                 param_selection=self.param_selection,
                 norm_param=self.norm_param,
                 norm_det=self.norm_det,
@@ -304,6 +302,20 @@ class PYCI:
                 tmpfile=self.tmpfile,
                 **self.kwargs,
             )
+        # add constraints from fanpy objective. 
+        for const in self.fanpy_objective.constraints:
+            if isinstance(const, NormConstraint):
+                # use normalization constraint from PyCI objective:
+                # check if normalization constraint has been built
+                if "<\\Phi|\\Psi> - 1>" in self.objective.constraints:
+                    continue
+                else: 
+                    self.note("Normalization constraint has not been built by PyCI because norm_det was specified")
+            else: 
+                const_name = const.__class__.__name__
+                adapted_const = ConstraintAdapter(const)
+                self.objective.add_constraint(const_name, adapted_const.objective, adapted_const.gradient)
+        
 
     def update_objective(self, new_ham):
         """
@@ -326,6 +338,12 @@ class PYCI:
             energy_nuc = self.energy_nuc
 
         # Create new Fanpy objective
+        # todo: we need two different types of constraints. One for Fanpy, the other for PyCI. 
+        new_constraints = []
+        for const in self.fanpy_objective.constraints:
+            if hasattr(const, "ham"): # update consts with ham attribute
+                const.ham = new_ham
+            new_constraints.append(const)          
         new_fanpy_objective = fanpy_objective_class(
             self.fanpy_wfn,
             new_ham,
@@ -339,7 +357,7 @@ class PYCI:
             eqn_weights=self.fanpy_objective.eqn_weights,
             energy_type=self.fanpy_objective.energy_type,
             energy=self.fanpy_objective.energy.params,
-            constraints=self.constraints,
+            constraints=new_constraints,
         )
 
         # Build FanCI objective as PyCI interface
@@ -348,7 +366,6 @@ class PYCI:
             energy_nuc,
             norm_det=self.norm_det,
             norm_param=self.norm_param,
-            constraints=self.constraints,
             mask=self.mask,
             max_memory=self.max_memory,
             legacy_fanci=self.legacy_fanci,

@@ -1,12 +1,15 @@
 import pytest
 import numpy as np
 import pyci
+from unittest.mock import patch 
 
 from utils import find_datafile
 
 from fanpy.interface.pyci import PYCI
 from fanpy.eqn.projected import ProjectedSchrodinger
 from fanpy.eqn.energy_oneside import EnergyOneSideProjection
+from fanpy.eqn.constraints.norm import NormConstraint
+from fanpy.eqn.constraints.energy import EnergyConstraint
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from fanpy.wfn.cc.standard_cc import StandardCC
 from fanpy.tools.sd_list import sd_list
@@ -351,3 +354,50 @@ def test_ham_setter_type_check():
         pyci_obj.fanpy_ham = "not a Hamiltonian"
     with pytest.raises(TypeError):
         pyci_obj.pyci_ham = "not a Hamiltonian"
+
+def test_constraints_init():
+    """ Check if constraints are set up properly"""
+    setup_data = PyCITestSetup()
+    norm_const = NormConstraint(setup_data.wfn)
+    e_const = EnergyConstraint(setup_data.wfn, setup_data.ham)
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham, constraints=[norm_const, e_const])
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+    n_pyci_consts = len(pyci_obj.objective.constraints)
+    assert n_pyci_consts == 2
+    # check for compute objective 
+    with patch.object(EnergyConstraint, "objective", return_value = 3.08 ) as mock_method:
+        x = np.random.rand(pyci_obj.objective.nactive)
+        res = pyci_obj.objective.compute_objective(x)
+        
+        # check if we call the method at least once
+        # we do not check how many times we call the objective method,
+        # as it depends on pyci
+        assert mock_method.call_count > 0 
+
+        # make sure we get expected return value
+        assert res[-1] == 3.08 # last element is the energy constraint
+
+        # check if we passed the expected elements of x
+        adapted_x = x[:-1]
+        assert np.allclose(mock_method.call_args[0][0], adapted_x)
+
+def test_ham_update():
+    """ Make sure the hamiltonian gets updated in constraints that have a ham attribute."""
+    setup_data = PyCITestSetup()
+    norm_const = NormConstraint(setup_data.wfn)
+    e_const = EnergyConstraint(setup_data.wfn, setup_data.ham)
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham, constraints=[norm_const, e_const])
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    norb = setup_data.ham.one_int.shape[0]
+    one_int = np.random.rand(norb, norb)
+    two_int = np.random.rand(norb, norb, norb, norb)
+    new_ham = FakeHamiltonian(one_int, two_int)
+    pyci_obj.update_objective(new_ham)
+    assert len(pyci_obj.fanpy_objective.constraints) == 2
+    # NOTE: this assumes that energy constraint is the second in the list.
+    # this is because we set up the constraints to be [norm, e] for the fanpy obj in this test case
+    new_energy_const = pyci_obj.fanpy_objective.constraints[1] 
+    assert type(new_energy_const.ham) == type(new_ham)
+    assert np.allclose(new_energy_const.ham.one_int, new_ham.one_int)
+    assert np.allclose(new_energy_const.ham.two_int, new_ham.two_int)
