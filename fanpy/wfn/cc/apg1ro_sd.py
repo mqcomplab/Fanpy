@@ -7,91 +7,32 @@ from fanpy.wfn.cc.apg1ro_d import APG1roD
 class APG1roSD(APG1roD):
     r"""APG1ro wavefunction with generalized single and double excitations.
 
-    NOTE:
-    The excitation operator pool in this wavefunction consists of
-    generalized single excitations together with generalized double
-    excitations inherited from APG1roD.
-
-    .. math::
-    \left| \Psi_{\mathrm{APG1roSD}} \right\rangle = 
-    \prod_{\mu \in \mathcal{E}} 
-    \left(1 + t_\mu \tilde{\tau}_\mu \right) \left| \Phi_0 \right\rangle
-
-    where
+    The wavefunction is parameterized as
 
     .. math::
 
-    \mathcal{E} = \left\{\tau_p^q, \tau_{i\bar{i}}^{rs} \right\}
+        \left| \Psi_{\mathrm{APG1roSD}} \right\rangle
+        = \prod_{\mu \in \mathcal{E}}
+          \left( 1 + t_\mu\, \tau_\mu \right) \left| \Phi_0 \right\rangle,
+        \qquad
+        \mathcal{E} = \left\{ \tau_{i}^{a}, \tau_{i\bar{i}}^{ab} \right\},
 
-    The excitation operator pool :math:\mathcal{E} consists of
-        - generalized single excitations
-          :math:(\tau_p^q)
-        - generalized double excitations
-          :math:(\tau_{i\bar{i}}^{rs})
+    where :math:`i, j, k, \ldots` index occupied spin orbitals and
+    :math:`a, b, c, \ldots` index virtual spin orbitals. The excitation
+    pool :math:`\mathcal{E}` extends APG1roD with generalized single
+    excitations :math:`\tau_{i}^{a}` alongside the generalized double
+    excitations :math:`\tau_{i\bar{i}}^{ab}` inherited from APG1roD.
+    The doubles cover both pair-preserving (:math:`b = \bar{a}`) and
+    pair-breaking (:math:`b \neq \bar{a}`) excitations. Unlike AP1roGSDSpin,
+    the single excitations are not restricted to spin-conserving form,
+    allowing spin-flip excitations and broken spin symmetry. The single
+    excitation manifold can be further constrained through the ``s_type``
+    keyword inherited from the PCCD base class.
 
-    generated from the reference determinant.
+    The reference wavefunction (``refwfn``) must be a seniority-0 Slater
+    determinant.
 
-    The generalized doubles always annihilate paired occupied spin
-    complements :math:(i,\bar{i}), while allowing generalized creation
-    into arbitrary virtual spin orbitals :math:(r,s).
-
-    Consequently, the ansatz includes both
-        - pair-preserving double excitations
-        .. math::
-        \tau_{i\bar{i}}^{a\bar{a}}
-
-        - and pair-breaking double excitations
-        .. math::
-        \tau_{i\bar{i}}^{ab}
-        where :math:b \neq \bar{a}.
-
-    Unlike AP1roGSDSpin, the generalized single excitations are not
-    restricted to spin-conserving excitations. Consequently, this ansatz allows
-        - broken spin symmetry,
-        - spin-flip excitations,
-        - and spin-contaminated determinants.
-
-    The effective single excitation operators :math:\tilde{\tau} may
-    additionally be constrained during overlap evaluation through the
-    s_type option implemented in the PCCD wavefunction class.
-
-    sen-o: Require breaking an occupied pair
-
-    .. math::
-
-        \tilde{\tau}_p^q = a_q^\dagger a_p \hat{n}_{\bar{p}}
-
-    sen-v: Forbid formation of virtual pairs
-
-    .. math::
-
-        \tilde{\tau}_p^q =
-        a_q^\dagger a_p \left(1 - \hat{n}_{\bar{q}} \right)
-
-    sen-ov: Apply both restrictions
-
-    .. math::
-
-        \tilde{\tau}_p^q = a_q^\dagger a_p \left(1 - \hat{n}_{\bar{q}} \right)
-        \hat{n}_{\bar{p}}
-
-    free: No seniority restrictions
-
-    .. math::
-
-        \tilde{\tau}_p^q = a_q^\dagger a_p
-
-    These restrictions are enforced dynamically during excitation-operator
-    combination filtering during overlap evaluation and are not encoded
-    directly into the stored excitation operators.
-
-    This method constructs only a static pool of excitation operators
-    derived from the reference determinant.
-
-    The overlap routines later generate compatible combinations of these
-    excitation operators during determinant connections.
-
-    The reference wavefunction must be a seniority-0 Slater determinant.
+    See Ref. [1]_ for the full theoretical background.
 
 
     Attributes
@@ -117,6 +58,11 @@ class APG1roSD(APG1roD):
             dictionary, the keys are tuples with the indices of annihilation and creation
             operators, and the values are the excitation operators that allow to excite from the
             annihilation to the creation operators.
+    s_type : str
+        Option controlling the screening of single excitations during
+        overlap evaluation. Inherited from :class:`PCCD`.
+        See PCCD.assign_s_type for available options and their definitions.
+        
 
     Properties
     ----------
@@ -157,6 +103,8 @@ class APG1roSD(APG1roD):
         Assign the reference wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign the parameters of the CC wavefunction.
+    assign_s_type(self, s_type):
+        Assign the option of seniority-breaking condition used for single excitations.
     get_ind(self, exop) : int
         Return the parameter index that corresponds to a given excitation operator.
     get_exop(self, ind) : list of int
@@ -174,6 +122,12 @@ class APG1roSD(APG1roD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_ranks(self, ranks=None):

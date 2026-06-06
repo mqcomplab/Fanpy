@@ -1,4 +1,4 @@
-"""AP1roG wavefunction with single and double excitations."""
+"""AP1roG wavefunction with single and paired-double excitations."""
 
 from fanpy.tools import slater
 from fanpy.wfn.cc.pccd_ap1rog import PCCD
@@ -29,43 +29,7 @@ class AP1roGSDSpin(PCCD):
     generated from the reference determinant.
     
     The effective single excitation operators :math:\tilde{\tau} may additionally be 
-    constrained during overlap evaluation through the s_type option implemented in the PCCD wavefunction class.
-
-    sen-o  : Require breaking an occupied pair 
-    
-    .. math::
-
-        \tilde{\tau}_i^a = a_a^\dagger a_i \, \hat{n}_{\bar{i}}, 
-        \qquad 
-        \tilde{\tau}_{\bar{i}}^{\bar{a}} = a_{\bar{a}}^\dagger a_{\bar{i}} \, \hat{n}_i 
-
-    sen-v  : Forbid formation of virtual pairs
-
-    .. math::
-
-        \tilde{\tau}_i^a = a_a^\dagger a_i \left(1 - \hat{n}_{\bar{a}}\right), 
-        \qquad
-        \tilde{\tau}_{\bar{i}}^{\bar{a}} = a_{\bar{a}}^\dagger a_{\bar{i}} \left(1 - \hat{n}_a\right)
-
-    sen-ov : Apply both above restrictions
-
-    .. math::
-
-        \tilde{\tau}_i^a = a_a^\dagger a_i \left(1 - \hat{n}_{\bar{a}} \right) \hat{n}_{\bar{i}}, 
-        \qquad 
-        \tilde{\tau}_{\bar{i}}^{\bar{a}} = a_{\bar{a}}^\dagger a_{\bar{i}} 
-            \left(1 - \hat{n}_a \right) \hat{n}_i
-
-    free : No seniority restrictions
-
-    .. math::
-
-        \tilde{\tau}_i^a = a_a^\dagger a_i, 
-        \qquad 
-        \tilde{\tau}_{\bar{i}}^{\bar{a}} = a_{\bar{a}}^\dagger a_{\bar{i}} \]
-
-    These restrictions are enforced dynamically during excitation-operator combination filtering 
-    during overlap evaluation and are not encoded directly into the stored excitation operators.
+    constrained during overlap evaluation through the `s_type` option implemented in the PCCD wavefunction class.
 
     The reference wavefunction can only be a single Slater determinant with seniority-0.
 
@@ -92,6 +56,11 @@ class AP1roGSDSpin(PCCD):
             dictionary, the keys are tuples with the indices of annihilation and creation
             operators, and the values are the excitation operators that allow to excite from the
             annihilation to the creation operators.
+    s_type : str
+        Option controlling the screening of single excitations during
+        overlap evaluation. Inherited from :class:`PCCD`.
+        See PCCD.assign_s_type for available options and their definitions.
+
 
     Properties
     ----------
@@ -132,6 +101,8 @@ class AP1roGSDSpin(PCCD):
         Assign the reference wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign the parameters of the CC wavefunction.
+    assign_s_type(self, s_type):
+        Assign the option of seniority-breaking condition used for single excitations.
     get_ind(self, exop) : int
         Return the parameter index that corresponds to a given excitation operator.
     get_exop(self, ind) : list of int
@@ -149,6 +120,12 @@ class AP1roGSDSpin(PCCD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_ranks(self, ranks=None):

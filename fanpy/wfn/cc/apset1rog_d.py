@@ -7,57 +7,32 @@ from fanpy.wfn.cc.pccd_ap1rog import PCCD
 class APset1roGD(PCCD):
     r"""APset1roG wavefunction with set-restricted double excitations.
 
-    NOTE:
-    The excitation operator pool in this wavefunction consists exclusively
-    of double excitations that annihilate paired occupied spin orbitals
-    while creating electrons into two disjoint sets of virtual spin orbitals.
-
-    .. math::
-
-    \left| \Psi_{\mathrm{APset1roGD}} \right\rangle
-    =  \prod_{\mu \in \mathcal{E}}
-    \left( 1 + t_\mu \tau_\mu \right)
-    \left| \Phi_0 \right\rangle
-
-    where
-
-    .. math::
-
-    \mathcal{E} = \left\{\tau_{i\bar{i}}^{ab}
-    \; \middle| \; a \in A,\; b \in B,\; A \cap B = \varnothing
-    \right\}
-
-    The excitation operator pool :math:\mathcal{E} consists of generalized
-    double excitations that
-        - annihilate paired occupied spin complements
-          :math:(i,\bar{i})
-        - create electrons into two disjoint sets of virtual spin orbitals
-          :math:(A,B)
-    generated from the reference determinant.
-
-    By default,
-    :math:A corresponds to virtual alpha spin orbitals,
-    :math:B corresponds to virtual beta spin orbitals,
-    thereby preserving spin projection symmetry.
-
-    Custom disjoint virtual sets may also be supplied through the
-    indices argument of :meth:assign_exops.
-
-    Unlike APG1roD, the virtual excitation space is constrained through
-    the disjoint-set structure :math:A \cap B = \varnothing, preventing
-    both created electrons from occupying the same virtual spin orbital set.
-
-    Although this class inherits the s_type infrastructure from PCCD,
-    the seniority-filtering conditions do not affect the present ansatz
-    because the excitation operator pool contains only double excitations.
-
-    This method constructs only a static pool of excitation operators
-    derived from the reference determinant.
-
-    The overlap routines later generate compatible combinations of these
-    excitation operators during determinant connections.
-
     The reference wavefunction must be a seniority-0 Slater determinant.
+
+    .. math::
+
+        \left| \Psi_{\mathrm{APset1roGD}} \right\rangle
+        = \prod_{\mu \in \mathcal{E}}
+          \left( 1 + t_\mu\, \tau_\mu \right) \left| \Phi_0 \right\rangle,
+        \qquad
+        \mathcal{E} = \left\{ \tau_{i\bar{i}}^{ab}
+        \mid a \in A,\, b \in B,\, A \cap B = \varnothing \right\},
+
+    where :math:`i, j, k, \ldots` index occupied spin orbitals and
+    :math:`a, b, c, \ldots` index virtual spin orbitals. The excitation
+    pool :math:`\mathcal{E}` consists of double excitations that annihilate
+    an occupied pair :math:`(i, \bar{i})` and create electrons into two
+    disjoint sets of virtual spin orbitals :math:`A` and :math:`B`. By
+    default, :math:`A` and :math:`B` correspond to the virtual alpha and
+    beta spin orbitals respectively, preserving spin projection symmetry;
+    custom disjoint sets may be supplied through the ``indices`` argument
+    of :meth:`assign_exops`. The ``s_type`` keyword has no effect on this
+    ansatz as the excitation pool contains only double excitations.
+
+    The reference wavefunction (``refwfn``) must be a seniority-0 Slater
+    determinant.
+
+    See Ref. [1]_ for the full theoretical background.
 
 
     Attributes
@@ -140,6 +115,12 @@ class APset1roGD(PCCD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_exops(self, indices=None):
