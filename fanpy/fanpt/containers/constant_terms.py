@@ -226,7 +226,7 @@ class FANPTConstantTerms:
                             * np.einsum(
                                 "mkl,k,l->m",
                                 self.fanpt_container.d3_g_e_wfnparams2,
-                                self.previous_responses[1][:-1],
+                                self.previous_responses[0][:-1],
                                 self.previous_responses[0][:-1],
                             )
                         )
