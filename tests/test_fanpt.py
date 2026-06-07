@@ -1,6 +1,5 @@
 import numpy as np
 import pyci
-from fanpy.wfn.utils import convert_to_fanci
 from fanpy.wfn.geminal.ap1rog import AP1roG
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
 from scipy.special import comb
