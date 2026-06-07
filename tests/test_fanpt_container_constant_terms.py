@@ -355,7 +355,7 @@ def test_gen_constant_terms_eparam_order3_qao3_with_tensors():
         * np.einsum(
             "mkl,k,l->m",
             d3_g_e_wfnparams2,
-            wfn_response_2,
+            wfn_response_1,
             wfn_response_1,
         )
         - 3.0
