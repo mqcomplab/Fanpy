@@ -1,73 +1,115 @@
-# test_fanpt_fanpt.py  — Refactored to use a context manager (Option B)
-import numpy as np
-import types
-import pytest
+"""Tests for fanpy.fanpt.fanpt.FANPT."""
+
 from contextlib import ExitStack
 from unittest.mock import patch
+import types
+
+import numpy as np
+import pytest
 
 from fanpy.fanpt.fanpt import FANPT
-import fanpy.fanpt.fanpt as mod
+import fanpy.fanpt.fanpt as fanpt_module
 
 
-#
-# ---------- Tiny fakes ----------
-#
+N_SPINORB = 2
+FOCK_SENTINEL = 123.0
+DUMMY_WFN_VALUE = 7.0
+DUMMY_ENERGY = 11.5
+DUMMY_ECORE = 99.0
+
+
+def make_two_mo():
+    """Return a zero two-electron integral tensor."""
+    return np.zeros((N_SPINORB, N_SPINORB, N_SPINORB, N_SPINORB))
+
+
+def make_one_mo():
+    """Return a small identity one-electron integral matrix."""
+    return np.eye(N_SPINORB)
+
+
+def make_norm_constraint(ref_sd):
+    """Return the normalization constraint string used by FanCI."""
+    return f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}"
+
 
 class FakeHam:
-    """Mock representation of a molecular Hamiltonian."""
+    """Minimal Hamiltonian object used by FANPT tests."""
+
     def __init__(self, ecore=0.0, one_mo=None, two_mo=None):
         self.ecore = ecore
-        self.one_mo = np.array(one_mo) if one_mo is not None else np.zeros((2, 2))
-        self.two_mo = np.array(two_mo) if two_mo is not None else np.zeros((2, 2, 2, 2))
+        self.one_mo = np.array(one_mo) if one_mo is not None else np.zeros((N_SPINORB, N_SPINORB))
+        self.two_mo = np.array(two_mo) if two_mo is not None else make_two_mo()
+
+
+class FakeOptimizeResult(dict):
+    """Minimal optimization result with scipy-like `.x` attribute."""
+
+    def __init__(self, x):
+        super().__init__()
+        self.x = x
 
 
 class FakeObjective:
-    """Mock objective class simulating FanCI's projected Schrödinger objective."""
-    def __init__(self, *, nequation=3, nactive=3, constraints=None, last_mask=False, ham=None, fill="full"):
+    """Minimal projected Schrödinger objective used by FANPT."""
+
+    def __init__(
+        self,
+        *,
+        nequation=3,
+        nactive=3,
+        constraints=None,
+        last_mask=False,
+        ham=None,
+        fill="full",
+    ):
         self.nequation = nequation
         self.nactive = nactive
-        # mask: True = active; last index corresponds to energy
+        self.constraints = list(constraints or [])
+        self.ham = ham or FakeHam(0.0, make_one_mo(), make_two_mo())
+        self.fill = fill
+
+        # FanCI convention: True means active. Last parameter is the energy.
         self.mask = np.zeros(nactive, dtype=bool)
         self.mask[-1] = last_mask
-        self.constraints = list(constraints or [])
-        self.ham = ham or FakeHam(0.0, np.eye(2), np.zeros((2, 2, 2, 2)))
-        self.fill = fill
-        # required by FANPT: .fanpy_objective.refwfn used when ref_sd is None
+
+        # Required by FANPT when ref_sd is not explicitly provided.
         self.fanpy_objective = types.SimpleNamespace(refwfn=0)
 
-        # counters for freeze/unfreeze/constraint removal
-        self.frozen_calls = 0
-        self.unfrozen_calls = 0
+        self.freeze_calls = 0
+        self.unfreeze_calls = 0
         self.removed_constraints = []
 
-    def freeze_parameter(self, idx):
-        assert idx == -1
-        self.frozen_calls += 1
-        self.mask[idx] = False
+    def freeze_parameter(self, index):
+        """Freeze the energy parameter."""
+        assert index == -1
+        self.freeze_calls += 1
+        self.mask[index] = False
 
-    def unfreeze_parameter(self, idx):
-        assert idx == -1
-        self.unfrozen_calls += 1
-        self.mask[idx] = True
+    def unfreeze_parameter(self, index):
+        """Unfreeze the energy parameter."""
+        assert index == -1
+        self.unfreeze_calls += 1
+        self.mask[index] = True
 
-    def remove_constraint(self, s):
-        self.removed_constraints.append(s)
-        try:
-            self.constraints.remove(s)
-        except ValueError:
-            pass
+    def remove_constraint(self, constraint):
+        """Remove a constraint if present."""
+        self.removed_constraints.append(constraint)
+
+        if constraint in self.constraints:
+            self.constraints.remove(constraint)
 
     def optimize(self, params, **kwargs):
-        # deterministic fake: return a result with `x` of length = number of active params
+        """Return deterministic active-parameter values."""
+        del params, kwargs
+
         active_count = int(self.mask.sum())
-        x = np.arange(active_count, dtype=float)
-        class Result(dict):
-            def __init__(self, x): super().__init__(); self.x = x
-        return Result(x)
+        return FakeOptimizeResult(np.arange(active_count, dtype=float))
 
 
 class FakePYCI:
-    """Mock PyCI interface class for FANPT testing."""
+    """Minimal PYCI interface wrapper."""
+
     def __init__(self, objective, energy_nuc, legacy_fanci=True):
         self.objective = objective
         self.energy_nuc = energy_nuc
@@ -75,82 +117,117 @@ class FakePYCI:
         self.update_calls = []
 
     def update_objective(self, ham):
+        """Record Hamiltonian updates."""
         self.update_calls.append(ham)
 
 
 class DummyContainer:
-    """Mock FANPT container (EParam/EFree) used in tests."""
+    """Minimal FANPT container replacement."""
+
     def __init__(self, **kwargs):
-        self.kwargs = kwargs  # record inputs for assertions
+        self.kwargs = kwargs
 
 
 class DummyUpdater:
-    """Mock FANPTUpdater for unit tests."""
-    def __init__(self, fanpt_container, final_order, final_l, solver, resum):
-        nactive = fanpt_container.kwargs["params"].size - 1
-        self.new_wfn_params = np.ones(nactive) * 7.0
-        self.new_energy = 11.5
-        self.new_ham = FakeHam(ecore=99.0, one_mo=np.eye(2), two_mo=np.zeros((2, 2, 2, 2)))
+    """Minimal FANPTUpdater replacement."""
+
+    def __init__(
+        self,
+        fanpt_container,
+        final_order,
+        final_l,
+        solver,
+        resum,
+        quasi_approximation_order=None,
+        **kwargs,
+    ):
+        del final_order, final_l, solver, resum, quasi_approximation_order, kwargs
+
+        nactive_wfn_params = fanpt_container.kwargs["params"].size - 1
+        self.new_wfn_params = np.full(nactive_wfn_params, DUMMY_WFN_VALUE)
+        self.new_energy = DUMMY_ENERGY
+        self.new_ham = FakeHam(DUMMY_ECORE, make_one_mo(), make_two_mo())
 
 
-#
-# ---------- Context-manager patching environment (Option B) ----------
-#
+def fake_reduce_to_fock(two_mo):
+    """Return a sentinel tensor so tests can verify reduce_to_fock was used."""
+    return np.full_like(two_mo, FOCK_SENTINEL)
 
-def _fake_reduce_to_fock(two_mo):
-    """Return a sentinel so tests can assert this was used."""
-    return np.full_like(two_mo, 123.0)
 
-class CtxEnv:
-    """Context manager that patches FANPT's dependencies to fakes."""
-    def __init__(self, fake_objective=None):
-        self.stack = ExitStack()
+class PatchedFANPTEnvironment:
+    """Patch FANPT dependencies with lightweight fakes."""
+
+    def __init__(self, objective=None):
+        self.objective = objective or FakeObjective()
         self.ham_calls = []
-        self.fake_objective = fake_objective or FakeObjective()
-        self.fake_projected = None  # set in __enter__
+        self.fake_projected = None
+        self._stack = ExitStack()
 
     def __enter__(self):
-        # Patch reduce_to_fock in fanpt module
-        self.stack.enter_context(patch.object(mod, "reduce_to_fock", _fake_reduce_to_fock))
-
-        # Patch pyci.hamiltonian inside fanpt module and record constructor calls
-        def _ham_ctor(ecore, one_mo, two_mo):
-            self.ham_calls.append((ecore, np.array(one_mo), np.array(two_mo)))
-            return FakeHam(ecore, one_mo, two_mo)
-        self.stack.enter_context(patch.object(mod.pyci, "hamiltonian", _ham_ctor))
-
-        # Patch PYCI constructor to return our FakePYCI holding self.fake_objective
-        def _fake_PYCI(fanpy_objective, energy_nuc, legacy_fanci=True):
-            return FakePYCI(self.fake_objective, energy_nuc, legacy_fanci=legacy_fanci)
-        self.stack.enter_context(patch.object(mod.fanpy.interface.pyci, "PYCI", _fake_PYCI))
-
-        # Patch container classes + updater
-        self.stack.enter_context(patch.object(mod, "FANPTContainerEParam", DummyContainer))
-        self.stack.enter_context(patch.object(mod, "FANPTContainerEFree",  DummyContainer))
-        self.stack.enter_context(patch.object(mod, "FANPTUpdater",         DummyUpdater))
-
-        # Patch ProjectedSchrodinger and create a fake instance
-        class _FakeProjectedSchrodinger: pass
-        self.stack.enter_context(patch.object(mod, "ProjectedSchrodinger", _FakeProjectedSchrodinger))
-        self.fake_projected = _FakeProjectedSchrodinger()
-
+        self._patch_reduce_to_fock()
+        self._patch_hamiltonian_constructor()
+        self._patch_pyci_interface()
+        self._patch_fanpt_components()
+        self._patch_projected_schrodinger()
         return self
 
-    def __exit__(self, exc_type, exc, tb):
-        self.stack.close()
+    def __exit__(self, exc_type, exc, traceback):
+        self._stack.close()
 
+    def _patch_reduce_to_fock(self):
+        self._stack.enter_context(
+            patch.object(fanpt_module, "reduce_to_fock", fake_reduce_to_fock)
+        )
 
-#
-# ---------- Tests ----------
-#
+    def _patch_hamiltonian_constructor(self):
+        def fake_hamiltonian(ecore, one_mo, two_mo):
+            self.ham_calls.append((ecore, np.array(one_mo), np.array(two_mo)))
+            return FakeHam(ecore, one_mo, two_mo)
+
+        self._stack.enter_context(
+            patch.object(fanpt_module.pyci, "hamiltonian", fake_hamiltonian)
+        )
+
+    def _patch_pyci_interface(self):
+        def fake_pyci(fanpy_objective, energy_nuc, legacy_fanci=True):
+            del fanpy_objective
+            return FakePYCI(self.objective, energy_nuc, legacy_fanci=legacy_fanci)
+
+        self._stack.enter_context(
+            patch.object(fanpt_module.fanpy.interface.pyci, "PYCI", fake_pyci)
+        )
+
+    def _patch_fanpt_components(self):
+        patches = [
+            ("FANPTContainerEParam", DummyContainer),
+            ("FANPTContainerEFree", DummyContainer),
+            ("FANPTUpdater", DummyUpdater),
+        ]
+
+        for name, replacement in patches:
+            self._stack.enter_context(patch.object(fanpt_module, name, replacement))
+
+    def _patch_projected_schrodinger(self):
+        class FakeProjectedSchrodinger:
+            pass
+
+        self._stack.enter_context(
+            patch.object(fanpt_module, "ProjectedSchrodinger", FakeProjectedSchrodinger)
+        )
+        self.fake_projected = FakeProjectedSchrodinger()
+
 
 def test_init_selects_eparam_and_unfreezes_energy():
-    """energy_active=True → use EParam, unfreeze energy if last mask is False, build ham0 via reduce_to_fock."""
-    fake_obj = FakeObjective(nequation=4, nactive=3, constraints=[], last_mask=False, ham=FakeHam(
-        ecore=0.5, one_mo=np.eye(2), two_mo=np.zeros((2, 2, 2, 2))
-    ))
+    """energy_active=True uses EParam and unfreezes inactive energy."""
+    objective = FakeObjective(
+        nequation=4,
+        nactive=3,
+        constraints=[],
+        last_mask=False,
+        ham=FakeHam(0.5, make_one_mo(), make_two_mo()),
+    )
 
-    with CtxEnv(fake_objective=fake_obj) as env:
+    with PatchedFANPTEnvironment(objective) as env:
         fanpt = FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=1.234,
@@ -161,25 +238,28 @@ def test_init_selects_eparam_and_unfreezes_energy():
             steps=1,
         )
 
-        # container class chosen
-        assert fanpt.fanpt_container_class is DummyContainer
-        # energy unfreezing happened (last mask was False initially)
-        assert fake_obj.unfrozen_calls == 1
+    assert fanpt.fanpt_container_class is DummyContainer
+    assert objective.unfreeze_calls == 1
 
-        # ham0 built via pyci.hamiltonian with reduced two-electron integrals
-        assert len(env.ham_calls) == 1
-        ecore, one_mo, two_mo = env.ham_calls[0]
-        assert np.all(two_mo == 123.0)  # reduce_to_fock sentinel
-        assert fanpt.ham1 is fake_obj.ham
-        assert isinstance(fanpt.ham0, FakeHam)
+    assert len(env.ham_calls) == 1
+    _, _, two_mo = env.ham_calls[0]
+    assert np.all(two_mo == FOCK_SENTINEL)
+
+    assert fanpt.ham1 is objective.ham
+    assert isinstance(fanpt.ham0, FakeHam)
 
 
 def test_init_selects_efree_and_freezes_energy_when_active():
-    """energy_active=False → use EFree, freeze energy if mask[-1] is True."""
-    # last_mask=True triggers freeze in EFree branch
-    fake_obj = FakeObjective(nequation=4, nactive=3, constraints=[], last_mask=True, ham=FakeHam())
+    """energy_active=False uses EFree and freezes active energy."""
+    objective = FakeObjective(
+        nequation=4,
+        nactive=3,
+        constraints=[],
+        last_mask=True,
+        ham=FakeHam(),
+    )
 
-    with CtxEnv(fake_objective=fake_obj) as env:
+    with PatchedFANPTEnvironment(objective) as env:
         fanpt = FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=2.0,
@@ -187,35 +267,46 @@ def test_init_selects_efree_and_freezes_energy_when_active():
             ref_sd=0,
         )
 
-        assert fanpt.fanpt_container_class is DummyContainer
-        assert fake_obj.frozen_calls == 1
+    assert fanpt.fanpt_container_class is DummyContainer
+    assert objective.freeze_calls == 1
 
 
 def test_init_inorm_detection_and_norm_det_assignment():
-    """Detects normalization constraint and sets inorm/norm_det accordingly."""
+    """FANPT detects the normalization constraint and sets norm_det."""
     ref_sd = 2
-    norm_str = f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}"
-    fake_obj = FakeObjective(
-        nequation=4, nactive=3, constraints=[norm_str], last_mask=False,
-        ham=FakeHam(0.0, np.eye(2), np.zeros((2, 2, 2, 2)))
+    norm_constraint = make_norm_constraint(ref_sd)
+
+    objective = FakeObjective(
+        nequation=4,
+        nactive=3,
+        constraints=[norm_constraint],
+        last_mask=False,
+        ham=FakeHam(0.0, make_one_mo(), make_two_mo()),
     )
 
-    with CtxEnv(fake_objective=fake_obj) as env:
+    with PatchedFANPTEnvironment(objective) as env:
         fanpt = FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=0.0,
             energy_active=True,
             ref_sd=ref_sd,
         )
-        assert fanpt.inorm is True
-        assert fanpt.norm_det == [(ref_sd, 1.0)]
+
+    assert fanpt.inorm is True
+    assert fanpt.norm_det == [(ref_sd, 1.0)]
 
 
 def test_init_resum_requires_inactive_energy():
-    """resum=True with energy_active=True should error."""
-    fake_obj = FakeObjective(nequation=4, nactive=3, constraints=[], last_mask=False, ham=FakeHam())
+    """resum=True requires energy_active=False."""
+    objective = FakeObjective(
+        nequation=4,
+        nactive=3,
+        constraints=[],
+        last_mask=False,
+        ham=FakeHam(),
+    )
 
-    with CtxEnv(fake_objective=fake_obj) as env:
+    with PatchedFANPTEnvironment(objective) as env:
         with pytest.raises(ValueError, match="energy parameter must be inactive"):
             FANPT(
                 fanpy_objective=env.fake_projected,
@@ -225,53 +316,67 @@ def test_init_resum_requires_inactive_energy():
             )
 
 
-def test_init_resum_branch_normalizes_or_removes_constraint():
-    """
-    resum=True & energy_active=False:
-      - if not inorm and nequation == nactive → norm_det is set
-      - if inorm and (nequation - 1) == nactive → constraint removed, inorm=False
-    """
-    # Case 1: not inorm, nequation == nactive
-    ham1 = FakeHam(0.0, np.eye(2), np.zeros((2, 2, 2, 2)))
+def test_init_resum_sets_norm_det_when_no_constraint_and_square_system():
+    """resum=True sets norm_det when no explicit normalization constraint exists."""
     ref_sd = 0
-    obj1 = FakeObjective(nequation=4, nactive=4, constraints=[], last_mask=False, ham=ham1)
+    objective = FakeObjective(
+        nequation=4,
+        nactive=4,
+        constraints=[],
+        last_mask=False,
+        ham=FakeHam(0.0, make_one_mo(), make_two_mo()),
+    )
 
-    with CtxEnv(fake_objective=obj1) as env1:
-        fanpt1 = FANPT(
-            fanpy_objective=env1.fake_projected,
+    with PatchedFANPTEnvironment(objective) as env:
+        fanpt = FANPT(
+            fanpy_objective=env.fake_projected,
             energy_nuc=0.0,
             energy_active=False,
             resum=True,
             ref_sd=ref_sd,
         )
-        assert fanpt1.norm_det == [(ref_sd, 1.0)]
-        assert fanpt1.inorm is False
 
-    # Case 2: inorm, nequation - 1 == nactive, and constraint present for ref_sd=0
-    norm_str = f"<\\psi_{{{ref_sd}}}|\\Psi> - v_{{{ref_sd}}}"
-    obj2 = FakeObjective(nequation=5, nactive=4, constraints=[norm_str], last_mask=False, ham=ham1)
+    assert fanpt.norm_det == [(ref_sd, 1.0)]
+    assert fanpt.inorm is False
 
-    with CtxEnv(fake_objective=obj2) as env2:
-        fanpt2 = FANPT(
-            fanpy_objective=env2.fake_projected,
+
+def test_init_resum_removes_norm_constraint_when_overdetermined_by_one():
+    """resum=True removes explicit normalization when nequation - 1 == nactive."""
+    ref_sd = 0
+    norm_constraint = make_norm_constraint(ref_sd)
+
+    objective = FakeObjective(
+        nequation=5,
+        nactive=4,
+        constraints=[norm_constraint],
+        last_mask=False,
+        ham=FakeHam(0.0, make_one_mo(), make_two_mo()),
+    )
+
+    with PatchedFANPTEnvironment(objective) as env:
+        fanpt = FANPT(
+            fanpy_objective=env.fake_projected,
             energy_nuc=0.0,
             energy_active=False,
             resum=True,
             ref_sd=ref_sd,
         )
-        assert norm_str in obj2.removed_constraints
-        assert fanpt2.inorm is False
+
+    assert norm_constraint in objective.removed_constraints
+    assert fanpt.inorm is False
 
 
 def test_optimize_toggles_freeze_when_energy_inactive():
-    """
-    energy_active=False:
-    - unfreeze before each FanCI solve, then freeze after,
-    - both at the initial solve and inside the lambda loop.
-    """
-    obj = FakeObjective(nequation=4, nactive=3, constraints=[], last_mask=False, ham=FakeHam())
+    """energy_active=False temporarily unfreezes energy during FanCI solves."""
+    objective = FakeObjective(
+        nequation=4,
+        nactive=3,
+        constraints=[],
+        last_mask=False,
+        ham=FakeHam(),
+    )
 
-    with CtxEnv(fake_objective=obj) as env:
+    with PatchedFANPTEnvironment(objective) as env:
         fanpt = FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=0.0,
@@ -279,8 +384,10 @@ def test_optimize_toggles_freeze_when_energy_inactive():
             steps=1,
         )
 
-        fanpt.optimize(guess_params=np.array([0.0, 0.0]), guess_energy=0.0)
+        fanpt.optimize(
+            guess_params=np.array([0.0, 0.0]),
+            guess_energy=0.0,
+        )
 
-        # Initial solve: unfreeze → freeze; Loop solve: unfreeze → freeze
-        assert obj.unfrozen_calls >= 2
-        assert obj.frozen_calls   >= 2
+    assert objective.unfreeze_calls >= 2
+    assert objective.freeze_calls >= 2
