@@ -1,16 +1,20 @@
 import pytest
 import numpy as np
+import pyci
+from unittest.mock import patch 
 
 from utils import find_datafile
 
 from fanpy.interface.pyci import PYCI
-from fanpy.wfn.base import BaseWavefunction
 from fanpy.eqn.projected import ProjectedSchrodinger
+from fanpy.eqn.energy_oneside import EnergyOneSideProjection
+from fanpy.eqn.constraints.norm import NormConstraint
+from fanpy.eqn.constraints.energy import EnergyConstraint
 from fanpy.ham.restricted_chemical import RestrictedMolecularHamiltonian
-from fanpy.ham.base import BaseHamiltonian
 from fanpy.wfn.cc.standard_cc import StandardCC
 from fanpy.tools.sd_list import sd_list
 from fanpy.tools.performance import current_memory
+from interface_utils import FakeWavefunction, FakeHamiltonian
 
 
 @pytest.mark.parametrize("legacy_fanci", [True, False])
@@ -55,80 +59,6 @@ def test_norm_constraint_chunking(legacy_fanci):
     # compare jacobians
     assert np.allclose(jac_constraint, jac_constraint_chunk)
 
-class FakeWavefunction(BaseWavefunction):
-    """ A fake wavefunction for testing purposes.
-    """
-
-    def __init__(self, nelec, nspin, params):
-        """ Initialize FakeWavefunction.
-
-        Args:
-            nelec (int): Number of electrons.
-            nspin (int): Number of spin orbitals.
-        """
-        self.assign_params(params)
-        super().__init__(nelec, nspin)
-
-    def get_overlap(self, sd, deriv=None):
-        """ Get overlap with a Slater determinant.
-
-        Args:
-            sd (int): Slater determinant in integer representation. -> not used for fake implementation.
-            deriv (np.ndarray, optional): If provided, compute the derivative of the overlap.
-
-        Returns:
-            float: Overlap value.
-        """
-        if deriv is not None:
-            return np.zeros(len(deriv))
-        else:
-            return 1.0 
-        
-    def assign_params(self, params):
-        """ Assign parameters to the wavefunction.
-
-        Args:
-            params (np.ndarray): Parameters to assign.
-        """
-        self.params = params
-
-class FakeHamiltonian(BaseHamiltonian):
-    """ A fake Hamiltonian for testing purposes.
-    """
-    def __init__(self, one_int, two_int):
-        """ Initialize FakeHamiltonian.
-
-        Args:
-            one_int (np.ndarray): One-electron integrals.
-            two_int (np.ndarray): Two-electron integrals.
-        """
-        self.one_int = one_int
-        self.two_int = two_int
-        self._nspin = one_int.shape[0] * 2 # assuming one_int is square and its size corresponds to the orbital space
-    @property
-    def nspin(self):
-        """ Return the number of spin orbitals.
-
-        Returns:
-            int: Number of spin orbitals.
-        """
-        return self._nspin
-    
-    def integrate_sd_sd(self, sd1, sd2, deriv=None):
-        """ Integrate the Hamiltonian with against two Slater determinants.
-
-        Args:
-            sd1 (int): First Slater determinant in integer representation. -> not used for fake implementation.
-            sd2 (int): Second Slater determinant in integer representation. -> not used for fake implementation.
-            deriv (np.ndarray, optional): If provided, compute the derivative of the integral.
-
-        Returns:
-            float: Integral value.
-        """
-        if deriv is not None:
-            return np.zeros(len(deriv))
-        else:
-            return 1.0
 
 class PyCITestSetup:
     """ A test setup for PyCI interface. It sets up the Restricted Hamiltonian and a fake wavefunction.
@@ -175,6 +105,10 @@ def test_pspace_trimming(legacy_fanci):
     # interface setup
     interface = PYCI(eqn, setup_data.e_nuc, legacy_fanci=legacy_fanci)
     assert interface.nproj == len(pspace_restr)
+
+    # check that pspace wfn is pyci 
+    # FakeWavefunction has seniority = None
+    assert isinstance(interface.pspace_wfn, pyci.fullci_wfn)
 
 @pytest.mark.parametrize("legacy_fanci", [True, False])
 def test_mask(legacy_fanci):
@@ -302,3 +236,168 @@ def test_behavior_regression_small_system(legacy_fanci):
     results = interface.objective.optimize(x0=x0)
     assert results["cost"] < initial_cost # optimization should reduce cost
     assert not np.allclose(results['energy'], expected_obj[-1], atol=10**-3) # energy should be different from initial objective value
+
+
+def test_projected_check():
+    """make sure we cannot initialize PYCI class with an objective that is not the projected schrodinger equation"""
+    setup_data = PyCITestSetup()
+    objective = EnergyOneSideProjection(setup_data.wfn, setup_data.ham)
+    with pytest.raises(TypeError):
+        PYCI(objective, 0.0)
+    
+def test_fill_seniority():
+    from fanpy.wfn.geminal.apig import APIG
+    sen_o_wfn = APIG(4, 8)
+    one_int = np.random.rand(4, 4)
+    two_int = np.random.rand(4, 4, 4, 4)
+    test_ham = RestrictedMolecularHamiltonian(
+        one_int, two_int
+    )
+    pspace = sd_list(4, 8, num_limit=None, exc_orders=[1, 2], spin=0, seniority=0)
+    fanpy_objective = ProjectedSchrodinger(sen_o_wfn, test_ham, energy_type="compute", pspace = pspace)
+    interface = PYCI(fanpy_objective, 0.0)
+    assert interface.nproj == len(pspace)
+    assert isinstance(interface.pspace_wfn, pyci.doci_wfn)
+
+def test_update_objective_fanpy_ham():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn , setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    one_int =  np.random.rand(2, 2)
+    two_int = np.random.rand(2, 2, 2, 2)
+    new_ham = RestrictedMolecularHamiltonian(one_int, two_int)
+    pyci_obj.update_objective(new_ham)
+
+    # check if Fanpy ham got updated
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+    # check if PyCI ham got updated
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+
+def test_update_objective_pyci_ham():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    one_int =  np.random.rand(2, 2)
+    two_int = np.random.rand(2, 2, 2, 2)
+    new_ham = pyci.hamiltonian(0.0, one_int, two_int)
+    pyci_obj.update_objective(new_ham)
+
+    # check if Fanpy ham got updated
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+    # check if PyCI ham got updated
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+
+def test_pyci_ham_setter():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    # setting it with pyci ham
+    one_int =  np.random.rand(2, 2)
+    two_int = np.random.rand(2, 2, 2, 2)
+    new_ham = pyci.hamiltonian(0.0, one_int, two_int)
+    pyci_obj.pyci_ham = new_ham
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+    # setting it with fanpy ham
+    one_int =  np.ones((2, 2))
+    two_int = np.ones((2, 2, 2, 2))
+    new_ham = RestrictedMolecularHamiltonian(one_int, two_int)
+    pyci_obj.pyci_ham = new_ham
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+def test_fanpy_ham_setter():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    # setting it with pyci ham
+    one_int =  np.random.rand(2, 2)
+    two_int = np.random.rand(2, 2, 2, 2)
+    new_ham = pyci.hamiltonian(0.0, one_int, two_int)
+    pyci_obj.fanpy_ham = new_ham
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+    # setting it with fanpy ham
+    one_int =  np.ones((2, 2))
+    two_int = np.ones((2, 2, 2, 2))
+    new_ham = RestrictedMolecularHamiltonian(one_int, two_int)
+    pyci_obj.fanpy_ham = new_ham
+    assert np.allclose(pyci_obj.pyci_ham.one_mo, one_int)
+    assert np.allclose(pyci_obj.pyci_ham.two_mo, two_int)
+    assert np.allclose(pyci_obj.fanpy_ham.one_int, one_int)
+    assert np.allclose(pyci_obj.fanpy_ham.two_int, two_int)
+
+def test_ham_setter_type_check():
+    setup_data = PyCITestSetup() # ham params initialized to zeros
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham)
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    with pytest.raises(TypeError):
+        pyci_obj.fanpy_ham = "not a Hamiltonian"
+    with pytest.raises(TypeError):
+        pyci_obj.pyci_ham = "not a Hamiltonian"
+
+def test_constraints_init():
+    """ Check if constraints are set up properly"""
+    setup_data = PyCITestSetup()
+    norm_const = NormConstraint(setup_data.wfn)
+    e_const = EnergyConstraint(setup_data.wfn, setup_data.ham)
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham, constraints=[norm_const, e_const])
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+    n_pyci_consts = len(pyci_obj.objective.constraints)
+    assert n_pyci_consts == 2
+    # check for compute objective 
+    with patch.object(EnergyConstraint, "objective", return_value = 3.08 ) as mock_method:
+        x = np.random.rand(pyci_obj.objective.nactive)
+        res = pyci_obj.objective.compute_objective(x)
+        
+        # check if we call the method at least once
+        # we do not check how many times we call the objective method,
+        # as it depends on pyci
+        assert mock_method.call_count > 0 
+
+        # make sure we get expected return value
+        assert res[-1] == 3.08 # last element is the energy constraint
+
+        # check if we passed the expected elements of x
+        adapted_x = x[:-1]
+        assert np.allclose(mock_method.call_args[0][0], adapted_x)
+
+def test_ham_update():
+    """ Make sure the hamiltonian gets updated in constraints that have a ham attribute."""
+    setup_data = PyCITestSetup()
+    norm_const = NormConstraint(setup_data.wfn)
+    e_const = EnergyConstraint(setup_data.wfn, setup_data.ham)
+    fanpy_obj = ProjectedSchrodinger(setup_data.wfn, setup_data.ham, constraints=[norm_const, e_const])
+    pyci_obj = PYCI(fanpy_obj, 0.0)
+
+    norb = setup_data.ham.one_int.shape[0]
+    one_int = np.random.rand(norb, norb)
+    two_int = np.random.rand(norb, norb, norb, norb)
+    new_ham = FakeHamiltonian(one_int, two_int)
+    pyci_obj.update_objective(new_ham)
+    assert len(pyci_obj.fanpy_objective.constraints) == 2
+    # NOTE: this assumes that energy constraint is the second in the list.
+    # this is because we set up the constraints to be [norm, e] for the fanpy obj in this test case
+    new_energy_const = pyci_obj.fanpy_objective.constraints[1] 
+    assert type(new_energy_const.ham) == type(new_ham)
+    assert np.allclose(new_energy_const.ham.one_int, new_ham.one_int)
+    assert np.allclose(new_energy_const.ham.two_int, new_ham.two_int)
