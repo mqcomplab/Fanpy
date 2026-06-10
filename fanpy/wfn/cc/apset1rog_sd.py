@@ -5,21 +5,38 @@ from fanpy.wfn.cc.apset1rog_d import APset1roGD
 
 
 class APset1roGSD(APset1roGD):
-    r"""APset1roG wavefunction with single and double excitations.
+    r"""APset1roG wavefunction with set-restricted single and double excitations.
+
+    The wavefunction is parameterized as
 
     .. math::
 
-        \left| {{\Psi }_{APset1roGSD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{\begin{smallmatrix}a\in A \\b\in B\\A\bigcap B=\varnothing
-        \end{smallmatrix}}^{{}}{{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}}
-        \right)}\prod\limits_{i=1}^{N/2\;}{\left( 1+\sum\limits_{b\in B}^{{}}{{{t}_{\bar{i};b}}
-        \hat{\tau }_{i\bar{i}}^{ib}} \right)\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a\in A}^{{}}{{{t}_{i;a}}\hat{\tau }_{i\bar{i}}^{a\bar{i}}}
-        \right)}\left| {{\Phi }_{0}} \right\rangle }
+        \left| \Psi_{\mathrm{APset1roGSD}} \right\rangle
+        = \prod_{\mu \in \mathcal{E}}
+          \left( 1 + t_\mu\, \tau_\mu \right) \left| \Phi_0 \right\rangle,
+        \qquad
+        \mathcal{E} = \left\{ \tau_{i}^{a},\, \tau_{\bar{i}}^{b},\,
+        \tau_{i\bar{i}}^{ab}
+        \mid a \in A,\, b \in B,\, A \cap B = \varnothing \right\},
 
+    where :math:`i, j, k, \ldots` index occupied spin orbitals and
+    :math:`a, b, c, \ldots` index virtual spin orbitals. The excitation
+    pool :math:`\mathcal{E}` extends APset1roGD with set-restricted
+    spin-conserving single excitations :math:`\tau_{i}^{a}` and
+    :math:`\tau_{\bar{i}}^{b}` alongside the double excitations
+    :math:`\tau_{i\bar{i}}^{ab}` inherited from APset1roGD. The disjoint
+    sets :math:`A` and :math:`B` default to virtual alpha and beta spin
+    orbitals respectively, preserving spin projection symmetry; custom
+    disjoint sets may be supplied through the ``indices`` argument of
+    :meth:`assign_exops`. The single excitation manifold can be further
+    constrained through the ``s_type`` keyword inherited from the PCCD
+    base class.
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    The reference wavefunction (``refwfn``) must be a seniority-0 Slater
+    determinant.
+
+    See Ref. [1]_ for the full theoretical background.
+
 
     Attributes
     ----------
@@ -44,6 +61,11 @@ class APset1roGSD(APset1roGD):
         dictionary, the keys are tuples with the indices of annihilation and creation
         operators, and the values are the excitation operators that allow to excite from the
         annihilation to the creation operators.
+    s_type : str
+        Option controlling the screening of single excitations during
+        overlap evaluation. Inherited from :class:`PCCD`.
+        See PCCD.assign_s_type for available options and their definitions.
+
 
     Properties
     ----------
@@ -84,6 +106,8 @@ class APset1roGSD(APset1roGD):
         Assign the reference wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign the parameters of the CC wavefunction.
+    assign_s_type(self, s_type):
+        Assign the option of seniority-breaking condition used for single excitations.
     get_ind(self, exop) : int
         Return the parameter index that corresponds to a given excitation operator.
     get_exop(self, ind) : list of int
@@ -101,6 +125,12 @@ class APset1roGSD(APset1roGD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_ranks(self, ranks=None):

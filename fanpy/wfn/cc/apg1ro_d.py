@@ -5,16 +5,32 @@ from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
 
 class APG1roD(PCCD):
-    r"""APG1ro wavefunction with only double excitations.
+    r"""APG1ro wavefunction with generalized double excitations.
+
+ The wavefunction is parameterized as
 
     .. math::
 
-        \[\left| {{\Psi }_{APG1roD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a,b\in virt}^{{}}
-        {{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}} \right)}\left| {{\Phi }_{0}} \right\rangle \]
+        \left| \Psi_{\mathrm{APG1roD}} \right\rangle
+        = \prod_{\mu \in \mathcal{E}}
+          \left( 1 + t_\mu\, \tau_\mu \right) \left| \Phi_0 \right\rangle,
+        \qquad
+        \mathcal{E} = \left\{ \tau_{i\bar{i}}^{ab} \right\},
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    where :math:`i, j, k, \ldots` index occupied spin orbitals, and 
+    :math:`a, b, c, \ldots` index virtual spin orbitals. The excitation pool
+    :math:`\mathcal{E}` consists of generalized double excitations that
+    annihilate a paired occupied pair :math:`(i, \bar{i})` and create
+    electrons in arbitrary virtual spin orbitals :math:`(a, b)`. This
+    covers both pair-preserving excitations (:math:`b = \bar{a}`) 
+    and pair-breaking excitations (:math:`b \neq = \bar{a}`); 
+    because the virtual creation indices are unrestricted, 
+    the ansatz may break spin symmetry.
+
+    The reference wavefunction (``refwfn``) must be a seniority-0 Slater
+    determinant.
+
+    See Ref. [1]_ for the full theoretical background.
 
     Attributes
     ----------
@@ -96,6 +112,12 @@ class APG1roD(PCCD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_exops(self, indices=None):

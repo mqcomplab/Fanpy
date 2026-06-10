@@ -5,18 +5,35 @@ from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
 
 class APset1roGD(PCCD):
-    r"""APset1roG wavefunction with only double excitations.
+    r"""APset1roG wavefunction with set-restricted double excitations.
+
+    The reference wavefunction must be a seniority-0 Slater determinant.
 
     .. math::
 
-        \left| {{\Psi }_{APset1roGD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{\begin{smallmatrix}a\in A \\ b\in B \\ A\bigcap B=\varnothing
-        \end{smallmatrix}}^{{}}{{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}}
-        \right)}\left| {{\Phi }_{0}} \right\rangle
+        \left| \Psi_{\mathrm{APset1roGD}} \right\rangle
+        = \prod_{\mu \in \mathcal{E}}
+          \left( 1 + t_\mu\, \tau_\mu \right) \left| \Phi_0 \right\rangle,
+        \qquad
+        \mathcal{E} = \left\{ \tau_{i\bar{i}}^{ab}
+        \mid a \in A,\, b \in B,\, A \cap B = \varnothing \right\},
 
+    where :math:`i, j, k, \ldots` index occupied spin orbitals and
+    :math:`a, b, c, \ldots` index virtual spin orbitals. The excitation
+    pool :math:`\mathcal{E}` consists of double excitations that annihilate
+    an occupied pair :math:`(i, \bar{i})` and create electrons into two
+    disjoint sets of virtual spin orbitals :math:`A` and :math:`B`. By
+    default, :math:`A` and :math:`B` correspond to the virtual alpha and
+    beta spin orbitals respectively, preserving spin projection symmetry;
+    custom disjoint sets may be supplied through the ``indices`` argument
+    of :meth:`assign_exops`. The ``s_type`` keyword has no effect on this
+    ansatz as the excitation pool contains only double excitations.
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    The reference wavefunction (``refwfn``) must be a seniority-0 Slater
+    determinant.
+
+    See Ref. [1]_ for the full theoretical background.
+
 
     Attributes
     ----------
@@ -98,6 +115,12 @@ class APset1roGD(PCCD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_exops(self, indices=None):

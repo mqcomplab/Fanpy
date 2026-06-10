@@ -5,19 +5,35 @@ from fanpy.wfn.cc.apg1ro_d import APG1roD
 
 
 class APG1roSD(APG1roD):
-    r"""APG1ro wavefunction with single and double excitations.
+    r"""APG1ro wavefunction with generalized single and double excitations.
+
+    The wavefunction is parameterized as
 
     .. math::
 
-        \left| {{\Psi }_{APG1roSD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a,b\in virt}^{{}}{{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}}
-        \right)}\prod\limits_{i=1}^{N/2\;}{\left( 1+\sum\limits_{a\in virt}^{{}}{{{t}_{\bar{i};a}}
-        \hat{\tau }_{i\bar{i}}^{ia}} \right)\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a\in virt}^{{}}{{{t}_{i;a}}\hat{\tau }_{i\bar{i}}^{a\bar{i}}}
-        \right)}\left| {{\Phi }_{0}} \right\rangle }
+        \left| \Psi_{\mathrm{APG1roSD}} \right\rangle
+        = \prod_{\mu \in \mathcal{E}}
+          \left( 1 + t_\mu\, \tau_\mu \right) \left| \Phi_0 \right\rangle,
+        \qquad
+        \mathcal{E} = \left\{ \tau_{i}^{a}, \tau_{i\bar{i}}^{ab} \right\},
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    where :math:`i, j, k, \ldots` index occupied spin orbitals and
+    :math:`a, b, c, \ldots` index virtual spin orbitals. The excitation
+    pool :math:`\mathcal{E}` extends APG1roD with generalized single
+    excitations :math:`\tau_{i}^{a}` alongside the generalized double
+    excitations :math:`\tau_{i\bar{i}}^{ab}` inherited from APG1roD.
+    The doubles cover both pair-preserving (:math:`b = \bar{a}`) and
+    pair-breaking (:math:`b \neq \bar{a}`) excitations. Unlike AP1roGSDSpin,
+    the single excitations are not restricted to spin-conserving form,
+    allowing spin-flip excitations and broken spin symmetry. The single
+    excitation manifold can be further constrained through the ``s_type``
+    keyword inherited from the PCCD base class.
+
+    The reference wavefunction (``refwfn``) must be a seniority-0 Slater
+    determinant.
+
+    See Ref. [1]_ for the full theoretical background.
+
 
     Attributes
     ----------
@@ -42,6 +58,11 @@ class APG1roSD(APG1roD):
             dictionary, the keys are tuples with the indices of annihilation and creation
             operators, and the values are the excitation operators that allow to excite from the
             annihilation to the creation operators.
+    s_type : str
+        Option controlling the screening of single excitations during
+        overlap evaluation. Inherited from :class:`PCCD`.
+        See PCCD.assign_s_type for available options and their definitions.
+        
 
     Properties
     ----------
@@ -82,6 +103,8 @@ class APG1roSD(APG1roD):
         Assign the reference wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign the parameters of the CC wavefunction.
+    assign_s_type(self, s_type):
+        Assign the option of seniority-breaking condition used for single excitations.
     get_ind(self, exop) : int
         Return the parameter index that corresponds to a given excitation operator.
     get_exop(self, ind) : list of int
@@ -99,6 +122,12 @@ class APG1roSD(APG1roD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_ranks(self, ranks=None):

@@ -1,23 +1,37 @@
-"""APG1ro wavefunction with single and double excitations."""
+"""AP1roG wavefunction with single and paired-double excitations."""
 
 from fanpy.tools import slater
 from fanpy.wfn.cc.pccd_ap1rog import PCCD
 
 
 class AP1roGSDSpin(PCCD):
-    r"""AP1roG wavefunction with single and double excitations, correct spin symmetry.
+    r"""AP1roG wavefunction with single and paired-double excitations, both preserving spin symmetry.
+    
+    NOTE: The excitation operator pool in this wavefunction consists of paired doubles 
+    inherited from PCCD together with spin-conserving single excitations.
 
     .. math::
 
-        \left| {{\Psi }_{APG1roSD}} \right\rangle =\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a,b\in virt}^{{}}{{{t}_{i;ab}}\hat{\tau }_{i\bar{i}}^{ab}}
-        \right)}\prod\limits_{i=1}^{N/2\;}{\left( 1+\sum\limits_{a\in virt}^{{}}{{{t}_{\bar{i};a}}
-        \hat{\tau }_{i\bar{i}}^{ia}} \right)\prod\limits_{i=1}^{N/2\;}
-        {\left( 1+\sum\limits_{a\in virt}^{{}}{{{t}_{i;a}}\hat{\tau }_{i\bar{i}}^{a\bar{i}}}
-        \right)}\left| {{\Phi }_{0}} \right\rangle }
+    \left| \Psi _{\mathrm{AP1roGSDSpin}} \right\rangle = \prod _{\mu \in \mathcal{E}} 
+        \left( 1+t_{\mu }\tilde{\tau }_{\mu }\right)| \Phi _{0} \rangle
 
-    In this case the reference wavefunction can only be a single Slater determinant with
-    seniority 0.
+    where, 
+
+    .. math::
+    
+    \mathcal{E} = \left\{\tau_i^a,\tau_{\bar{i}}^{\bar{a}},\tau_{i\bar{i}}^{a\bar{a}}\right\}
+        
+    The excitation operator pool :math:\mathcal{E} consists of
+        - spin-conserving single excitations
+        :math:(\tau_i^a,\tau_{\bar{i}}^{\bar{a}})
+        - paired double excitations
+        :math:(\tau_{i\bar{i}}^{a\bar{a}})
+    generated from the reference determinant.
+    
+    The effective single excitation operators :math:\tilde{\tau} may additionally be 
+    constrained during overlap evaluation through the `s_type` option implemented in the PCCD wavefunction class.
+
+    The reference wavefunction can only be a single Slater determinant with seniority-0.
 
     Attributes
     ----------
@@ -42,6 +56,11 @@ class AP1roGSDSpin(PCCD):
             dictionary, the keys are tuples with the indices of annihilation and creation
             operators, and the values are the excitation operators that allow to excite from the
             annihilation to the creation operators.
+    s_type : str
+        Option controlling the screening of single excitations during
+        overlap evaluation. Inherited from :class:`PCCD`.
+        See PCCD.assign_s_type for available options and their definitions.
+
 
     Properties
     ----------
@@ -82,6 +101,8 @@ class AP1roGSDSpin(PCCD):
         Assign the reference wavefunction.
     assign_params(self, params=None, add_noise=False)
         Assign the parameters of the CC wavefunction.
+    assign_s_type(self, s_type):
+        Assign the option of seniority-breaking condition used for single excitations.
     get_ind(self, exop) : int
         Return the parameter index that corresponds to a given excitation operator.
     get_exop(self, ind) : list of int
@@ -99,6 +120,12 @@ class AP1roGSDSpin(PCCD):
         Assign the excitation operators that can excite from the given indices to be annihilated
         to the given indices to be created.
 
+    References
+    ----------
+    .. [1] P. B. Gaikwad, T. D. Kim, M. Richer, R. A. Lokhande, G. Sánchez-Díaz; 
+           P. A. Limacher, P. W. Ayers and R. A. Miranda-Quintana, "Coupled-cluster-inspired 
+           geminal wavefunctions," *J. Chem. Phys.* **160**, 144108 (2024).
+           https://doi.org/10.1063/5.0196561
     """
 
     def assign_ranks(self, ranks=None):
@@ -143,6 +170,10 @@ class AP1roGSDSpin(PCCD):
         spin-orbitals to create.
         [a1, a2, ..., aN, c1, c2, ..., cN]
 
+
+        This method constructs only a static pool of excitation operators derived from 
+        the reference determinant. The overlap routines later generate compatible combinations 
+        of these excitation operators during determinant connections.
         """
         if indices is not None:
             raise TypeError(
