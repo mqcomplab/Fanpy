@@ -7,7 +7,6 @@ import types
 import numpy as np
 import pytest
 
-from fanpy.fanpt.fanpt import FANPT
 import fanpy.fanpt.fanpt as fanpt_module
 
 
@@ -228,7 +227,7 @@ def test_init_selects_eparam_and_unfreezes_energy():
     )
 
     with PatchedFANPTEnvironment(objective) as env:
-        fanpt = FANPT(
+        fanpt = fanpt_module.FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=1.234,
             legacy_fanci=False,
@@ -260,7 +259,7 @@ def test_init_selects_efree_and_freezes_energy_when_active():
     )
 
     with PatchedFANPTEnvironment(objective) as env:
-        fanpt = FANPT(
+        fanpt = fanpt_module.FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=2.0,
             energy_active=False,
@@ -285,7 +284,7 @@ def test_init_inorm_detection_and_norm_det_assignment():
     )
 
     with PatchedFANPTEnvironment(objective) as env:
-        fanpt = FANPT(
+        fanpt = fanpt_module.FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=0.0,
             energy_active=True,
@@ -308,7 +307,7 @@ def test_init_resum_requires_inactive_energy():
 
     with PatchedFANPTEnvironment(objective) as env:
         with pytest.raises(ValueError, match="energy parameter must be inactive"):
-            FANPT(
+            fanpt_module.FANPT(
                 fanpy_objective=env.fake_projected,
                 energy_nuc=0.0,
                 energy_active=True,
@@ -328,7 +327,7 @@ def test_init_resum_sets_norm_det_when_no_constraint_and_square_system():
     )
 
     with PatchedFANPTEnvironment(objective) as env:
-        fanpt = FANPT(
+        fanpt = fanpt_module.FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=0.0,
             energy_active=False,
@@ -354,7 +353,7 @@ def test_init_resum_removes_norm_constraint_when_overdetermined_by_one():
     )
 
     with PatchedFANPTEnvironment(objective) as env:
-        fanpt = FANPT(
+        fanpt = fanpt_module.FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=0.0,
             energy_active=False,
@@ -377,7 +376,7 @@ def test_optimize_toggles_freeze_when_energy_inactive():
     )
 
     with PatchedFANPTEnvironment(objective) as env:
-        fanpt = FANPT(
+        fanpt = fanpt_module.FANPT(
             fanpy_objective=env.fake_projected,
             energy_nuc=0.0,
             energy_active=False,
