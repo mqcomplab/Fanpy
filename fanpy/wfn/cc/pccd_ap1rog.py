@@ -737,7 +737,7 @@ class PCCD(BaseCC):
 
 
     def _olp_double_derivative(self, sd):
-        """Calculate the double derivative of the overlap with the Slater determinant.
+        r"""Calculate the double derivative of the overlap with the Slater determinant.
 
         .. math::
 
@@ -770,7 +770,7 @@ class PCCD(BaseCC):
             # get sign
             sign = slater.sign_excite(sd2, a_inds, c_inds)
 
-            val = np.zeros(self.nparams)
+            val = np.zeros((self.nparams, self.nparams))
             if tuple(a_inds + c_inds) not in self.exop_combinations:
                 self.generate_possible_exops(a_inds, c_inds)
 
