@@ -180,7 +180,14 @@ def test_resum_path(monkeypatch):
     assert updater.resum
     assert hasattr(updater, "resum_correction")
 
+def fake_constant_terms(*args, **kwargs):
+    del args
 
+    fanpt_container = kwargs["fanpt_container"]
+    order = kwargs["order"]
+    return SimpleNamespace(
+        constant_terms=np.full(fanpt_container.c_matrix.shape[0], order)
+    )
 def test_non_resum_path(monkeypatch):
     """Updater computes finite response vectors in the non-resummation path."""
     updater_module, Updater = import_updater()
@@ -189,14 +196,6 @@ def test_non_resum_path(monkeypatch):
     rng = np.random.default_rng(0)
     container.c_matrix = rng.normal(size=(3, 5))
 
-    def fake_constant_terms(*args, **kwargs):
-        del args
-
-        fanpt_container = kwargs["fanpt_container"]
-        order = kwargs["order"]
-        return SimpleNamespace(
-            constant_terms=np.full(fanpt_container.c_matrix.shape[0], order)
-        )
 
     patch_updater_dependencies(
         monkeypatch,
