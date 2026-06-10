@@ -128,6 +128,15 @@ def test_der_g_lambda_efree_adjustment(inorm):
 # ---- der2_g_lambda_wfnparams ----
 @pytest.mark.parametrize("inorm", [True, False])
 def test_der2_g_lambda_wfnparams_efree(inorm):
+    """
+    super(): d2_g_lambda_wfnparams[:nproj] = 2 * d_ovlp_s
+
+    EFree:
+      if inorm=True:
+        subtract d_ref/dp_k * ovlp_s and d_ref * d_ovlp_s/dp_k
+      if inorm=False:
+        normalized correction cancels the projected block for this dummy setup
+    """
     inst = DummyEFree(inorm=inorm, nproj=4, nactive=3, nequation=6, ref_sd=2)
 
     # Deterministic d_ovlp grid
@@ -157,6 +166,17 @@ def test_der2_g_lambda_wfnparams_efree(inorm):
 # ---- gen_coeff_matrix ----
 @pytest.mark.parametrize("inorm", [True, False])
 def test_gen_coeff_matrix_efree_adjustment(inorm):
+    """
+    super(): c_matrix is initialized to 100 by the dummy parent.
+
+    EFree:
+      if inorm=True:
+        subtract f_ref,k * ovlp_s
+      if inorm=False:
+        subtract (f_ref,k - E * d_ovlp_ref,k) * ovlp_s / ovlp_ref
+
+    Rows beyond nproj are unchanged.
+    """
     nproj, nactive, nequation = 4, 3, 6
     ref_sd = 1
     E = 1.25
