@@ -53,7 +53,6 @@ def test_fock_energy():
     pspace = sd_list(nelec, nspin, num_limit=None, exc_orders=[1, 2, 3, 4, 5, 6], spin=0)
     objective = ProjectedSchrodinger(wfn, orig, energy_type="compute", pspace=pspace)
     pyci_interface = interface.pyci.PYCI(objective, 2.9182427095417482, max_memory=64000, legacy_fanci=False)
-    pyci_interface.objective_type = "projected"
     pyci_interface.build_pyci_objective()
     integrals_orig = np.zeros(nproj, dtype=pyci.c_double)
     olps_orig = pyci_interface.objective.compute_overlap(objective.active_params, 'S')[:nproj]
@@ -64,7 +63,6 @@ def test_fock_energy():
     fock = RestrictedMolecularHamiltonian(one_int, fock_two_int, update_prev_params=True)
     objective_fock = ProjectedSchrodinger(wfn, fock, energy_type="compute", pspace=pspace)
     pyci_interface_fock = interface.pyci.PYCI(objective_fock, 2.9182427095417482, max_memory=64000, legacy_fanci=False)
-    pyci_interface_fock.objective_type = "projected"
     pyci_interface_fock.build_pyci_objective()
     integrals_fock = np.zeros(nproj, dtype=pyci.c_double)
     olps_fock = pyci_interface_fock.objective.compute_overlap(objective_fock.active_params, 'S')[:nproj]
@@ -90,7 +88,6 @@ def test_fock_objective():
     pspace = sd_list(nelec, nspin, num_limit=None, exc_orders=[1, 2, 3, 4, 5, 6], spin=0)
     objective_fock = ProjectedSchrodinger(wfn, fock, energy_type="compute", pspace=pspace)
     pyci_interface_fock = interface.pyci.PYCI(objective_fock, 2.9182427095417482, max_memory=64000, legacy_fanci=False)
-    pyci_interface_fock.objective_type = "projected"
     pyci_interface_fock.build_pyci_objective()
     integrals_fock = np.zeros(nproj, dtype=pyci.c_double)
     olps_fock = pyci_interface_fock.objective.compute_overlap(objective_fock.active_params, 'S')[:nproj]
@@ -116,7 +113,6 @@ def test_fock_rotation():
     pspace = sd_list(nelec, nspin, num_limit=None, exc_orders=[1, 2, 3, 4, 5, 6], spin=0)
     objective = ProjectedSchrodinger(wfn, orig, energy_type="compute", pspace=pspace)
     pyci_interface = interface.pyci.PYCI(objective, 2.9182427095417482, max_memory=64000, legacy_fanci=False)
-    pyci_interface.objective_type = "projected"
     pyci_interface.build_pyci_objective()
     integrals_orig = np.zeros(nproj, dtype=pyci.c_double)
     olps_orig = pyci_interface.objective.compute_overlap(objective.active_params, 'S')[:nproj]
@@ -143,7 +139,6 @@ def test_fock_rotation():
     pspace = sd_list(nelec, nspin, num_limit=None, exc_orders=[1, 2, 3, 4, 5, 6], spin=0)
     objective_orbrot = ProjectedSchrodinger(wfn, orbrot, energy_type="compute", pspace=pspace)
     pyci_interface_orbrot = interface.pyci.PYCI(objective_orbrot, 2.9182427095417482, max_memory=64000, legacy_fanci=False)
-    pyci_interface_orbrot.objective_type = "projected"
     pyci_interface_orbrot.build_pyci_objective()
     integrals_orbrot = np.zeros(nproj, dtype=pyci.c_double)
     olps_orbrot = pyci_interface_orbrot.objective.compute_overlap(objective_orbrot.active_params, 'S')[:nproj]
@@ -157,7 +152,6 @@ def test_fock_rotation():
     pspace = sd_list(nelec, nspin, num_limit=None, exc_orders=[1, 2, 3, 4, 5, 6], spin=0)
     objective_fock = ProjectedSchrodinger(wfn, fock, energy_type="compute", pspace=pspace)
     pyci_interface_fock = interface.pyci.PYCI(objective_fock, 2.9182427095417482, max_memory=64000, legacy_fanci=False)
-    pyci_interface_fock.objective_type = "projected"
     pyci_interface_fock.build_pyci_objective()
     integrals_fock = np.zeros(nproj, dtype=pyci.c_double)
     olps_fock = pyci_interface_fock.objective.compute_overlap(objective_fock.active_params, 'S')[:nproj]
