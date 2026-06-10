@@ -786,7 +786,7 @@ class PCCD(BaseCC):
             # `occ_indices(sd)` line.
             # The correct determinant to use (`sd` or `sd2`) for occupancy filtering during
             # excitation validation requires further investigation
-            oocc_indices = set(slater.occ_indices(sd))
+            occ_indices = set(slater.occ_indices(sd))
 
             for exc_order in indices_multi:
                 indices_sign = indices_multi[exc_order]
