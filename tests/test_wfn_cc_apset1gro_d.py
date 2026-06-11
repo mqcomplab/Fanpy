@@ -45,3 +45,29 @@ def test_assign_exops_non_default_inds():
     test_default.assign_exops()
 
     assert test_default.exop_combinations == test.exop_combinations
+
+def test_assign_exops_errors():
+    test = TempAPset1roGD()
+    test.assign_nelec(4)
+    test.assign_nspin(8)
+    test.assign_refwfn()
+
+    # not having two sets:
+    with pytest.raises(TypeError, match="`indices` must have exactly 2 elements"):
+        test.assign_exops([[ 2, 3 ], [6], [7, 5]])
+
+    # non int inds: 
+    with pytest.raises(TypeError, match="The elements of `indices` must be lists of non-negative ints"):
+        test.assign_exops([[ 2, 3 ], [ 6, 7.5]])
+
+    # negative inds:
+    with pytest.raises(ValueError, match="All `indices` must be lists of non-negative ints"):
+        test.assign_exops([[ -2, 3 ], [ 6, 7]])
+
+    # set has occ orbitals
+    with pytest.raises(ValueError, match="`indices` cannot correspond to occupied spin-orbitals"):
+        test.assign_exops([[0, 1, 4, 5], [2, 3, 6, 7]])
+
+    # not a disjoint set
+    with pytest.raises(ValueError, match="The sets of creation operators must be disjoint"):
+        test.assign_exops([[ 3, 6], [ 6, 7]])
