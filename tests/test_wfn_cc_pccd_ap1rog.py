@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 from fanpy.tools import slater
 from fanpy.wfn.cc.pccd_ap1rog import PCCD
+from fanpy.wfn.cc.ap1rog_generalized import AP1roGSDGeneralized
 
 
 class TempPCCD(PCCD):
@@ -120,7 +121,10 @@ def tests_type_effct_on_pCCD_overlap():
     sd = 0b10100011
 
     test_free = PCCD(4, 8, s_type="free")
+    params = np.random.rand(test_free.nparams)
+    test_free.assign_params(params)
     test_seno = PCCD(4, 8, s_type="sen-o")
+    test_seno.assign_params(params)
 
     olp_free = test_free.get_overlap(sd)
     olp_seno = test_seno.get_overlap(sd)
@@ -142,7 +146,7 @@ def test_olp_double_derivative_symmetric():
     """Test overlap Hessian symmetry."""
 
     test = PCCD(4, 8)
-
+    test.assign_params(np.random.rand(test.nparams))
     sd = 0b11001100
 
     hess = test._olp_double_derivative(sd)
@@ -154,20 +158,25 @@ def test_olp_double_derivative_zero_diagonal():
     """Test Hessian diagonal vanishes."""
 
     test = PCCD(4, 8)
-
+    test.assign_params(np.random.rand(test.nparams))
     sd = 0b11001100
 
     hess = test._olp_double_derivative(sd)
 
     assert np.allclose(np.diag(hess), 0)
 
+#### Test double deriv and deriv with multiple s types ###
 
-def test_olp_double_derivative_finite_difference():
+@pytest.mark.parametrize("sd,s_type", [[0b10100101, "sen-o"], 
+                                       [0b11000101, "sen-v"], 
+                                       [0b10010101, "sen-ov"], 
+                                       [0b11000011, "free"], 
+                                       [0b00110011, "sen-o"]])
+def test_olp_double_derivative_finite_difference(sd, s_type):
     """Test overlap Hessian with finite differences."""
 
-    test = PCCD(4, 8)
-
-    sd = 0b11001100
+    test = AP1roGSDGeneralized(4, 8, s_type = s_type)
+    test.assign_params(np.random.rand(test.nparams))
 
     h = 1e-7
 
@@ -192,3 +201,77 @@ def test_olp_double_derivative_finite_difference():
     test.params = orig
 
     assert np.allclose(analytic, numerical, atol=1e-5)
+
+@pytest.mark.parametrize("sd,s_type", [[0b10100101, "sen-o"], 
+                                       [0b11000101, "sen-v"], 
+                                       [0b10010101, "sen-ov"], 
+                                       [0b11000011, "free"], 
+                                       [0b00110011, "sen-o"]])
+def test_olp_derivative_finite_difference(sd, s_type):
+    """Test overlap Hessian with finite differences."""
+
+    test = AP1roGSDGeneralized(4, 8, s_type = s_type)
+    test.assign_params(np.random.rand(test.nparams))
+
+    h = 1e-7
+
+    analytic = test._olp_deriv(sd)
+
+    numerical = np.zeros_like(analytic)
+
+    orig = test.params.copy()
+
+    for j in range(test.nparams):
+
+        test.params = orig.copy()
+        test.params[j] += h
+        plus = test._olp(sd)
+
+        test.params = orig.copy()
+        test.params[j] -= h
+        minus = test._olp(sd)
+
+        numerical[j] = (plus - minus) / (2 * h)
+
+    test.params = orig
+
+    assert np.allclose(analytic, numerical, atol=1e-5)
+
+
+#### olp tests ####
+
+
+def test_olp_identity_is_one():
+    """Test that the reference determinant has unit overlap."""
+    test = PCCD(4, 8)
+
+    assert test._olp(test.refwfn) == pytest.approx(1.0)
+
+def test_olp_pair_excitation_matches_parameter():
+    """Test that a single pair excitation returns the matching amplitude."""
+    test = PCCD(4, 8)
+    test.assign_params(np.array([0.25, -0.5, 0.75, -1.25]))
+
+    sd = slater.excite(test.refwfn, 0, 4, 2, 6)
+    sign = slater.sign_excite(test.refwfn, [0, 4], [2, 6])
+
+    assert test._olp(sd) == pytest.approx(sign * test.params[test.get_ind((0, 4, 2, 6))])
+
+def test_olp_broken_pair_is_zero():
+    """Test that seniority-breaking determinants have zero overlap in pCCD."""
+    test = PCCD(4, 8)
+    test.assign_params(np.array([0.25, -0.5, 0.75, -1.25]))
+
+    sd = slater.excite(test.refwfn, 0, 2)
+
+    assert test._olp(sd) == pytest.approx(0.0)
+
+def test_olp_single_excitation_matches_parameter():
+    """Test that a single pair excitation returns the matching amplitude."""
+    test = AP1roGSDGeneralized(4, 8)
+    test.assign_params(np.random.rand(test.nparams))
+
+    sd = slater.excite(test.refwfn, 0, 2)
+    sign = slater.sign_excite(test.refwfn, [0], [2])
+
+    assert test._olp(sd) == pytest.approx(sign * test.params[test.get_ind((0, 2))])
