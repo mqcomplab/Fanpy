@@ -30,6 +30,7 @@
 # It should compute the energy correction as per eq. (7) of the overleaf document
 
 import numpy as np
+import scipy as sc
 
 from fanpy.wfn.geminal.ap1rog import AP1roG
 from fanpy.tools import slater
@@ -53,10 +54,10 @@ class LCCD:
 
 
     """
+ 
 
 
-
-    def __init__(self, wfn, ham):
+    def __init__(self, wfn, ham, pspace):
         # check if wfn is AP1roG --> currently, we are only implementing the correction for this
 
         # save wfn and ham as properties
@@ -70,37 +71,47 @@ class LCCD:
 
         self.wfn = wfn
         self.ham = ham
+        self.pspace = pspace
 
         self.ref_sd = wfn.ref_sd
         self.nspatial = wfn.nspatial
         self.nspin = wfn.nspin
+
 
         self.generate_exops()
     
 
     def generate_exops(self):
         # Get occupied and virtual orbital indices from reference SD
+        total_occ = slater.total_occ(self.ref_sd)
         occ_indices = slater.occ_indices(self.ref_sd)
         vir_indices = slater.vir_indices(self.ref_sd, self.nspin)
+        alpha_indices, _ = slater.split_spin(self.ref_sd, self.nspatial)
+        occ_alpha_indices = slater.occ_indices(alpha_indices)
+        vir_alpha_indices = slater.vir_indices(alpha_indices, self.nspatial)
         
-        self.exops = {}
+        dict_exops_ind = {}
         param_ind = 0
-        
-        for i_ind, i in enumerate(occ_indices):
-            for j in occ_indices[i_ind + 1:]:
-                for a_ind, a in enumerate(vir_indices):
-                    for b in vir_indices[a_ind + 1:]:
-                        if self._is_pair_excitation(i, j, a, b):
-                            continue
+        for i_ind, i in enumerate(occ_alpha_indices):
+            for j in occ_alpha_indices[i_ind + 1:]:
+                for a_ind, a in enumerate(vir_alpha_indices):
+                    for b in vir_alpha_indices[a_ind + 1:]:
+
+                        #if self._is_pair_excitation(i, j, a, b):
+                        #    continue
                         
                         # Store excitation operator: (i,j,a,b) -> parameter index
-                        self.exops[(i, j, a, b)] = param_ind
-                        param_ind += 1
+                        dict_exops_ind[(i, j, a, b)] = param_ind
+                        param_ind += 1 
         
+        self.dict_exops_ind = dict_exops_ind
+        self.dict_ind_exops = {i: exops for exops,i in dict_exops_ind.items()}
+         
         # Initialize cluster amplitude parameters
-        self.nparams = len(self.exops)
-        self.params = np.zeros(self.nparams)
-        
+        self.nparams = len(self.dict_exops_ind)
+        self.amplitudes = np.zeros(self.nparams)
+
+
     def _is_pair_excitation(self, i, j, a ,b):
         if j == i + self.nspatial and b == a + self.nspatial:
             return True
@@ -108,12 +119,57 @@ class LCCD:
             return True
         return False
 
-    
+
+    def _generate_sub_exops(self, mu):
+        i, j, a, b = mu
+        sub_exops = ((i,j,a,b), (i,j+self.nspatial,a,b+self.nspatial), (i+self.nspatial,j,a+self.nspatial,b), (i+self.spatial,j+self.spatial,a+self.spatial,b+self.spatial))
+        return sub_exops
+
+
     def calculate_b(self):
-        pass
+        b = np.zeros((self.nparams))
+        for ind_mu, mu in self.dict_ind_exops.items():
+            b_mu = 0.0
+            for sub_mu_exop in self._generate_sub_exops(mu):
+                sub_exc_refsd = slater.excite(self.ref_sd, sub_mu_exop)
+                b_mu += self.ham.integrate_sd_wfn(sub_exc_refsd, self.wfn)
+            b[ind_mu] = b_mu
+        self.b_vector = b
+
 
     def calculate_a(self):
-        pass
+        a = np.zeros((self.nparams, self.nparams))
+        const = self.ham.integrate_sd_wfn(self.ref_sd, self.wfn)
+
+        for ind_mu, mu in self.dict_ind_exops.items():
+
+            for ind_nu, nu in self.dict_ind_exops.items():
+
+                for m in self.pspace:
+                    a_mu_nu = 0.0
+                    for sub_mu_exop in self._generate_sub_exops(mu):
+                        sub_exc_mu_refsd = slater.excite(self.ref_sd, sub_mu_exop)
+                        for sub_nu_exop in self._generate_sub_exops(nu):
+                            sub_exc_nu_m = slater.excite(m, sub_nu_exop)
+                            a_mu_nu += self.ham.integrate_sd_sd(sub_exc_mu_refsd, sub_exc_nu_m)
+                    a_mu_nu *= self.wfn.get_overlap(m)
+
+                if nu == mu:
+                    a_mu_nu -= const
+                
+                a[ind_mu, ind_nu] = a_mu_nu
+
+        self.a_matrix = a
+
 
     def compute_correction(self):
-        pass
+        amplitudes = sc.linalg.lstsq(a_matrix, -self.b_vector, check_finite=True)
+
+        self.amplitudes = amplitudes
+        
+        E_corr = 0.0
+        for ind_nu, nu in self.dict_ind_exops.items():
+            i, j, a, b = nu
+            E_corr += amplitudes[ind_nu] * (2*self.ham.two_int(i, j, a, b) - self.ham.two_int(i, j, b, a))
+
+        return E_corr
