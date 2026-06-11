@@ -87,3 +87,32 @@ def test_generate_possible_exops():
         test.exop_combinations[(0, 1, 4, 2, 3, 6)][2][1],
         [test.get_ind((1, 3)), test.get_ind((0, 4, 2, 6)), sign if sign == 1 else 0],
     )
+
+def test_assign_exops_errors():
+    test = TempAPset1GroSD()
+    test.assign_nelec(4)
+    test.assign_nspin(8)
+    test.assign_refwfn()
+    # wrong type
+    with pytest.raises(TypeError, match="The elements of `indices` must be lists of non-negative ints" ):
+        test.assign_exops(["not a list", "not a list"])
+
+    # not having two sets:
+    with pytest.raises(TypeError, match="`indices` must have exactly 2 elements"):
+        test.assign_exops([[ 2, 3 ], [6], [7, 5]])
+
+    # non int inds: 
+    with pytest.raises(TypeError, match="The elements of `indices` must be lists of non-negative ints"):
+        test.assign_exops([[ 2, 3 ], [ 6, 7.5]])
+
+    # negative inds:
+    with pytest.raises(ValueError, match="All `indices` must be lists of non-negative ints"):
+        test.assign_exops([[ -2, 3 ], [ 6, 7]])
+
+    # set has occ orbitals
+    with pytest.raises(ValueError, match="`indices` cannot correspond to occupied spin-orbitals"):
+        test.assign_exops([[0, 1, 4, 5], [2, 3, 6, 7]])
+
+    # not a disjoint set
+    with pytest.raises(ValueError, match="The sets of annihilation operators must be disjoint"):
+        test.assign_exops([[ 3, 6], [ 6, 7]])
