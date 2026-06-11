@@ -163,7 +163,7 @@ class LCCD:
 
 
     def compute_correction(self):
-        amplitudes = sc.linalg.lstsq(a_matrix, -self.b_vector, check_finite=True)
+        amplitudes = sc.linalg.lstsq(self.a_matrix, -self.b_vector, check_finite=True)
 
         self.amplitudes = amplitudes
         
