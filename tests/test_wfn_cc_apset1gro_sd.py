@@ -116,3 +116,25 @@ def test_assign_exops_errors():
     # not a disjoint set
     with pytest.raises(ValueError, match="The sets of annihilation operators must be disjoint"):
         test.assign_exops([[ 3, 6], [ 6, 7]])
+
+def test_assign_exops_non_default_inds():
+    test = TempAPset1GroSD()
+    nelec = 6
+    nspin = 14
+    test.assign_nelec(nelec)
+    test.assign_nspin(nspin)
+    test.assign_refwfn()
+    ground_state = slater.ground(nelec, nspin)
+    vir_idx = slater.vir_indices(ground_state, nspin).tolist()
+    alpha_idx = vir_idx[:len(vir_idx)//2]
+    beta_idx = vir_idx[len(vir_idx)//2:]
+    # trigger non-default case, but with same alpha beta subsets
+    # as for the default case. This allows easier testing. 
+
+    test_default = TempAPset1GroSD()
+    test_default.assign_nelec(nelec)
+    test_default.assign_nspin(nspin)
+    test_default.assign_refwfn()
+    test_default.assign_exops()
+
+    assert test_default.exop_combinations == test.exop_combinations
