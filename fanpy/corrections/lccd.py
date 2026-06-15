@@ -54,7 +54,6 @@ class LCCD:
 
 
     """
- 
 
 
     def __init__(self, wfn, ham, pspace):
@@ -79,6 +78,8 @@ class LCCD:
 
 
         self.generate_exops()
+        self.calculate_b()
+        self.calculate_a()
     
 
     def generate_exops(self):
@@ -100,7 +101,7 @@ class LCCD:
                         #if self._is_pair_excitation(i, j, a, b):
                         #    continue
                         
-                        # Store excitation operator: (i,j,a,b) -> parameter index
+                        #Store excitation operator: (i,j,a,b) -> parameter index
                         dict_exops_ind[(i, j, a, b)] = param_ind
                         param_ind += 1 
         
@@ -112,17 +113,21 @@ class LCCD:
         self.amplitudes = np.zeros(self.nparams)
 
 
-    def _is_pair_excitation(self, i, j, a ,b):
+    def _is_pair_excitation(self, i, j, a, b):
         if j == i + self.nspatial and b == a + self.nspatial:
             return True
         if i == j + self.nspatial and a == b + self.nspatial:
-            return True
+            return True 
         return False
 
 
     def _generate_sub_exops(self, mu):
+        """
+        generate all the excitations in the double singlet operator :
+        E_{ia} E_{jb} = a^{\dagger}_a a_i a^{\dagger}_b a_j+ a^{\dagger}_a a_i a^{\dagger}_{\bar{b}} a_{\bar{j}}+ a^{\dagger}_{\bar{a}} a_{\bar{i}} a^{\dagger}_b a_j + a^{\dagger}_{\bar{a}} a_{\bar{i}} a^{\dagger}_{\bar{b}} a_{\bar{j}}
+        """
         i, j, a, b = mu
-        sub_exops = ((i,j,a,b), (i,j+self.nspatial,a,b+self.nspatial), (i+self.nspatial,j,a+self.nspatial,b), (i+self.spatial,j+self.spatial,a+self.spatial,b+self.spatial))
+        sub_exops = ((i,j,a,b), (i,j+self.nspatial,a,b+self.nspatial), (i+self.nspatial,j,a+self.nspatial,b), (i+self.nspatial,j+self.nspatial,a+self.nspatial,b+self.nspatial))
         return sub_exops
 
 
@@ -131,13 +136,23 @@ class LCCD:
         for ind_mu, mu in self.dict_ind_exops.items():
             b_mu = 0.0
             for sub_mu_exop in self._generate_sub_exops(mu):
-                sub_exc_refsd = slater.excite(self.ref_sd, sub_mu_exop)
+                sub_exc_refsd = slater.excite(self.ref_sd, *sub_mu_exop)
                 b_mu += self.ham.integrate_sd_wfn(sub_exc_refsd, self.wfn)
             b[ind_mu] = b_mu
         self.b_vector = b
 
 
     def calculate_a(self):
+        """
+        \begin{equation}
+        \begin{split}
+        A_{\mu, \nu} &= \braket{\mu | [\hat{H}, \hat{\tau}_{\nu}]|AP1roG} \\
+        &= \braket{\mu | \hat{H} \hat{\tau}_{\nu}|AP1roG} - \braket{\overbrace{\mu | \hat{\tau}_{\nu}}^{\delta_{\nu, \mu} \bra{\Phi_0}} \hat{H} | AP1roG}
+        \\
+        &= \left( \sum_{m\in S} \left( \sum_{\mu _k} \left( \sum_{\nu _k} \braket{\mu _k | \hat{H} \hat{\tau _{\nu _k}} | m}  \right) \right) * \braket{m | AP1roG} \right) - \delta_{\mu \nu} \braket{\Phi_0 | \hat{H} | AP1roG}
+        \end{split}
+        \end{equation}
+        """
         a = np.zeros((self.nparams, self.nparams))
         const = self.ham.integrate_sd_wfn(self.ref_sd, self.wfn)
 
@@ -148,9 +163,11 @@ class LCCD:
                 for m in self.pspace:
                     a_mu_nu = 0.0
                     for sub_mu_exop in self._generate_sub_exops(mu):
-                        sub_exc_mu_refsd = slater.excite(self.ref_sd, sub_mu_exop)
+                        sub_exc_mu_refsd = slater.excite(self.ref_sd, *sub_mu_exop)
                         for sub_nu_exop in self._generate_sub_exops(nu):
-                            sub_exc_nu_m = slater.excite(m, sub_nu_exop)
+                            sub_exc_nu_m = slater.excite(m, *sub_nu_exop)
+                            if sub_exc_nu_m == None:   #if the excitation applied give zero
+                                continue
                             a_mu_nu += self.ham.integrate_sd_sd(sub_exc_mu_refsd, sub_exc_nu_m)
                     a_mu_nu *= self.wfn.get_overlap(m)
 
@@ -170,6 +187,6 @@ class LCCD:
         E_corr = 0.0
         for ind_nu, nu in self.dict_ind_exops.items():
             i, j, a, b = nu
-            E_corr += amplitudes[ind_nu] * (2*self.ham.two_int(i, j, a, b) - self.ham.two_int(i, j, b, a))
+            E_corr += amplitudes[ind_nu] * (2*self.ham.two_int[i, j, a, b] - self.ham.two_int[i, j, b, a])
 
         return E_corr
