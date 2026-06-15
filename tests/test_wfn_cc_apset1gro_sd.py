@@ -129,7 +129,9 @@ def test_assign_exops_non_default_inds():
     alpha_idx = vir_idx[:len(vir_idx)//2]
     beta_idx = vir_idx[len(vir_idx)//2:]
     # trigger non-default case, but with same alpha beta subsets
-    # as for the default case. This allows easier testing. 
+    # as for the default case. This allows easier testing.
+    # print("DEBUG >>> test.exop_combs: ", test.exops)
+    test.assign_exops([alpha_idx, beta_idx])
 
     test_default = TempAPset1GroSD()
     test_default.assign_nelec(nelec)
@@ -137,4 +139,4 @@ def test_assign_exops_non_default_inds():
     test_default.assign_refwfn()
     test_default.assign_exops()
 
-    assert test_default.exop_combinations == test.exop_combinations
+    assert test_default.exops == test.exops
