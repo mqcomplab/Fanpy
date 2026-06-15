@@ -44,7 +44,7 @@ def test_assign_exops_non_default_inds():
     test_default.assign_refwfn()
     test_default.assign_exops()
 
-    assert test_default.exop_combinations == test.exop_combinations
+    assert test_default.exops == test.exops
 
 def test_assign_exops_errors():
     test = TempAPset1roGD()
