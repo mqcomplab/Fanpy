@@ -32,17 +32,26 @@ def test_assign_expos():
     doubles = sd_list(n_elec, n_spin, exc_orders=[2], spin=0, seniority=0)
     singles = sd_list(n_elec, n_spin, exc_orders=[1])
     exc_sds = []
-    exc_sds.extend(doubles)
-    exc_sds.extend(singles)
+    # sd list adds ground state as well because it satisfies the spin and sen restrictions
+    # ground is added as the first element, we jump over it here
+    exc_sds.extend(doubles[1:])
+    exc_sds.extend(singles[1:])
 
     # generate excited sds from exc ops in wfn 
     wfn_exc_sds = []
     ground_state = ground(n_elec, n_spin)
-    for exc_orders in wfn.exop_combinations:
+    for exc_orders in wfn.exops.keys():
         sd = excite(ground_state, *exc_orders)
         wfn_exc_sds.append(sd)
 
+    # convert arrays to numpy so that comparison easier
+    exc_sds_np = np.asarray(exc_sds, dtype=int)
+    exc_sds_np = np.sort(exc_sds_np)
+    # sort arrays 
+    wfn_exc_sds_np = np.asarray(wfn_exc_sds, dtype=int)
+    wfn_exc_sds_np = np.sort(wfn_exc_sds_np)
+
     # compare sds
-    assert exc_sds.sort() == wfn_exc_sds.sort()
+    np.testing.assert_array_equal(exc_sds_np, wfn_exc_sds_np)
 
 
