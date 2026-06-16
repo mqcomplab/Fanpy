@@ -4,6 +4,7 @@ import numpy as np
 from fanpy.tools import slater
 from fanpy.wfn.cc.pccd_ap1rog import PCCD
 from fanpy.wfn.cc.ap1rog_generalized import AP1roGSDGeneralized
+from fanpy.wfn.cc.apset1rog_sd import APset1roGSD
 
 
 class TempPCCD(PCCD):
@@ -168,6 +169,164 @@ def test_olp_single_excitation_matches_parameter():
 
     assert test._olp(sd) == pytest.approx(sign * test.params[test.get_ind((0, 2))])
 
+@pytest.mark.parametrize("s_type", ["sen-o", "sen-v", "sen-ov"])
+def test_olp_filtering(monkeypatch, s_type):
+    """Check if single excitations get filtered for s_types o, v, ov
+    Note: this does not check if the filtering logic is working properly
+    """
+
+    wfn_olp = APset1roGSD(
+        nelec=4,
+        nspin=8,
+        s_type=s_type,
+    )
+    wfn_indices_multi = APset1roGSD(
+        nelec=4,
+        nspin=8,
+        s_type=s_type,
+    )
+    #
+    # reference:
+    refsd = slater.ground(4, 8)
+
+    wfn_olp.refwfn = refsd
+    wfn_indices_multi.rewfwfn = refsd
+
+    # Build excited determinant
+    # annihilate:
+    #   pair from spatial orbital 0
+    #   alpha electron from spatial orbital 1
+    #
+    # create:
+    #   pair in spatial orbital 2
+    #   alpha electron in spatial orbital 3
+    #
+
+    excited_sd = slater.excite(refsd, 0, 1, 4, 2, 3, 6)
+
+    # Generate all possible exc combinations
+    a_inds, c_inds = slater.diff_orbs(refsd, excited_sd)
+    wfn_indices_multi.generate_possible_exops(a_inds, c_inds)
+
+    original_indices = wfn_indices_multi.exop_combinations[tuple(a_inds + c_inds)]
+
+    # Capture filtered indices_multi
+
+    captured = {}
+
+    def fake_product_amplitudes_multi(indices_multi):
+        captured["indices_multi"] = indices_multi
+        return 1.0
+
+    monkeypatch.setattr(
+        wfn_olp,
+        "product_amplitudes_multi",
+        fake_product_amplitudes_multi,
+    )
+
+    # Run overlap
+    wfn_olp._olp(excited_sd)
+
+    olp_indices = captured["indices_multi"]
+
+    # all sen types need to remove the case, where the excited SD is generated
+    # from single excitations only
+
+    removed_any = False
+
+    for exc_order in original_indices:
+        if len(olp_indices[exc_order]) < len(original_indices[exc_order]):
+            removed_any = True
+
+    assert removed_any
+
+    # make sure some excitations survived
+
+    surviving = any(
+        len(olp_indices[exc_order]) > 0
+        for exc_order in olp_indices
+    )
+
+    assert surviving
+
+def test_olp_no_filtering_for_free(monkeypatch):
+    """
+    Make sure that seniority type free does not filter single excitations. 
+    """
+
+    wfn_olp = APset1roGSD(
+        nelec=4,
+        nspin=8,
+        s_type="free",
+    )
+    wfn_indices_multi = APset1roGSD(
+        nelec=4,
+        nspin=8,
+        s_type="free",
+    )
+    refsd = slater.create(0, 0, 1, 4, 5)
+
+    wfn_olp.refwfn = refsd
+    wfn_indices_multi.rewfwfn = refsd
+
+    # Build excited determinant
+    # annihilate:
+    #   pair from spatial orbital 0
+    #   alpha electron from spatial orbital 1
+    #
+    # create:
+    #   pair in spatial orbital 2
+    #   alpha electron in spatial orbital 3
+    #
+
+    excited_sd = refsd
+
+    excited_sd = slater.excite(refsd, 0, 1, 4, 2, 3, 6)
+
+    # Generate all excitation combinations
+
+    a_inds, c_inds = slater.diff_orbs(refsd, excited_sd)
+    wfn_indices_multi.generate_possible_exops(a_inds, c_inds)
+
+    original_indices = wfn_indices_multi.exop_combinations[tuple(a_inds + c_inds)]
+
+    # Capture filtered indices_multi
+
+    captured = {}
+
+    def fake_product_amplitudes_multi(indices_multi):
+        captured["indices_multi"] = indices_multi
+        return 1.0
+
+    monkeypatch.setattr(
+        wfn_olp,
+        "product_amplitudes_multi",
+        fake_product_amplitudes_multi,
+    )
+
+    # Run overlap
+
+    wfn_olp._olp(excited_sd)
+
+    olp_indices = captured["indices_multi"]
+
+    removed_any = False
+
+    for exc_order in original_indices:
+        if len(olp_indices[exc_order]) < len(original_indices[exc_order]):
+            removed_any = True
+
+    assert not removed_any # we should not be removing exc with s_type free
+
+    # make sure there are exc operators present
+    # this is a bit redundant, but keeping it here just in case
+
+    surviving = any(
+        len(olp_indices[exc_order]) > 0
+        for exc_order in olp_indices
+    )
+
+    assert surviving
 
 ######### DERIV ##########
 
