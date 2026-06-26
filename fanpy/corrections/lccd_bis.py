@@ -92,6 +92,13 @@ class LCCD_bis:
 
         sub_exops = [(i,j,a,b), (i,self._get_opposite_spin(j),a,self._get_opposite_spin(b)), (self._get_opposite_spin(i),j,self._get_opposite_spin(a),b), (self._get_opposite_spin(i),self._get_opposite_spin(j),self._get_opposite_spin(a),self._get_opposite_spin(b))]   ####
 
+        for sub_exop in sub_exops:
+            i, j, a, b = sub_exop
+            if i == j+self.nspatial and a == b+self.nspatial:
+                sub_exops.remove(sub_exop)
+            if j == i+self.nspatial and b == a+self.nspatial:
+                sub_exops.remove(sub_exop)
+
         return sub_exops
 
 
