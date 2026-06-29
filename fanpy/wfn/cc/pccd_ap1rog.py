@@ -187,12 +187,13 @@ class PCCD(BaseCC):
             annihilation to the creation operators.
 
         """
+        # indices are used for assign_exops, without any modification 
+        # we can pass it here to BaseCC as assign_exops gets overwritten by PCCD and its child classes
         super().__init__(
-            nelec, nspin, memory=memory, params=params, exop_combinations=exop_combinations, refresh_exops=refresh_exops
+            nelec, nspin, memory=memory, params=params, exop_combinations=exop_combinations, indices=indices, refresh_exops=refresh_exops
         )
         self.assign_s_type(s_type=s_type)
         self.assign_ranks(ranks=ranks)
-        self.assign_exops(indices=indices)
         self.assign_refwfn(refwfn=refwfn)
 
         # mapping from indices to exops
