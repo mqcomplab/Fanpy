@@ -78,8 +78,6 @@ class LCCD_bis:
     def _is_pair_excitation(self, i, j, a, b):
         if i == self._get_opposite_spin(j) and a == self._get_opposite_spin(b):
             return True
-        if j == self._get_opposite_spin(i) and b == self._get_opposite_spin(a):
-            return True
         return False
 
 
@@ -95,8 +93,6 @@ class LCCD_bis:
         for sub_exop in sub_exops:
             i, j, a, b = sub_exop
             if i == self._get_opposite_spin(j) and a == self._get_opposite_spin(b):
-                sub_exops.remove(sub_exop)
-            if j == self._get_opposite_spin(i) and b == self._get_opposite_spin(a):
                 sub_exops.remove(sub_exop)
 
         return sub_exops
