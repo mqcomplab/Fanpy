@@ -138,11 +138,8 @@ class LCCD:
         dict_exops_ind = {}
         param_ind = 0
         for idx_p, (i, a) in enumerate(occ_virt_pairs):
-            for idx_q, (j, b) in enumerate(occ_virt_pairs):
-                if idx_q <= idx_p:
-                    # idx_q < idx_p: duplicate of an already-stored pair
-                    # idx_q == idx_p: (i,a) == (j,b), the forbidden t_ii^aa term
-                    continue
+            for idx_q in range(idx_p + 1, len(occ_virt_pairs)):
+                j, b = occ_virt_pairs[idx_q]
                 dict_exops_ind[(i, j, a, b)] = param_ind
                 param_ind += 1
 
