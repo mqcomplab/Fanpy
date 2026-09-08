@@ -101,6 +101,7 @@ class BaseSchrodinger:
         step_print=True,
         step_save=True,
         tmpfile="",
+        mpi_comm=None,
     ):
         """Initialize the objective instance.
 
@@ -134,6 +135,9 @@ class BaseSchrodinger:
             By default, the parameter values are not stored.
             If a file name is provided, then parameters are stored upon execution of the objective
             method.
+        mpi_comm : mpi4py.MPI.Comm
+            MPI communicator used to split projection-space sums across ranks.
+            Default disables MPI parallelism.
 
         Raises
         ------
@@ -180,6 +184,7 @@ class BaseSchrodinger:
         self.step_print = step_print
         self.step_save = step_save
         self.print_queue = {}
+        self.mpi_comm = mpi_comm
 
     @property
     def optimize_orbitals(self):
@@ -284,6 +289,9 @@ class BaseSchrodinger:
         and a counter are used to differentiate the files associated with each component.
 
         """
+        if self.mpi_comm is not None and self.mpi_comm.Get_rank() != 0:
+            return
+
         if self.tmpfile != "":
             root, ext = os.path.splitext(self.tmpfile)
             names = [type(component).__name__ for component in self.indices_component_params]
@@ -326,8 +334,11 @@ class BaseSchrodinger:
                 )
 
         for component, indices in self.indices_component_params.items():
-            new_params = component.params.ravel()
+            old_params = component.params.ravel()
+            new_params = old_params.copy()
             new_params[indices] = params[indices_objective_params[component]]
+            if np.array_equal(new_params, old_params):
+                continue
             component.assign_params(new_params)
 
     def wrapped_get_overlap(self, sd, deriv=False):  # pylint: disable=C0103
@@ -383,6 +394,79 @@ class BaseSchrodinger:
                 if inds_component.size > 0:
                     inds_objective = self.indices_objective_params[wfn]
                     output[inds_objective] = self.wfn.get_overlap(sd, (wfn, inds_component))
+
+        return output
+
+    def wrapped_get_overlaps(self, sds, deriv=False):  # pylint: disable=C0103
+        """Wrap `get_overlaps` to be derivatized with respect to objective parameters.
+
+        Falls back to scalar `get_overlap` calls for wavefunctions that do not provide a vectorized
+        `get_overlaps` implementation.
+
+        Parameters
+        ----------
+        sds : iterable of {int, np.int64, mpz}
+            Slater determinants against which the overlaps are taken.
+        deriv : bool
+            Option for derivatizing the overlaps with respect to the active objective parameters.
+            Default is no derivatization.
+
+        Returns
+        -------
+        overlaps : np.ndarray
+            Overlaps of shape `(nsds,)` if `deriv` is False. Otherwise, derivatives of shape
+            `(nsds, active_nparams)`.
+
+        Raises
+        ------
+        TypeError
+            If `deriv` is not boolean.
+
+        """
+        if __debug__ and not isinstance(deriv, bool):
+            raise TypeError("`deriv` must be given as a boolean.")
+
+        sds = np.asarray(sds)
+
+        if not deriv:
+            if hasattr(self.wfn, "get_overlaps"):
+                return self.wfn.get_overlaps(sds)
+            return np.array([self.wfn.get_overlap(sd) for sd in sds])
+
+        output = np.zeros((sds.size, self.active_nparams))
+        if not isinstance(
+            self.wfn,
+            (BaseCompositeOneWavefunction, LinearCombinationWavefunction, ProductWavefunction),
+        ):
+            inds_component = self.indices_component_params[self.wfn]
+            if inds_component.size > 0:
+                inds_objective = self.indices_objective_params[self.wfn]
+                if hasattr(self.wfn, "get_overlaps"):
+                    output[:, inds_objective] = self.wfn.get_overlaps(sds, deriv=inds_component)
+                else:
+                    output[:, inds_objective] = np.array(
+                        [self.wfn.get_overlap(sd, inds_component) for sd in sds]
+                    )
+        else:
+            if isinstance(self.wfn, BaseCompositeOneWavefunction):  # pragma: no cover
+                wfns = [self.wfn, self.wfn.wfn]
+            elif isinstance(self.wfn, ProductWavefunction):
+                wfns = self.wfn.wfns
+            elif isinstance(self.wfn, LinearCombinationWavefunction):
+                wfns = (self.wfn,) + self.wfn.wfns
+            for wfn in wfns:
+                if wfn not in self.indices_component_params:
+                    continue
+                inds_component = self.indices_component_params[wfn]
+                if inds_component.size > 0:
+                    inds_objective = self.indices_objective_params[wfn]
+                    deriv_info = (wfn, inds_component)
+                    if hasattr(self.wfn, "get_overlaps"):
+                        output[:, inds_objective] = self.wfn.get_overlaps(sds, deriv=deriv_info)
+                    else:
+                        output[:, inds_objective] = np.array(
+                            [self.wfn.get_overlap(sd, deriv_info) for sd in sds]
+                        )
 
         return output
 
@@ -568,8 +652,71 @@ class BaseSchrodinger:
         """
         if __debug__ and not isinstance(deriv, bool):
             raise TypeError("`deriv` must be given as a boolean.")
-        get_overlap = self.wrapped_get_overlap
+        get_overlaps = self.wrapped_get_overlaps
         integrate_sd_wfn = self.wrapped_integrate_sd_wfn
+
+        if hasattr(refwfn, "iter_chunks"):
+            norm = 0.0
+            energy_num = 0.0
+            comm = self.mpi_comm
+            use_mpi = comm is not None and comm.Get_size() > 1
+            if deriv:
+                d_norm = np.zeros(self.active_nparams)
+                d_energy_num = np.zeros(self.active_nparams)
+
+            for ref_sds in refwfn.iter_chunks():
+                ref_sds = np.asarray(ref_sds)
+                if len(ref_sds) == 0:
+                    continue
+                if use_mpi:
+                    rank = comm.Get_rank()
+                    size = comm.Get_size()
+                    chunk_indices = np.arange(ref_sds.size)
+                    local_indices = chunk_indices[rank::size]
+                    local_ref_sds = ref_sds[local_indices]
+
+                    def ordered_chunk_sum(local_values, value_shape=()):
+                        gathered = comm.allgather((local_indices, local_values))
+                        values = np.zeros((ref_sds.size, *value_shape), dtype=float)
+                        for indices, rank_values in gathered:
+                            values[np.asarray(indices, dtype=int)] = rank_values
+                        return np.sum(values, axis=0)
+
+                    overlaps = get_overlaps(local_ref_sds)
+                    integrals = np.array([integrate_sd_wfn(i) for i in local_ref_sds])
+                    norm += ordered_chunk_sum(overlaps * overlaps)
+                    energy_num += ordered_chunk_sum(overlaps * integrals)
+
+                    if deriv:
+                        d_overlaps = get_overlaps(local_ref_sds, deriv)
+                        d_integrals = np.array([integrate_sd_wfn(i, deriv) for i in local_ref_sds])
+                        d_norm += 2 * ordered_chunk_sum(
+                            overlaps[:, None] * d_overlaps, (self.active_nparams,)
+                        )
+                        d_energy_num += ordered_chunk_sum(
+                            d_overlaps * integrals[:, None], (self.active_nparams,)
+                        )
+                        d_energy_num += ordered_chunk_sum(
+                            overlaps[:, None] * d_integrals, (self.active_nparams,)
+                        )
+                    continue
+
+                overlaps = get_overlaps(ref_sds)
+                integrals = np.array([integrate_sd_wfn(i) for i in ref_sds])
+                norm += np.sum(overlaps * overlaps)
+                energy_num += np.sum(overlaps * integrals)
+
+                if deriv:
+                    d_overlaps = get_overlaps(ref_sds, deriv)
+                    d_integrals = np.array([integrate_sd_wfn(i, deriv) for i in ref_sds])
+                    d_norm += 2 * np.sum(overlaps[:, None] * d_overlaps, axis=0)
+                    d_energy_num += np.sum(d_overlaps * integrals[:, None], axis=0)
+                    d_energy_num += np.sum(overlaps[:, None] * d_integrals, axis=0)
+
+            energy = energy_num / norm
+            if not deriv:
+                return energy
+            return d_energy_num / norm - d_norm * energy / norm
 
         # define reference
         if isinstance(refwfn, CIWavefunction):
@@ -577,7 +724,7 @@ class BaseSchrodinger:
             ref_coeffs = refwfn.params
             if deriv:
                 d_ref_coeffs = np.zeros((refwfn.nparams, self.active_nparams), dtype=float)
-                inds_component = self.indices_component_params[refwfn]
+                inds_component = self.indices_component_params.get(refwfn, np.array([], dtype=int))
                 if inds_component.size > 0:
                     inds_objective = self.indices_objective_params[refwfn]
                     d_ref_coeffs[inds_component, inds_objective] = 1.0
@@ -587,9 +734,9 @@ class BaseSchrodinger:
             if slater.is_sd_compatible(refwfn):
                 refwfn = [refwfn]
             ref_sds = refwfn
-            ref_coeffs = np.array([get_overlap(i) for i in refwfn])
+            ref_coeffs = get_overlaps(refwfn)
             if deriv:
-                d_ref_coeffs = np.array([get_overlap(i, deriv) for i in refwfn])
+                d_ref_coeffs = get_overlaps(refwfn, deriv)
         else:
             raise TypeError(
                 "Reference state must be given as a Slater determinant, a CI "
@@ -598,8 +745,69 @@ class BaseSchrodinger:
                 "determinants."
             )
 
+        comm = self.mpi_comm
+        if comm is not None and comm.Get_size() > 1:
+            rank = comm.Get_rank()
+            size = comm.Get_size()
+            ref_sds = np.asarray(ref_sds)
+            global_indices = np.arange(ref_sds.size)
+            local_indices = global_indices[rank::size]
+            local_ref_sds = ref_sds[local_indices]
+
+            def ordered_sum(local_values, value_shape=()):
+                gathered = comm.allgather((local_indices, local_values))
+                values = np.zeros((ref_sds.size, *value_shape), dtype=float)
+                for indices, rank_values in gathered:
+                    values[np.asarray(indices, dtype=int)] = rank_values
+                return np.sum(values, axis=0)
+
+            if isinstance(refwfn, CIWavefunction):
+                ref_coeffs = refwfn.params[rank::size]
+                if deriv:
+                    d_ref_coeffs = np.zeros((local_ref_sds.size, self.active_nparams), dtype=float)
+                    inds_component = self.indices_component_params.get(refwfn, np.array([], dtype=int))
+                    if inds_component.size > 0:
+                        inds_objective = self.indices_objective_params[refwfn]
+                        local_ci_indices = np.arange(refwfn.nparams)[rank::size]
+                        d_ref_coeffs[:, inds_objective] = (
+                            local_ci_indices[:, None] == inds_component[None, :]
+                        ).astype(float)
+            else:
+                ref_coeffs = get_overlaps(local_ref_sds)
+                if deriv:
+                    d_ref_coeffs = get_overlaps(local_ref_sds, deriv)
+
+            overlaps = get_overlaps(local_ref_sds)
+            integrals = np.array([integrate_sd_wfn(i) for i in local_ref_sds])
+
+            norm = ordered_sum(ref_coeffs * overlaps)
+            energy_num = ordered_sum(ref_coeffs * integrals)
+            energy = energy_num / norm
+
+            if not deriv:
+                return energy
+
+            if local_ref_sds.size:
+                local_d_norm_ref_terms = d_ref_coeffs * overlaps[:, None]
+                local_d_norm_wfn_terms = ref_coeffs[:, None] * get_overlaps(local_ref_sds, deriv)
+                local_d_integrals = np.array([integrate_sd_wfn(i, deriv) for i in local_ref_sds])
+                local_d_energy_ref_terms = d_ref_coeffs * integrals[:, None]
+                local_d_energy_wfn_terms = ref_coeffs[:, None] * local_d_integrals
+            else:
+                local_d_norm_ref_terms = np.zeros((0, self.active_nparams))
+                local_d_norm_wfn_terms = np.zeros((0, self.active_nparams))
+                local_d_energy_ref_terms = np.zeros((0, self.active_nparams))
+                local_d_energy_wfn_terms = np.zeros((0, self.active_nparams))
+
+            d_norm = ordered_sum(local_d_norm_ref_terms, (self.active_nparams,))
+            d_norm += ordered_sum(local_d_norm_wfn_terms, (self.active_nparams,))
+            d_energy = ordered_sum(local_d_energy_ref_terms, (self.active_nparams,)) / norm
+            d_energy += ordered_sum(local_d_energy_wfn_terms, (self.active_nparams,)) / norm
+            d_energy -= d_norm * energy / norm
+            return d_energy
+
         # overlaps and integrals
-        overlaps = np.array([get_overlap(i) for i in ref_sds])
+        overlaps = get_overlaps(ref_sds)
         integrals = np.array([integrate_sd_wfn(i) for i in ref_sds])
 
         # norm
@@ -612,7 +820,7 @@ class BaseSchrodinger:
             return energy
 
         d_norm = np.sum(d_ref_coeffs * overlaps[:, None], axis=0)
-        d_norm += np.sum(ref_coeffs[:, None] * np.array([get_overlap(i, deriv) for i in ref_sds]), axis=0)
+        d_norm += np.sum(ref_coeffs[:, None] * get_overlaps(ref_sds, deriv), axis=0)
         d_energy = np.sum(d_ref_coeffs * integrals[:, None], axis=0) / norm
         d_energy += (
             np.sum(
@@ -717,14 +925,14 @@ class BaseSchrodinger:
         pspace_r = np.array(pspace_r)
         pspace_norm = np.array(pspace_norm)
 
-        get_overlap = self.wrapped_get_overlap
+        get_overlaps = self.wrapped_get_overlaps
         integrate_sd_sd = self.wrapped_integrate_sd_sd
 
         # overlaps and integrals
-        overlaps_l = np.array([[get_overlap(i)] for i in pspace_l])
-        overlaps_r = np.array([[get_overlap(i) for i in pspace_r]])
+        overlaps_l = get_overlaps(pspace_l)[:, None]
+        overlaps_r = get_overlaps(pspace_r)[None, :]
         ci_matrix = np.array([[integrate_sd_sd(i, j) for j in pspace_r] for i in pspace_l])
-        overlaps_norm = np.array([get_overlap(i) for i in pspace_norm])
+        overlaps_norm = get_overlaps(pspace_norm)
 
         # norm
         norm = np.sum(overlaps_norm**2)
@@ -733,10 +941,10 @@ class BaseSchrodinger:
         if not deriv:
             return np.sum(overlaps_l * ci_matrix * overlaps_r) / norm
 
-        d_norm = 2 * np.sum(overlaps_norm[:, None] * np.array([get_overlap(i, deriv) for i in pspace_norm]), axis=0)
+        d_norm = 2 * np.sum(overlaps_norm[:, None] * get_overlaps(pspace_norm, deriv), axis=0)
         d_energy = (
             np.sum(
-                np.array([[get_overlap(i, deriv)] for i in pspace_l]) * ci_matrix[:, :, None] * overlaps_r[:, :, None],
+                get_overlaps(pspace_l, deriv)[:, None, :] * ci_matrix[:, :, None] * overlaps_r[:, :, None],
                 axis=(0, 1),
             )
             / norm
@@ -752,7 +960,7 @@ class BaseSchrodinger:
         )
         d_energy += (
             np.sum(
-                overlaps_l[:, :, None] * ci_matrix[:, :, None] * np.array([[get_overlap(i, deriv) for i in pspace_r]]),
+                overlaps_l[:, :, None] * ci_matrix[:, :, None] * get_overlaps(pspace_r, deriv)[None, :, :],
                 axis=(0, 1),
             )
             / norm
@@ -835,3 +1043,4 @@ class BaseSchrodinger:
             "not supported for vector-valued function. May need to condense the equations down to a"
             " single equation and use cma."
         )
+
