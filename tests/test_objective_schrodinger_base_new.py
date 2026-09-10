@@ -10,18 +10,6 @@ Covers:
 - `get_energy_one_proj`: the chunked-refwfn branch must agree with the plain list branch for the
   same total determinant set (Eq. 30-31), and results must be invariant to how work is
   distributed and reduced across MPI ranks (Eq. 32-33), both with and without chunking.
-
-HDF5-backed projection spaces are intentionally NOT covered here (feature still under active
-development).
-
-A note on the MPI tests: real multi-rank testing normally requires `mpi4py` installed and running
-under `mpiexec -n N`, which doesn't fit a single-process `pytest` CI job. Instead,
-`ThreadedFakeComm` below emulates a communicator using real Python threads and a barrier, so that
-`allgather` genuinely blocks until all "ranks" contribute -- exercising the actual reduction logic
-in `get_energy_one_proj`, not just the `mpi_comm is None` short-circuit. This is a reasonable
-substitute for correctness testing, but it is not a replacement for running the real test suite
-under real MPI at least once (e.g. in a separate, opt-in CI job) before relying on it in
-production.
 """
 import os
 import threading
@@ -59,7 +47,7 @@ def _make_wfn_ham():
 def test_baseschrodinger_wrapped_get_overlaps_matches_scalar():
     """wrapped_get_overlaps (scalar-fallback path) must match wrapped_get_overlap per sd.
 
-    This is the paper's minimal validation condition (Eq. 9-10): the batched overlap array and
+    This is minimal validation condition (Eq. 9-10): the batched overlap array and
     Jacobian must equal what the scalar interface produces one determinant at a time.
     """
     wfn, ham = _make_wfn_ham()
@@ -115,7 +103,7 @@ def test_baseschrodinger_wrapped_get_overlaps_uses_native_batch_method():
 
 def test_baseschrodinger_assign_params_skips_unchanged_components():
     """assign_params must not call component.assign_params when its proposed parameter array is
-    unchanged from the current one (Eq. 28: "assign only if p_new != p_old").
+    unchanged from the current one.
     """
     wfn, ham = _make_wfn_ham()
     param1 = ParamContainer(np.array([1.0, 2.0]))
@@ -201,8 +189,8 @@ class FakeChunkedSpace:
 
 def test_baseschrodinger_get_energy_one_proj_chunked_matches_unchunked():
     """The chunked-refwfn branch must give the same energy/gradient as passing the full
-    determinant list directly (both implement the same projected-reference form, Eq. 14/17), since
-    chunking is only a partition of the same sum (Eq. 30-31).
+    determinant list directly (both implement the same projected-reference form), since
+    chunking is only a partition of the same sum.
     """
     wfn, ham = _make_wfn_ham()
     sds = [0b0101, 0b0110, 0b1100, 0b0011, 0b1001, 0b1010]
@@ -325,7 +313,7 @@ def test_baseschrodinger_get_energy_one_proj_mpi_matches_serial():
 
 
 def test_baseschrodinger_get_energy_one_proj_chunked_mpi_matches_serial():
-    """Chunked refwfn combined with MPI (the combination highlighted in the paper, Sec. IX) must
+    """Chunked refwfn combined with MPI must
     give the same energy/gradient as the chunked-but-serial result.
     """
     wfn, ham = _make_wfn_ham()
