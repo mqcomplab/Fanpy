@@ -446,7 +446,7 @@ class BaseSchrodinger:
                 else:
                     output[:, inds_objective] = np.array(
                         [self.wfn.get_overlap(sd, inds_component) for sd in sds]
-                    )
+                    ).reshape(sds.size, inds_component.size)
         else:
             if isinstance(self.wfn, BaseCompositeOneWavefunction):  # pragma: no cover
                 wfns = [self.wfn, self.wfn.wfn]
@@ -466,7 +466,7 @@ class BaseSchrodinger:
                     else:
                         output[:, inds_objective] = np.array(
                             [self.wfn.get_overlap(sd, deriv_info) for sd in sds]
-                        )
+                        ).reshape(sds.size, inds_component.size)
 
         return output
 
@@ -689,7 +689,8 @@ class BaseSchrodinger:
 
                     if deriv:
                         d_overlaps = get_overlaps(local_ref_sds, deriv)
-                        d_integrals = np.array([integrate_sd_wfn(i, deriv) for i in local_ref_sds])
+                        d_integrals = np.array([integrate_sd_wfn(i, deriv) for i in local_ref_sds]
+                        ).reshape(local_ref_sds.size, self.active_nparams)
                         d_norm += 2 * ordered_chunk_sum(
                             overlaps[:, None] * d_overlaps, (self.active_nparams,)
                         )
