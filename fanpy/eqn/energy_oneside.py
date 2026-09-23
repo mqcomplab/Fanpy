@@ -104,6 +104,7 @@ class EnergyOneSideProjection(BaseSchrodinger):
         step_save=True,
         tmpfile="",
         refwfn=None,
+        mpi_comm=None,
     ):
         """Initialize the objective instance.
 
@@ -144,6 +145,9 @@ class EnergyOneSideProjection(BaseSchrodinger):
             space.
             By default, the given wavefunction is used as the reference by using a complete
             projection space.
+        mpi_comm : mpi4py.MPI.Comm
+            MPI communicator used to split projection-space sums across ranks.
+            Default disables MPI parallelism.
 
         Raises
         ------
@@ -163,6 +167,7 @@ class EnergyOneSideProjection(BaseSchrodinger):
             step_print=step_print,
             step_save=step_save,
             tmpfile=tmpfile,
+            mpi_comm=mpi_comm,
         )
         self.assign_refwfn(refwfn)
 
@@ -218,6 +223,10 @@ class EnergyOneSideProjection(BaseSchrodinger):
         if slater.is_sd_compatible(refwfn):
             refwfn = [refwfn]
 
+        if hasattr(refwfn, "iter_chunks"):
+            self.refwfn = refwfn
+            return
+
         if __debug__:
             if isinstance(refwfn, (list, tuple)):
                 for sd in refwfn:  # pylint: disable=C0103
@@ -251,7 +260,7 @@ class EnergyOneSideProjection(BaseSchrodinger):
                         "spin orbitals as the given wavefunction."
                     )
             else:
-                raise TypeError("Projection space must be given as a list or a tuple.")
+                raise TypeError("Projection space must be given as a list, tuple, or chunked projection space.")
 
         self.refwfn = refwfn
 
@@ -284,14 +293,15 @@ class EnergyOneSideProjection(BaseSchrodinger):
 
         energy = self.get_energy_one_proj(self.refwfn)
 
-        if self.step_print:
+        is_mpi_root = self.mpi_comm is None or self.mpi_comm.Get_rank() == 0
+        if self.step_print and is_mpi_root:
             print("(Mid Optimization) Electronic energy: {}".format(energy))
-        else:
+        elif is_mpi_root:
             self.print_queue["Electronic energy"] = energy
 
         return energy
 
-    def gradient(self, params, assign=True, normalize=True, save=True):
+    def gradient(self, params, assign=True, normalize=False, save=True):
         """Return the gradient of the energy integrated against the reference wavefunction.
 
         See `BaseSchrodinger.get_energy_one_proj` for details.
@@ -315,15 +325,17 @@ class EnergyOneSideProjection(BaseSchrodinger):
         if normalize and hasattr(self.wfn, "normalize"):
             self.wfn.normalize(self.refwfn)
         # Save params
-        if save:
+        if save and self.step_save:
             self.save_params()
 
         grad = self.get_energy_one_proj(self.refwfn, True)
 
         grad_norm = np.linalg.norm(grad)
-        if self.step_print:
+        is_mpi_root = self.mpi_comm is None or self.mpi_comm.Get_rank() == 0
+        if self.step_print and is_mpi_root:
             print("(Mid Optimization) Norm of the gradient of the energy: {}".format(grad_norm))
-        else:
+        elif is_mpi_root:
             self.print_queue["Norm of the gradient of the energy"] = grad_norm
 
         return grad
+
