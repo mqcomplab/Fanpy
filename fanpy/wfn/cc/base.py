@@ -655,7 +655,7 @@ class BaseCC(BaseWavefunction):
             """Cached _olp method without caching the instance."""
             return self._olp(sd1)
 
-        @functools.lru_cache(maxsize=0, typed=False)
+        @functools.lru_cache(maxsize=memory, typed=False)
         def _olp_deriv(sd1):
             """Cached _olp_deriv method without caching the instance."""
             return self._olp_deriv(sd1)

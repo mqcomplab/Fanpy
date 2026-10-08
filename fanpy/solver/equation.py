@@ -175,9 +175,9 @@ def minimize(objective, use_gradient=True, **kwargs):
         """Clean up at the end of each iteration."""
         # update hamiltonian
         if objective.indices_component_params[ham].size > 0:
-            ham.update_prev_prams = True
+            ham.update_prev_params = True
             ham.assign_params(ham.params)
-            ham.update_prev_prams = False
+            ham.update_prev_params = False
         # save parameters
         objective.save_params()
         # print
@@ -194,3 +194,122 @@ def minimize(objective, use_gradient=True, **kwargs):
         output["energy"] = output["function"]
 
     return output
+
+
+def basinhopping(objective, use_gradient=True, **kwargs):
+    """Solve an equation using `scipy.optimize.basinhopping`.
+
+    Basin-hopping performs repeated random perturbations followed by local minimizations. It is useful
+    when a local optimizer such as BFGS is getting trapped in one basin.
+
+    Parameters
+    ----------
+    objective : BaseSchrodinger
+        Instance that contains the function that will be optimized.
+    use_gradient : bool
+        Option to pass the objective gradient to the local minimizer.
+        Default is True.
+    kwargs : dict
+        Keyword arguments to `scipy.optimize.basinhopping`. Local minimizer options should be given
+        in `minimizer_kwargs`. By default, the local minimizer is BFGS with the objective gradient
+        when `use_gradient` is True, and Powell otherwise.
+
+    Returns
+    -------
+    Dictionary with the following keys and values:
+    success : bool
+        True if optimization succeeded.
+    params : np.ndarray
+        Parameters at the end of the optimization.
+    energy : float
+        Energy after optimization.
+        Only available for objectives that are EnergyOneSideProjection, EnergyTwoSideProjection, and
+        LeastSquaresEquations instances.
+    function : float
+        Final objective value.
+    message : str
+        Message returned by the optimizer.
+    internal : OptimizeResult
+        Returned value of `scipy.optimize.basinhopping`.
+
+    Raises
+    ------
+    TypeError
+        If objective is not BaseSchrodinger instance.
+    ValueError
+        If objective has more than one equation.
+
+    """
+    import scipy.optimize  # pylint: disable=C0415
+
+    if not isinstance(objective, BaseSchrodinger):
+        raise TypeError("Objective must be a BaseSchrodinger instance.")
+    if objective.num_eqns != 1:
+        raise ValueError("Objective must contain only one equation.")
+
+    minimizer_kwargs = kwargs.setdefault("minimizer_kwargs", {})
+    if "args" in kwargs:
+        minimizer_kwargs.setdefault("args", kwargs.pop("args"))
+    if use_gradient:
+        minimizer_kwargs.setdefault("method", "BFGS")
+        minimizer_kwargs.setdefault("jac", objective.gradient)
+        minimizer_kwargs.setdefault("options", {})
+        minimizer_kwargs["options"].setdefault("gtol", 1e-8)
+        minimizer_kwargs["options"].setdefault("ftol", 1e-12)
+        minimizer_kwargs["options"].setdefault("maxiter", 500)
+    else:
+        minimizer_kwargs.setdefault("method", "Powell")
+        minimizer_kwargs.setdefault("options", {})
+        minimizer_kwargs["options"].setdefault("xtol", 1e-9)
+        minimizer_kwargs["options"].setdefault("ftol", 1e-9)
+
+    ham = objective.ham
+    ham.update_prev_params = False
+    user_callback = kwargs.get("callback", None)
+    user_minimizer_callback = minimizer_kwargs.get("callback", None)
+
+    def cleanup():
+        """Clean up during local minimization and after each basin minimum."""
+        if objective.indices_component_params[ham].size > 0:
+            ham.update_prev_params = True
+            ham.assign_params(ham.params)
+            ham.update_prev_params = False
+        objective.save_params()
+        for key, value in objective.print_queue.items():
+            print("(Mid Optimization) {}: {}".format(key, value))
+
+    def update_local_minimize(*args, **callback_kwargs):
+        """Clean up at the end of a local minimizer iteration."""
+        cleanup()
+        if user_minimizer_callback is not None:
+            return user_minimizer_callback(*args, **callback_kwargs)
+        return None
+
+    def update_basinhopping(x, f, accept):  # pylint: disable=C0103
+        """Clean up at the end of a basin-hopping step."""
+        cleanup()
+        if user_callback is not None:
+            return user_callback(x, f, accept)
+        return None
+
+    minimizer_kwargs["callback"] = update_local_minimize
+    kwargs["callback"] = update_basinhopping
+
+    results = scipy.optimize.basinhopping(objective.objective, objective.active_params, **kwargs)
+
+    output = {}
+    output["success"] = results.success
+    output["params"] = results.x
+    output["function"] = results.fun
+    output["message"] = results.message
+    output["internal"] = results
+    if isinstance(objective, LeastSquaresEquations):
+        output["energy"] = objective.energy.params
+    elif isinstance(objective, (EnergyOneSideProjection, EnergyTwoSideProjection)):  # pragma: no branch
+        output["energy"] = results.fun
+
+    objective.assign_params(results.x)
+    objective.save_params()
+
+    return output
+
