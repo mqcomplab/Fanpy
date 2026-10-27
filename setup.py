@@ -57,7 +57,7 @@ setup(
     ],
     keywords="wavefunction hamiltonian optimization schrodinger equation quantum chemistry",
     packages=find_packages(exclude=["docs", "tests"]),
-    python_requires=">=3.11",
+    python_requires=">=3.11, <3.15",
     install_requires=["numpy>=1.25", 
                       "scipy>=1.9", 
                       "cython", 
