@@ -50,15 +50,14 @@ setup(
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         # Specify the Python versions you support here.
         # These classifiers are *not* checked by 'pip install'. See instead
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
     ],
     keywords="wavefunction hamiltonian optimization schrodinger equation quantum chemistry",
     packages=find_packages(exclude=["docs", "tests"]),
-    python_requires=">=3.9",
+    python_requires=">=3.11, <3.15",
     install_requires=["numpy>=1.25", 
                       "scipy>=1.9", 
                       "cython", 
