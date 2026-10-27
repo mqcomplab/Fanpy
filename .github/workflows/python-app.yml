@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.11", "3.14"]
 
     steps:
       - name: Checkout code
@@ -24,9 +24,6 @@ jobs:
 
       - name: Install dependencies
         # dependencies listed in setup.py 
-        # NOTE on versions:
-        #   we have not properly tested for numpy 2.0 yet,
-        #   so we need to specify versions for those two
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[test, pyscf, tensorflow]"
